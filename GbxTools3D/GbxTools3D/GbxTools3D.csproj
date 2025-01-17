@@ -11,4 +11,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+      <Content Include="Dataset\**">
+          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
+  </ItemGroup>
+
 </Project>

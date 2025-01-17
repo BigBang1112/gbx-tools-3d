@@ -1,30 +1,37 @@
-﻿let renderer, scene, camera, cube;
+﻿let renderer, scene, camera, stats;
 
 export function create() {
-    scene = new THREE.Scene();
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.y = 2;
     camera.position.z = 5;
+    camera.lookAt(0, 0, 0);
 
     renderer = new THREE.WebGLRenderer();
     renderer.antialias = true;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setAnimationLoop(animate);
+    renderer.setAnimationLoop(render);
 
-    const canvas = document.querySelector('canvas');
+    const canvas = document.querySelector("canvas");
     canvas.parentNode.replaceChild(renderer.domElement, canvas);
 
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-    cube = new THREE.Mesh(geometry, material);
-    scene.add(cube);
+    stats = new Stats();
+    document.body.appendChild(stats.dom);
 
     return renderer;
 }
 
-function animate() {
-    cube.rotation.x += 0.01;
-    cube.rotation.y += 0.01;
+export function setScene(newScene) {
+    scene = newScene;
+}
+
+export function setCamera(newCamera) {
+    camera = newCamera;
+}
+
+function render() {
+    stats.begin();
     renderer.render(scene, camera);
+    stats.end();
 }

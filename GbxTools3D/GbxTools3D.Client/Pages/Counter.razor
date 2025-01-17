@@ -1,18 +1,39 @@
 ﻿@page "/counter"
 @using System.Runtime.InteropServices.JavaScript
 @using GbxTools3D.Client.Modules
-@rendermode @(new InteractiveWebAssemblyRenderMode(prerender:false))
+@rendermode InteractiveWebAssembly
 
 <PageTitle>Counter</PageTitle>
+
+<p>@Status</p>
 
 <canvas></canvas>
 
 @code {
+    public string Status { get; set; } = "Loading...";
+
     protected override async Task OnInitializedAsync()
     {
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        Status = "Loading 3D module...";
+        StateHasChanged();
+
         await JSHost.ImportAsync("Main", "../js/main.js");
+
+        Status = "";
+        StateHasChanged();
+
         await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js");
+        await JSHost.ImportAsync(nameof(Scene), "../js/scene.js");
+
+        var scene = new Scene();
+        scene.Test();
 
         Renderer.Create();
+        Renderer.Scene = scene;
     }
 }
