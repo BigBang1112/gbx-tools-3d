@@ -1,5 +1,6 @@
 using GbxTools3D.Components;
 using GbxTools3D.Data;
+using GbxTools3D.Services;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
@@ -50,6 +51,8 @@ builder.Services.AddOpenTelemetry()
             .AddOtlpExporter();
     });
 builder.Services.AddMetrics();
+
+builder.Services.AddHostedService<PopulateDbService>();
 
 var app = builder.Build();
 
