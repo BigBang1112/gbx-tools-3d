@@ -2,6 +2,7 @@
 @using System.Runtime.InteropServices.JavaScript
 @using GbxTools3D.Client.Modules
 @rendermode InteractiveWebAssembly
+@inject IJSRuntime JS
 
 <PageTitle>Counter</PageTitle>
 
@@ -18,11 +19,6 @@
         {
             return;
         }
-
-        Status = "Loading 3D module...";
-        StateHasChanged();
-
-        await JSHost.ImportAsync("Main", "../js/main.js");
 
         Status = "";
         StateHasChanged();

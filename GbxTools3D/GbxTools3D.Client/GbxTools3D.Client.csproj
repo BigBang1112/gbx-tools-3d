@@ -15,4 +15,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\js\addons\" />
+  </ItemGroup>
+
 </Project>

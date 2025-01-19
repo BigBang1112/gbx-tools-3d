@@ -7,7 +7,18 @@
     <base href="/" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["GbxTools3D.styles.css"]" />
-    <ImportMap />
+
+    @{
+        var importMapDefinition = new ImportMapDefinition(
+            new Dictionary<string, string>
+            {
+                ["three"] = "https://cdn.jsdelivr.net/npm/three@0.172.0/build/three.module.min.js",
+                ["three/addons/"] = "https://cdn.jsdelivr.net/npm/three@0.172.0/examples/jsm/"
+            }, null, null);
+    }
+
+    <ImportMap ImportMapDefinition="importMapDefinition" />
+
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
 </head>

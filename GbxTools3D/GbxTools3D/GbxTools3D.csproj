@@ -34,6 +34,7 @@
 
   <ItemGroup>
     <Folder Include="Data\Configurations\" />
+    <Folder Include="Endpoints\" />
   </ItemGroup>
 
 </Project>
