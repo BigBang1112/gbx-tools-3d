@@ -2,6 +2,7 @@
 using GBX.NET.Components;
 using GBX.NET.Engines.Plug;
 using System.IO.Compression;
+using System.Xml.Linq;
 
 namespace GbxTools3D.Serializers;
 
@@ -11,24 +12,28 @@ public class MeshSerializer
     private readonly CPlugSolid2Model? solid2;
     private readonly byte? lod;
     private readonly bool collision;
+    private readonly CPlugVehicleVisModelShared? vehicle;
 
-    private MeshSerializer(CPlugSolid solid, byte? lod, bool collision)
+    private MeshSerializer(CPlugSolid solid, byte? lod, bool collision, CPlugVehicleVisModelShared? vehicle)
     {
         this.solid = solid;
-        this.lod = lod;
         this.collision = collision;
+        this.vehicle = vehicle;
+
+        this.lod = vehicle is not null && lod >= vehicle.VisualVehicles.Length
+            ? (byte)(vehicle.VisualVehicles.Length - 1) : lod;
     }
 
-    public static void Serialize(Stream stream, CPlugSolid solid, byte? lod = null, bool collision = false)
+    public static void Serialize(Stream stream, CPlugSolid solid, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
     {
-        var serializer = new MeshSerializer(solid, lod, collision);
+        var serializer = new MeshSerializer(solid, lod, collision, vehicle);
         serializer.Serialize(stream);
     }
 
-    public static byte[] Serialize(CPlugSolid solid, byte? lod = null, bool collision = false)
+    public static byte[] Serialize(CPlugSolid solid, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
     {
         using var ms = new MemoryStream();
-        Serialize(ms, solid, lod, collision);
+        Serialize(ms, solid, lod, collision, vehicle);
         return ms.ToArray();
     }
 
@@ -44,10 +49,10 @@ public class MeshSerializer
         wd.Write([0xD4, 0x54, 0x35, 0x84, 0x03, 0xCD]);
         wd.Write7BitEncodedInt(0); // version
 
+        wd.Write(lod ?? 255);
+
         using var deflate = new DeflateStream(stream, CompressionLevel.SmallestSize);
         using var w = new AdjustedBinaryWriter(deflate);
-
-        wd.Write(lod ?? 255);
 
         var fileWriteTime = solid?.FileWriteTime ?? solid2?.FileWriteTime;
 
@@ -59,7 +64,7 @@ public class MeshSerializer
 
         if (solid is not null && solid.Tree is CPlugTree tree)
         {
-            WriteTree(w, tree);
+            WriteTree(w, tree, isRoot: true);
         }
 
         /*if (solid2 is not null)
@@ -70,32 +75,66 @@ public class MeshSerializer
         }*/
     }
 
-    private void WriteTree(AdjustedBinaryWriter w, CPlugTree tree)
+    private void WriteTree(AdjustedBinaryWriter w, CPlugTree tree, bool isRoot = false)
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        w.Write7BitEncodedInt(tree.Children.Count);
+        w.Write7BitEncodedInt(tree.Children.Count(x => ShouldIncludeTree(x, isRoot)));
 
         WriteTranslation(w, tree.Location);
         WriteVisual(w, tree.Visual);
-        WriteVisualMip(w, tree as CPlugTreeVisualMip);
+
+        if (vehicle is not null && isRoot && lod is null)
+        {
+            var visualMip = new CPlugTreeVisualMip();
+
+            foreach (var level in tree.Children)
+            {
+                // may not work for boats and custom skins properly
+                if (int.TryParse(level.Name, out var treeIndex))
+                {
+                    var lod = treeIndex * 16;
+                    visualMip.Levels.Add(new(lod, level));
+                }
+            }
+
+            visualMip.Levels.Sort((x, y) => x.FarZ.CompareTo(y.FarZ));
+
+            WriteVisualMip(w, visualMip);
+        }
+        else
+        {
+            WriteVisualMip(w, tree as CPlugTreeVisualMip);
+        }
+
         WriteSurface(w, tree.Surface as CPlugSurface);
-        
-        try
-        {
-            WriteShader(w, tree.ShaderFile);
-        }
-        catch
-        {
-            WriteShader(w, tree.ShaderFile);
-        }
+        WriteShader(w, tree.ShaderFile);
 
         w.Write(tree.Name ?? "");
 
-        foreach (var node in tree.Children)
+        foreach (var node in tree.Children.Where(x => ShouldIncludeTree(x, isRoot)))
         {
             WriteTree(w, node);
         }
+    }
+
+    private bool ShouldIncludeTree(CPlugTree tree, bool isRoot)
+    {
+        if (vehicle is null || !isRoot)
+        {
+            return true;
+        }
+
+        // may not work for boats and custom skins properly
+        if (int.TryParse(tree.Name, out var treeIndex))
+        {
+            if (lod != treeIndex - 1)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void WriteTranslation(AdjustedBinaryWriter w, Iso4? trans)
@@ -142,15 +181,9 @@ public class MeshSerializer
 
     private void WriteVisual(AdjustedBinaryWriter w, CPlugVisual? visual)
     {
-        if (collision || visual is null)
+        if (collision || visual is null || visual is CPlugVisualSprite)
         {
             w.Write(false);
-            return;
-        }
-
-        if (visual is CPlugVisualSprite)
-        {
-            w.Write(false); // Sprites are not supported
             return;
         }
 
@@ -163,6 +196,8 @@ public class MeshSerializer
 
         if (visual3d.VertexStreams.Count == 0)
         {
+            w.Write(visual3d.Vertices.Any(x => x.Normal.HasValue)); // has normals
+
             w.Write7BitEncodedInt(visual3d.Vertices.Length);
             w.Write7BitEncodedInt(visual3d.TexCoords.Length);
 
@@ -182,15 +217,17 @@ public class MeshSerializer
                 w.Write(v.Position.Z);
             }
 
-            /*foreach (var v in visual3d.Vertices)
+            foreach (var v in visual3d.Vertices)
             {
-                w.Write(v.Normal.X);
-                w.Write(v.Normal.Y);
-                w.Write(v.Normal.Z);
-            }*/
+                w.Write(v.Normal.GetValueOrDefault().X);
+                w.Write(v.Normal.GetValueOrDefault().Y);
+                w.Write(v.Normal.GetValueOrDefault().Z);
+            }
         }
         else
         {
+            w.Write(false); // has normals (it has, just not exposed)
+
             var vertStream = visual3d.VertexStreams[0];
 
             w.Write7BitEncodedInt(vertStream.Positions?.Length ?? 0);
@@ -219,11 +256,34 @@ public class MeshSerializer
             throw new Exception("Visual is not indexed");
         }
 
-        w.Write7BitEncodedInt(visualIndexed.IndexBuffer?.Indices.Length ?? 0);
+        var indices = visualIndexed.IndexBuffer?.Indices ?? [];
 
-        foreach (var index in visualIndexed.IndexBuffer?.Indices ?? [])
+        w.Write7BitEncodedInt(indices.Length);
+
+        // write int size
+        var largestIndex = indices.Max();
+        var intSize = largestIndex switch
         {
-            w.Write7BitEncodedInt(index);
+            < 256 => 1,
+            < 65536 => 2,
+            _ => 4
+        };
+        w.Write((byte)intSize);
+
+        foreach (var index in indices)
+        {
+            switch (intSize)
+            {
+                case 1:
+                    w.Write((byte)index);
+                    break;
+                case 2:
+                    w.Write((ushort)index);
+                    break;
+                case 4:
+                    w.Write(index);
+                    break;
+            }
         }
     }
 
@@ -231,10 +291,11 @@ public class MeshSerializer
     {
         if (mip is null)
         {
-            w.Write(false);
+            w.Write7BitEncodedInt(0);
             return;
         }
 
+        // this is slightly wrong approach, you wanna preferable ignore visual mips at all on specific lods
         var pickedLevel = lod.HasValue ? (mip.Levels.ElementAtOrDefault(lod.Value) ?? mip.Levels.LastOrDefault()) : null;
 
         var pickedLevels = pickedLevel is null ? mip.Levels : [pickedLevel];

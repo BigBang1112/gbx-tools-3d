@@ -1,17 +1,29 @@
 ﻿@page "/counter"
 @using System.Runtime.InteropServices.JavaScript
+@using GBX.NET
+@using GBX.NET.Engines.Game
+@using GbxTools3D.Client.Data
+@using GbxTools3D.Client.Dtos
 @using GbxTools3D.Client.Modules
+@using System.Security.Cryptography
+@using System.Text
 @rendermode InteractiveWebAssembly
 @inject IJSRuntime JS
+@inject HttpClient Http
 
 <PageTitle>Counter</PageTitle>
 
-<p>@Status</p>
+<p style="position: absolute;">@Status</p>
 
 <canvas></canvas>
 
 @code {
+    private Scene? scene;
+
     public string Status { get; set; } = "Loading...";
+
+    [Parameter]
+    public string? TmxId { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -25,8 +37,9 @@
 
         await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js");
         await JSHost.ImportAsync(nameof(Scene), "../js/scene.js");
+        await JSHost.ImportAsync(nameof(Solid), "../js/solid.js");
 
-        var scene = new Scene();
+        scene = new Scene();
         scene.Test();
 
         Renderer.Create();

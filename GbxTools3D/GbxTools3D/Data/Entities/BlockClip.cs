@@ -1,4 +1,6 @@
-﻿namespace GbxTools3D.Data.Entities;
+﻿using GbxTools3D.Enums;
+
+namespace GbxTools3D.Data.Entities;
 
 public class BlockClip
 {

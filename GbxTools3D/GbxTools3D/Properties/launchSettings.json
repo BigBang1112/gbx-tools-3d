@@ -13,7 +13,7 @@
     "https": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "counter",
+      "launchUrl": "view/map",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

@@ -31,19 +31,23 @@ export function test(scene) {
     let directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 
     // Set the position and direction of the light
-    directionalLight.position.set(0, 256, 0);
-    directionalLight.target.position.set(-2048, 0, -2048);
+    directionalLight.position.set(0, 16, 0);
+    directionalLight.target.position.set(32, 0, 32);
 
     // Set up shadow properties for the light
     directionalLight.castShadow = true;
 
-    directionalLight.shadow.camera.up.set(0, 0, 1);
-    directionalLight.shadow.camera.lookAt(0, 0, 0);
-
     // Add the light to the scene
     add(scene, directionalLight);
+
+    const gridHelper = new THREE.GridHelper(1024, 1024);
+    add(scene, gridHelper);
 }
 
 export function add(scene, obj) {
     scene.add(obj);
+}
+
+export function remove(scene, obj) {
+    scene.remove(obj);
 }

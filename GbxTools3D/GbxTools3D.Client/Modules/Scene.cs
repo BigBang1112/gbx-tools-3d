@@ -14,12 +14,20 @@ internal partial class Scene
     [JSImport("add", nameof(Scene))]
     private static partial void Add(JSObject scene, JSObject obj);
 
+    [JSImport("remove", nameof(Scene))]
+    private static partial void Remove(JSObject scene, JSObject obj);
+
     [JSImport("test", nameof(Scene))]
     private static partial void Test(JSObject scene);
 
     public void Add(JSObject obj)
     {
         Add(scene, obj);
+    }
+
+    public void Remove(JSObject obj)
+    {
+        Remove(scene, obj);
     }
 
     public void Test()

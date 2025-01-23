@@ -1,11 +1,16 @@
 using GbxTools3D.Components;
 using GbxTools3D.Data;
+using GbxTools3D.Endpoints;
 using GbxTools3D.Services;
 using Microsoft.AspNetCore.CookiePolicy;
+using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+using Scalar.AspNetCore;
+using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +19,38 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+builder.Services.AddHttpClient("exchange", client =>
+{
+    client.DefaultRequestHeaders.Add(Microsoft.Net.Http.Headers.HeaderNames.UserAgent, "GbxTools3D");
+});
+
 builder.Services.AddResponseCompression(options =>
 {
     options.EnableForHttps = true;
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
+});
+
+builder.Services.AddOutputCache();
+#pragma warning disable EXTEXP0018
+builder.Services.AddHybridCache();
+#pragma warning restore EXTEXP0018
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = 429;
+
+    options.AddPolicy("fixed-external-downloads", context =>
+    {
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey: context.Connection.RemoteIpAddress?.ToString(), factory =>
+        {
+            return new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 20,
+                Window = TimeSpan.FromMinutes(1)
+            };
+        });
+    });
 });
 
 builder.Services.AddDbContextFactory<AppDbContext>(options =>
@@ -27,6 +59,8 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
     //options.UseMySql(connectionStr, ServerVersion.AutoDetect(connectionStr));
     options.UseInMemoryDatabase("GbxTools3D");
 });
+
+builder.Services.AddOpenApi();
 
 builder.Services.AddOpenTelemetry()
     .WithMetrics(options =>
@@ -54,6 +88,11 @@ builder.Services.AddMetrics();
 
 builder.Services.AddHostedService<PopulateDbService>();
 
+builder.Services.Configure<JsonOptions>(options =>
+{
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
+
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
@@ -70,6 +109,13 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.UseWebAssemblyDebugging();
+
+    app.MapOpenApi();
+    app.MapScalarApiReference(options =>
+    {
+        options.DefaultHttpClient = new(ScalarTarget.CSharp, ScalarClient.HttpClient);
+        options.Theme = ScalarTheme.DeepSpace;
+    });
 }
 else
 {
@@ -79,6 +125,10 @@ else
 }
 
 app.UseHttpsRedirection();
+
+app.UseRateLimiter();
+
+app.UseOutputCache();
 
 app.UseAntiforgery();
 
@@ -95,6 +145,9 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapStaticAssets();
+
+app.MapEndpoints();
+
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode()
     .AddInteractiveWebAssemblyRenderMode()

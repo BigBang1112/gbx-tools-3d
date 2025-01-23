@@ -1,4 +1,4 @@
-﻿namespace GbxTools3D.Data.Entities;
+﻿namespace GbxTools3D.Enums;
 
 public enum ClipDir
 {
