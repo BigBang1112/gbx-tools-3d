@@ -9,6 +9,8 @@
 
     <ItemGroup>
         <ProjectReference Include="..\GbxTools3D.Client\GbxTools3D.Client.csproj" />
+        <PackageReference Include="AspNetCore.HealthChecks.MySql" Version="9.0.0" />
+        <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.1" />
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10" />

@@ -1,7 +1,10 @@
 using GbxTools3D.Components;
 using GbxTools3D.Data;
 using GbxTools3D.Endpoints;
+using GbxTools3D.Health;
 using GbxTools3D.Services;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Http.Json;
 using Microsoft.AspNetCore.ResponseCompression;
@@ -61,6 +64,22 @@ builder.Services.AddDbContextFactory<AppDbContext>(options =>
 });
 
 builder.Services.AddOpenApi();
+
+builder.Services.AddHealthChecks()
+    //.AddMySql(builder.Configuration.GetConnectionString("DefaultConnection") ?? "");
+    .AddCheck<TmxTMUFHealthCheck>("tmx-tmuf")
+    .AddCheck<TmxTMNFHealthCheck>("tmx-tmnf")
+    .AddCheck<TmxNationsHealthCheck>("tmx-nations")
+    .AddCheck<TmxSunriseHealthCheck>("tmx-sunrise")
+    .AddCheck<TmxOriginalHealthCheck>("tmx-original")
+    .AddCheck<MxTM2HealthCheck>("mx-tm2")
+    .AddCheck<MxSMHealthCheck>("mx-sm")
+    .AddCheck<MxTM2020HealthCheck>("mx-tm2020")
+    .AddCheck<TmIoHealthCheck>("tmio");
+
+builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
+    .AddBearerToken();
+builder.Services.AddAuthorization();
 
 builder.Services.AddOpenTelemetry()
     .WithMetrics(options =>
@@ -128,9 +147,13 @@ app.UseHttpsRedirection();
 
 app.UseRateLimiter();
 
-app.UseOutputCache();
+app.MapHealthChecks("/_health", new()
+{
+    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+})
+    .RequireAuthorization();
 
-app.UseAntiforgery();
+app.UseOutputCache();
 
 app.UseCookiePolicy(new CookiePolicyOptions
 {
@@ -145,6 +168,11 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.MapStaticAssets();
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseAntiforgery();
 
 app.MapEndpoints();
 
