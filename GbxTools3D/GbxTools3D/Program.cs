@@ -14,6 +14,8 @@ using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using Serilog;
+using Serilog.Sinks.SystemConsole.Themes;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -81,10 +83,19 @@ builder.Services.AddAuthentication(BearerTokenDefaults.AuthenticationScheme)
     .AddBearerToken();
 builder.Services.AddAuthorization();
 
+Log.Logger = new LoggerConfiguration()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(theme: AnsiConsoleTheme.Sixteen, applyThemeToRedirectedOutput: true)
+    .WriteTo.OpenTelemetry()
+    .CreateLogger();
+
+builder.Services.AddSerilog();
+
 builder.Services.AddOpenTelemetry()
     .WithMetrics(options =>
     {
         options
+            .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
             .AddRuntimeInstrumentation()
             .AddProcessInstrumentation()
@@ -100,12 +111,16 @@ builder.Services.AddOpenTelemetry()
         }
 
         options
+            .AddAspNetCoreInstrumentation()
             .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
             .AddOtlpExporter();
     });
 builder.Services.AddMetrics();
 
 builder.Services.AddHostedService<PopulateDbService>();
+builder.Services.AddScoped<CollectionService>();
+builder.Services.AddScoped<MeshService>();
 
 builder.Services.Configure<JsonOptions>(options =>
 {

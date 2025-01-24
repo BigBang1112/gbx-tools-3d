@@ -4,11 +4,13 @@ namespace GbxTools3D.Data.Entities;
 
 public class Collection
 {
-    [StringLength(byte.MaxValue)]
-    public required string Id { get; set; }
-
+    public int Id { get; set; }
+    
     [StringLength(byte.MaxValue)]
     public required string Name { get; set; }
+
+    [StringLength(byte.MaxValue)]
+    public required string DisplayName { get; set; }
 
     public ICollection<BlockInfo> BlockInfos { get; set; } = [];
 }

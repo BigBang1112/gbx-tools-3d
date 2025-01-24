@@ -8,6 +8,10 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+        <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.0" />
+        <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+        <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.1.1" />
         <ProjectReference Include="..\GbxTools3D.Client\GbxTools3D.Client.csproj" />
         <PackageReference Include="AspNetCore.HealthChecks.MySql" Version="9.0.0" />
         <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="9.0.0" />
@@ -20,6 +24,7 @@
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
         <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="9.1.0-preview.1.25064.3" />
+        <PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.10.1" />
         <PackageReference Include="OpenTelemetry.Instrumentation.EntityFrameworkCore" Version="1.10.0-beta.1" />
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2" />
         <PackageReference Include="OpenTelemetry.Api.ProviderBuilderExtensions" Version="1.11.0" />

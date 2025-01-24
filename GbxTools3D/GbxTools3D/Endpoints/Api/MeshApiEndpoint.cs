@@ -1,15 +1,12 @@
 ﻿using GbxTools3D.Client.Dtos;
 using GbxTools3D.Data;
+using GbxTools3D.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Endpoints.Api;
 
 public static class MeshApiEndpoint
 {
-    private static readonly Func<AppDbContext, string, Task<MeshHq?>> MeshHqFirstOrDefault = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
-        .Select(x => new MeshHq { Hash = x.Hash, Data = x.Data, CreatedAt = x.CreatedAt })
-        .FirstOrDefault(x => x.Hash == hash));
-
     public static void Map(RouteGroupBuilder group)
     {
         group.MapGet("/", GetMeshInfo)
@@ -18,9 +15,9 @@ public static class MeshApiEndpoint
         group.MapGet("/{hash}/{lod}", GetMeshLodByHash); // cache output questionable due to larger memory usage
     }
 
-    private static async Task<IResult> GetMeshInfo(AppDbContext db, CancellationToken cancellationToken)
+    private static async Task<IResult> GetMeshInfo(MeshService meshService, CancellationToken cancellationToken)
     {
-        var meshCount = await db.Meshes.CountAsync(cancellationToken);
+        var meshCount = await meshService.GetMeshCountAsync(cancellationToken);
 
         return Results.Ok(new MeshInfoDto
         {
@@ -28,9 +25,9 @@ public static class MeshApiEndpoint
         });
     }
 
-    private static async Task<IResult> GetMeshByHash(AppDbContext db, string hash, HttpContext context, CancellationToken cancellationToken)
+    private static async Task<IResult> GetMeshByHash(MeshService meshService, string hash, HttpContext context, CancellationToken cancellationToken)
     {
-        var mesh = await MeshHqFirstOrDefault(db, hash);
+        var mesh = await meshService.GetMeshByHashHqAsync(hash, cancellationToken);
 
         if (mesh is null)
         {
@@ -44,7 +41,7 @@ public static class MeshApiEndpoint
 
     private static async Task<IResult> GetMeshLodByHash(AppDbContext db, string hash, int lod, CancellationToken cancellationToken)
     {
-        if (lod < 0 || lod > 2)
+        if (lod is < 0 or > 2)
         {
             return Results.BadRequest("Invalid LOD");
         }
@@ -78,12 +75,5 @@ public static class MeshApiEndpoint
         }
 
         return Results.Redirect($"/api/mesh/{hash}", permanent: true);
-    }
-
-    private class MeshHq
-    {
-        public required string Hash { get; set; }
-        public required byte[] Data { get; set; }
-        public required DateTime CreatedAt { get; set; }
     }
 }

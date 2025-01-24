@@ -62,7 +62,7 @@ public class MeshSerializer
             w.Write(fileWriteTime.Value.ToFileTimeUtc());
         }
 
-        if (solid is not null && solid.Tree is CPlugTree tree)
+        if (solid?.Tree is CPlugTree tree)
         {
             WriteTree(w, tree, isRoot: true);
         }
@@ -196,8 +196,9 @@ public class MeshSerializer
 
         if (visual3d.VertexStreams.Count == 0)
         {
-            w.Write(visual3d.Vertices.Any(x => x.Normal.HasValue)); // has normals
-
+            var hasNormals = visual3d.Vertices.FirstOrDefault().Normal.HasValue;
+            
+            w.Write(hasNormals);
             w.Write7BitEncodedInt(visual3d.Vertices.Length);
             w.Write7BitEncodedInt(visual3d.TexCoords.Length);
 
@@ -217,11 +218,14 @@ public class MeshSerializer
                 w.Write(v.Position.Z);
             }
 
-            foreach (var v in visual3d.Vertices)
+            if (hasNormals)
             {
-                w.Write(v.Normal.GetValueOrDefault().X);
-                w.Write(v.Normal.GetValueOrDefault().Y);
-                w.Write(v.Normal.GetValueOrDefault().Z);
+                foreach (var v in visual3d.Vertices)
+                {
+                    w.Write(v.Normal.GetValueOrDefault().X);
+                    w.Write(v.Normal.GetValueOrDefault().Y);
+                    w.Write(v.Normal.GetValueOrDefault().Z);
+                }
             }
         }
         else

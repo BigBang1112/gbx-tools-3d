@@ -1,8 +1,10 @@
 ﻿using GBX.NET;
 using System.ComponentModel.DataAnnotations;
+using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Data.Entities;
 
+[Index(nameof(Name))]
 public class BlockInfo
 {
     public int Id { get; set; }
