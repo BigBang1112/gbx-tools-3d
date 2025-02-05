@@ -1,7 +1,13 @@
 ﻿import * as THREE from 'three';
+import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+import { InstancedMesh2 } from '@three.ez/instanced-mesh';
+import { getRenderer } from './renderer.js';
+
+const material = new THREE.MeshMatcapMaterial({ color: 0xAD9000 });
 
 export function create() {
-    return new THREE.Object3D();
+    var obj = new THREE.Object3D();
+    return obj;
 }
 
 export function add(parent, child) {
@@ -16,28 +22,37 @@ export function setRotation(tree, xx, xy, xz, yx, yy, yz, zx, zy, zz) {
     tree.rotation.setFromRotationMatrix(new THREE.Matrix4().set(xx, xy, xz, 0, yx, yy, yz, 0, zx, zy, zz, 0, 0, 0, 0, 1));
 }
 
+export function updateMatrix(tree) {
+    tree.updateMatrix();
+}
+
+export function updateMatrixWorld(tree) {
+    tree.updateMatrixWorld(true);
+}
+
 export function createLod() {
-    return new THREE.LOD();
+    var lod = new THREE.LOD();
+    return lod;
 }
 
 export function addLod(lodTree, levelTree, distance) {
     lodTree.addLevel(levelTree, distance);
 }
 
-export function createVisual(vertData, normData, indData, uvData, expectedMeshCount) {
-    var verts = new Float32Array(vertData.length / 4);
-    var vertDataView = new DataView(vertData.slice().buffer);
-    for (var i = 0; i < vertData.length; i += 4) {
+export function createGeometry(vertData, normData, indData, uvData) {
+    const verts = new Float32Array(vertData.length / 4);
+    const vertDataView = new DataView(vertData.slice().buffer);
+    for (let i = 0; i < vertData.length; i += 4) {
         verts[i / 4] = vertDataView.getFloat32(i, true);
     }
 
-    var norms = new Float32Array(normData.length / 4);
-    var normDataView = new DataView(normData.slice().buffer);
-    for (var i = 0; i < normData.length; i += 4) {
+    const norms = new Float32Array(normData.length / 4);
+    const normDataView = new DataView(normData.slice().buffer);
+    for (let i = 0; i < normData.length; i += 4) {
         norms[i / 4] = normDataView.getFloat32(i, true);
     }
 
-    var inds = new Int32Array(indData.length);
+    const inds = new Int32Array(indData.length);
     indData.copyTo(inds);
 
     const geometry = new THREE.BufferGeometry();
@@ -45,30 +60,71 @@ export function createVisual(vertData, normData, indData, uvData, expectedMeshCo
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(norms, 3));
 
-    var vertCount = verts.length / 3;
-    var uvSetCount = uvData.length / 8 / vertCount;
-    var uvBufferCount = uvData.length / uvSetCount;
+    const vertCount = verts.length / 3;
+    const uvSetCount = uvData.length / 8 / vertCount;
+    const uvBufferCount = uvData.length / uvSetCount;
 
-    for (var i = 0; i < uvSetCount; i++) {
-        var offset = i * uvBufferCount;
-        var uvDataView = new DataView(uvData.slice(offset, offset + uvBufferCount).buffer);
-        var uvs = new Float32Array(uvBufferCount / 4);
-        for (var j = 0; j < uvBufferCount; j += 4) {
+    if (uvSetCount === 0) {
+        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(vertCount * 2, 2));
+    }
+    
+    for (let i = 0; i < uvSetCount; i++) {
+        const offset = i * uvBufferCount;
+        const uvDataView = new DataView(uvData.slice(offset, offset + uvBufferCount).buffer);
+        const uvs = new Float32Array(uvBufferCount / 4);
+        for (let j = 0; j < uvBufferCount; j += 4) {
             uvs[j / 4] = uvDataView.getFloat32(j, true);
         }
 
-        if (i == 0) {
+        if (i === 0) {
             geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         }
     }
 
-    if (uvSetCount > 0) {
-        geometry.computeTangents();
-    }
+    geometry.computeTangents();
+    
+    return geometry;
+}
 
-    const mesh = new THREE.InstancedMesh(geometry, new THREE.MeshMatcapMaterial({ color: 0xAD9000 }), expectedMeshCount);
+export function mergeGeometries(geometries) {
+    return BufferGeometryUtils.mergeGeometries(geometries, true);
+}
+
+export function createVisual(geometry, materials, expectedMeshCount) {
+    const mesh = new THREE.InstancedMesh(geometry, materials, expectedMeshCount);
+    //mesh.perObjectFrustumCulled = false;
+    //mesh.computeBVH({ margin: 0 });
     mesh.receiveShadow = true;
     mesh.castShadow = true;
-
     return mesh;
+}
+
+export function getInstanceInfoFromBlock(x, y, z, dir) {
+    return {
+        pos: { x, y, z },
+        rotY: -dir * Math.PI / 2
+    }
+}
+
+export function instantiate(tree, instanceInfos) {
+    if (!tree.isInstancedMesh) {
+        return;
+    }
+
+    /* for some reason, InstancedMesh2 is more expensive CPU-wise and GPU-wise than InstancedMesh, even with disabled frustum culling
+    tree.addInstances(instanceInfos.length, (obj, index) => {
+        let instanceInfo = instanceInfos[index];
+        obj.position = new THREE.Vector3(instanceInfo.pos.x, instanceInfo.pos.y, instanceInfo.pos.z);
+        obj.rotateY(instanceInfo.rotY);
+    });*/
+    
+    for (let i = 0; i < instanceInfos.length; i++) {
+        const instanceInfo = instanceInfos[i];
+        const placementMatrix = new THREE.Matrix4();
+        placementMatrix.makeRotationY(instanceInfo.rotY);
+        placementMatrix.setPosition(instanceInfo.pos.x, instanceInfo.pos.y, instanceInfo.pos.z);
+        tree.setMatrixAt(i, placementMatrix);
+    }
+
+    tree.instanceMatrix.needsUpdate = true;
 }

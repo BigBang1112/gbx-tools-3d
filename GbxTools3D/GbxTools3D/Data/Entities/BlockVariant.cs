@@ -1,4 +1,6 @@
-﻿namespace GbxTools3D.Data.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace GbxTools3D.Data.Entities;
 
 public class BlockVariant
 {
@@ -13,4 +15,9 @@ public class BlockVariant
 
     public int MeshId { get; set; }
     public required Mesh Mesh { get; set; }
+    
+    [StringLength(255)]
+    public string? Path { get; set; }
+
+    public ICollection<ObjectLink> ObjectLinks { get; set; } = [];
 }

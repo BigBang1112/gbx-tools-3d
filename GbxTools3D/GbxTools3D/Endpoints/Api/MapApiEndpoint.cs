@@ -4,6 +4,7 @@ using GbxTools3D.Enums;
 using GbxTools3D.External;
 using Microsoft.Extensions.Caching.Hybrid;
 using System.Text;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -17,7 +18,7 @@ public static class MapApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
     }
 
-    private static async Task<IResult> GetMapFromTmx(
+    private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromTmx(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -35,7 +36,7 @@ public static class MapApiEndpoint
 
         if (trackResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         trackResponse.EnsureSuccessStatusCode();
@@ -48,7 +49,7 @@ public static class MapApiEndpoint
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var trackData = await trackResponse.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -57,7 +58,7 @@ public static class MapApiEndpoint
 
         var mapInfoDto = default(MapInfoDto);
 
-        if (trackInfoResponse?.IsSuccessStatusCode == true)
+        if (trackInfoResponse.IsSuccessStatusCode)
         {
             var trackInfo = await trackInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxTrackInfo, cancellationToken);
 
@@ -79,14 +80,14 @@ public static class MapApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new MapContentDto
+        return TypedResults.Ok(new MapContentDto
         {
             Map = mapInfoDto,
             Content = trackData
         });
     }
 
-    private static async Task<IResult> GetMapFromMx(
+    private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromMx(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -104,7 +105,7 @@ public static class MapApiEndpoint
 
         if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         mapResponse.EnsureSuccessStatusCode();
@@ -113,16 +114,11 @@ public static class MapApiEndpoint
 
         var etag =  Convert.ToBase64String(Encoding.ASCII.GetBytes($"{site}-{mapId}-{mapContentLength}"));
 
-        if (etag is null)
-        {
-            return Results.NotFound();
-        }
-
         context.Response.Headers.ETag = etag;
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var mapData = await mapResponse.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -131,7 +127,7 @@ public static class MapApiEndpoint
 
         var mapInfoDto = default(MapInfoDto);
 
-        if (mapInfoResponse?.IsSuccessStatusCode == true)
+        if (mapInfoResponse.IsSuccessStatusCode)
         {
             var mapInfo = await mapInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseMxMapInfo, cancellationToken);
 
@@ -153,7 +149,7 @@ public static class MapApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new MapContentDto
+        return TypedResults.Ok(new MapContentDto
         {
             Map = mapInfoDto,
             Content = mapData

@@ -82,7 +82,12 @@ public class MeshSerializer
         w.Write7BitEncodedInt(tree.Children.Count(x => ShouldIncludeTree(x, isRoot)));
 
         WriteTranslation(w, tree.Location);
-        WriteVisual(w, tree.Visual);
+        var hasVisual = WriteVisual(w, tree.Visual);
+
+        if (hasVisual)
+        {
+            WriteShader(w, tree.ShaderFile);
+        }
 
         if (vehicle is not null && isRoot && lod is null)
         {
@@ -108,7 +113,6 @@ public class MeshSerializer
         }
 
         WriteSurface(w, tree.Surface as CPlugSurface);
-        WriteShader(w, tree.ShaderFile);
 
         w.Write(tree.Name ?? "");
 
@@ -179,12 +183,12 @@ public class MeshSerializer
         }
     }
 
-    private void WriteVisual(AdjustedBinaryWriter w, CPlugVisual? visual)
+    private bool WriteVisual(AdjustedBinaryWriter w, CPlugVisual? visual)
     {
         if (collision || visual is null || visual is CPlugVisualSprite)
         {
             w.Write(false);
-            return;
+            return false;
         }
 
         w.Write(true);
@@ -265,30 +269,25 @@ public class MeshSerializer
         w.Write7BitEncodedInt(indices.Length);
 
         // write int size
-        var largestIndex = indices.Max();
-        var intSize = largestIndex switch
+        byte intSize = indices.Max() switch
         {
             < 256 => 1,
             < 65536 => 2,
             _ => 4
         };
-        w.Write((byte)intSize);
+        w.Write(intSize);
 
         foreach (var index in indices)
         {
             switch (intSize)
             {
-                case 1:
-                    w.Write((byte)index);
-                    break;
-                case 2:
-                    w.Write((ushort)index);
-                    break;
-                case 4:
-                    w.Write(index);
-                    break;
+                case 1: w.Write((byte)index); break;
+                case 2: w.Write((ushort)index); break;
+                case 4: w.Write(index); break;
             }
         }
+        
+        return true;
     }
 
     private void WriteVisualMip(AdjustedBinaryWriter w, CPlugTreeVisualMip? mip)
@@ -315,13 +314,8 @@ public class MeshSerializer
 
     private static void WriteShader(AdjustedBinaryWriter w, GbxRefTableFile? shaderFile)
     {
-        if (shaderFile is null)
-        {
-            w.Write(string.Empty);
-            return;
-        }
-
-        w.Write(GbxPath.GetFileNameWithoutExtension(shaderFile.FilePath));
+        w.Write(shaderFile is null ? string.Empty : GbxPath.GetFileNameWithoutExtension(shaderFile.FilePath));
+        w.Write(false); // additionalMaterialProperties
     }
 
     private void WriteSurface(AdjustedBinaryWriter w, CPlugSurface? surface)
@@ -332,6 +326,80 @@ public class MeshSerializer
             return;
         }
 
-        w.Write(false); // TODO
+        w.Write(true);
+        var surf = surface.Geom?.Surf ?? surface.Surf;
+        var materials = surface.Materials
+            .Select(x => (int)(x.SurfaceId ?? x.Material?.SurfaceId ?? CPlugSurface.MaterialId.Concrete))
+            .ToList();
+
+        w.Write7BitEncodedInt(surf switch
+        {
+            CPlugSurface.Sphere => 0,
+            CPlugSurface.Ellipsoid => 1,
+            CPlugSurface.Mesh => 2,
+            _ => throw new ArgumentOutOfRangeException(nameof(surface), surface, "Unknown surface type.")
+        });
+
+        switch (surf)
+        {
+            case CPlugSurface.Sphere sphere:
+                w.Write(sphere.Size);
+                break;
+            case CPlugSurface.Ellipsoid ellipsoid:
+                w.Write(ellipsoid.Size.X);
+                w.Write(ellipsoid.Size.Y);
+                w.Write(ellipsoid.Size.Z);
+                break;
+            case CPlugSurface.Mesh mesh:
+                w.Write7BitEncodedInt(mesh.Vertices.Length);
+                foreach (var v in mesh.Vertices)
+                {
+                    w.Write(v.X);
+                    w.Write(v.Y);
+                    w.Write(v.Z);
+                }
+                
+                w.Write7BitEncodedInt(mesh.CookedTriangles?.Length ?? 0);
+
+                var maxIndex = 0;
+                foreach (var tri in mesh.CookedTriangles ?? [])
+                {
+                    if (tri.U02.X > maxIndex) maxIndex = tri.U02.X;
+                    if (tri.U02.Y > maxIndex) maxIndex = tri.U02.Y;
+                    if (tri.U02.Z > maxIndex) maxIndex = tri.U02.Z;
+                }
+                
+                byte intSize = maxIndex switch
+                {
+                    < 256 => 1,
+                    < 65536 => 2,
+                    _ => 4
+                };
+                w.Write(intSize);
+
+                foreach (var tri in mesh.CookedTriangles ?? [])
+                {
+                    w.Write((byte)materials[tri.U03]);
+                    switch (intSize)
+                    {
+                        case 1:
+                            w.Write((byte)tri.U02.X);
+                            w.Write((byte)tri.U02.Y);
+                            w.Write((byte)tri.U02.Z);
+                            break;
+                        case 2:
+                            w.Write((ushort)tri.U02.X);
+                            w.Write((ushort)tri.U02.Y);
+                            w.Write((ushort)tri.U02.Z);
+                            break;
+                        case 4:
+                            w.Write(tri.U02.X);
+                            w.Write(tri.U02.Y);
+                            w.Write(tri.U02.Z);
+                            break;
+                    }
+                }
+                break;
+        }
     }
 }

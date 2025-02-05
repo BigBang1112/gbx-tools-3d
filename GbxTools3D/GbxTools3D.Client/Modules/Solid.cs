@@ -1,20 +1,23 @@
-﻿using GBX.NET;
-using GbxTools3D.Client.Deserializers;
-using System.Diagnostics;
-using System.IO.Compression;
+﻿using System.IO.Compression;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.Versioning;
+using GBX.NET;
+using GbxTools3D.Client.Deserializers;
+using GbxTools3D.Client.Enums;
 
-namespace GbxTools3D.Client.Data;
+namespace GbxTools3D.Client.Modules;
 
-internal sealed partial class Solid
+[SupportedOSPlatform("browser")]
+internal sealed partial class Solid(JSObject obj)
 {
     private static int indexCounter;
 
     private static readonly byte[] MAGIC = [0xD4, 0x54, 0x35, 0x84, 0x03, 0xCD];
-
     private const int VERSION = 0;
+
+    public JSObject Object { get; } = obj;
 
     [JSImport("create", nameof(Solid))]
     private static partial JSObject Create();
@@ -28,21 +31,44 @@ internal sealed partial class Solid
     [JSImport("setRotation", nameof(Solid))]
     private static partial void SetRotation(JSObject tree, double xx, double xy, double xz, double yx, double yy, double yz, double zx, double zy, double zz);
 
+    [JSImport("updateMatrix", nameof(Solid))]
+    private static partial void UpdateMatrix(JSObject tree);
+    
+    [JSImport("updateMatrixWorld", nameof(Solid))]
+    private static partial void UpdateMatrixWorld(JSObject tree);
+    
     [JSImport("createLod", nameof(Solid))]
     private static partial JSObject CreateLod();
 
     [JSImport("addLod", nameof(Solid))]
     private static partial void AddLod(JSObject lodTree, JSObject levelTree, double distance);
 
-    [JSImport("createVisual", nameof(Solid))]
-    private static partial JSObject CreateVisual(
-        [JSMarshalAs<JSType.MemoryView>] Span<byte> vertices,
-        [JSMarshalAs<JSType.MemoryView>] Span<byte> normals,
+    [JSImport("createGeometry", nameof(Solid))]
+    private static partial JSObject CreateGeometry(
+        [JSMarshalAs<JSType.MemoryView>] Span<byte> vertexData,
+        [JSMarshalAs<JSType.MemoryView>] Span<byte> normalData,
         [JSMarshalAs<JSType.MemoryView>] Span<int> indices, 
-        [JSMarshalAs<JSType.MemoryView>] Span<byte> uvs, 
-        int expectedMeshCount);
+        [JSMarshalAs<JSType.MemoryView>] Span<byte> uvData);
+    
+    [JSImport("mergeGeometries", nameof(Solid))]
+    private static partial JSObject MergeGeometries(JSObject[] geometries);
 
-    public static async Task<JSObject> ParseAsync(Stream stream, int expectedMeshCount)
+    [JSImport("createVisual", nameof(Solid))]
+    private static partial JSObject CreateVisualMultipleMaterials(JSObject geometry, JSObject[] materials, int expectedMeshCount);
+
+    [JSImport("createVisual", nameof(Solid))]
+    private static partial JSObject CreateVisualSingleMaterial(JSObject geometry, JSObject material, int expectedMeshCount);
+    
+    [JSImport("getInstanceInfoFromBlock", nameof(Solid))]
+    private static partial JSObject GetInstanceInfoFromBlock(int x, int y, int z, int dir);
+    
+    public static JSObject GetInstanceInfoFromBlock(Int3 coord, Direction dir)
+        => GetInstanceInfoFromBlock(coord.X, coord.Y, coord.Z, (int)dir);
+
+    [JSImport("instantiate", nameof(Solid))]
+    private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);
+
+    public static async Task<Solid> ParseAsync(Stream stream, int expectedMeshCount, bool optimized = true)
     {
         using var rd = new AdjustedBinaryReader(stream);
 
@@ -63,15 +89,130 @@ internal sealed partial class Solid
         var lod = new byte?(rd.ReadByte());
         if (lod == 255) lod = null;
 
-        using var deflate = new DeflateStream(stream, CompressionMode.Decompress);
+        await using var deflate = new DeflateStream(stream, CompressionMode.Decompress);
         using var r = new AdjustedBinaryReader(deflate);
 
         var fileWriteTime = r.ReadBoolean() ? DateTime.FromFileTime(r.ReadInt64()) : default(DateTime?);
 
-        return await ReadTreeAsync(r, expectedMeshCount);
+        JSObject tree;
+        if (optimized)
+        {
+            var geometries = new List<JSObject>();
+            var materials = new List<JSObject>();
+            await ReadTreeAsSingleGeometryAsync(r, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials);
+            
+            if (geometries.Count == 0)
+            {
+                tree = Create();
+            }
+            else if (geometries.Count == 1)
+            {
+                tree = CreateVisualSingleMaterial(geometries[0], materials[0], expectedMeshCount);
+            }
+            else
+            {
+                var geometry = MergeGeometries(geometries.ToArray());
+                tree = CreateVisualMultipleMaterials(geometry, materials.ToArray(), expectedMeshCount);
+            }
+
+            if (geometries.Count != materials.Count)
+            {
+                
+            }
+        }
+        else
+        {
+            tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount);
+            UpdateMatrixWorld(tree);
+        }
+
+        return new Solid(tree);
     }
 
-    private static async Task<JSObject> ReadTreeAsync(AdjustedBinaryReader r, int expectedMeshCount)
+    public void Instantiate(JSObject[] instanceInfos)
+    {
+        Instantiate(obj, instanceInfos);
+    }
+
+    private static async Task ReadTreeAsSingleGeometryAsync(
+        AdjustedBinaryReader r, 
+        Mat3 rot, 
+        Vector3 pos,
+        List<JSObject> geometries,
+        List<JSObject> materials)
+    {
+        var childrenCount = r.Read7BitEncodedInt();
+
+        if (r.ReadBoolean())
+        {
+            var a = rot;
+            var b = ReadMatrix3(r);
+            rot = new Mat3(
+                a.XX * b.XX + a.XY * b.YX + a.XZ * b.ZX,
+                a.XX * b.XY + a.XY * b.YY + a.XZ * b.ZY,
+                a.XX * b.XZ + a.XY * b.YZ + a.XZ * b.ZZ,
+
+                a.YX * b.XX + a.YY * b.YX + a.YZ * b.ZX,
+                a.YX * b.XY + a.YY * b.YY + a.YZ * b.ZY,
+                a.YX * b.XZ + a.YY * b.YZ + a.YZ * b.ZZ,
+
+                a.ZX * b.XX + a.ZY * b.YX + a.ZZ * b.ZX,
+                a.ZX * b.XY + a.ZY * b.YY + a.ZZ * b.ZY,
+                a.ZX * b.XZ + a.ZY * b.YZ + a.ZZ * b.ZZ
+            );
+        }
+
+        if (r.ReadBoolean())
+        {
+            pos += ReadVector3(r);
+        }
+
+        var geometry = ReadVisualAsGeometry(r, rot, pos);
+        
+        if (geometry is not null)
+        {
+            geometries.Add(geometry);
+
+            var materialName = r.ReadString();
+            var additionalMaterialProperties = r.ReadBoolean();
+            
+            materials.Add(Material.Get(materialName));
+        }
+
+        await RestAsync(indexCounter);
+
+        var mipLevelCount = r.Read7BitEncodedInt();
+
+        if (mipLevelCount > 0)
+        {
+            //var lod = CreateLod();
+
+            var storedDistance = 0f;
+
+            for (var i = 0; i < mipLevelCount; i++)
+            {
+                var distance = storedDistance;
+                storedDistance = r.ReadSingle();
+
+                await ReadTreeAsSingleGeometryAsync(r, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : []);
+
+                //AddLod(lod, lodTree, distance);
+            }
+
+            //Add(tree, lod);
+        }
+
+        var surface = ReadSurface(r);
+
+        var name = r.ReadString();
+
+        for (var i = 0; i < childrenCount; i++)
+        {
+            await ReadTreeAsSingleGeometryAsync(r, rot, pos, geometries, materials);
+        }
+    }
+
+    private static async Task<JSObject> ReadTreeAsNestedObjectsAsync(AdjustedBinaryReader r, int expectedMeshCount)
     {
         var tree = Create();
 
@@ -89,14 +230,21 @@ internal sealed partial class Solid
             SetPosition(tree, pos.X, pos.Y, pos.Z);
         }
 
-        var visual = ReadVisual(r, expectedMeshCount, out var indexCount);
+        UpdateMatrix(tree);
 
-        await RestAsync(indexCount);
+        var geometry = ReadVisualAsGeometry(r, rot: Mat3.Identity, pos: Vector3.Zero);
 
-        if (visual is not null)
+        if (geometry is not null)
         {
+
+            var materialName = r.ReadString();
+            var additionalMaterialProperties = r.ReadBoolean();
+            
+            var visual = CreateVisualSingleMaterial(geometry, Material.Get(materialName), expectedMeshCount);
             Add(tree, visual);
         }
+
+        await RestAsync(indexCounter);
 
         var mipLevelCount = r.Read7BitEncodedInt();
 
@@ -106,12 +254,12 @@ internal sealed partial class Solid
 
             var storedDistance = 0f;
 
-            for (int i = 0; i < mipLevelCount; i++)
+            for (var i = 0; i < mipLevelCount; i++)
             {
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                var lodTree = await ReadTreeAsync(r, expectedMeshCount);
+                var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount);
 
                 AddLod(lod, lodTree, distance);
             }
@@ -119,27 +267,22 @@ internal sealed partial class Solid
             Add(tree, lod);
         }
 
-        var hasSurface = r.ReadBoolean();
-
-        var shaderName = r.ReadString();
+        var surface = ReadSurface(r);
 
         var name = r.ReadString();
 
-        for (int i = 0; i < childrenCount; i++)
+        for (var i = 0; i < childrenCount; i++)
         {
-            Add(tree, await ReadTreeAsync(r, expectedMeshCount));
+            Add(tree, await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount));
         }
 
         return tree;
     }
 
-    private static JSObject? ReadVisual(AdjustedBinaryReader r, int expectedMeshCount, out int indexCount)
+    private static JSObject? ReadVisualAsGeometry(AdjustedBinaryReader r, Mat3 rot, Vector3 pos)
     {
-        var hasVisual = r.ReadBoolean();
-
-        if (!hasVisual)
+        if (!r.ReadBoolean())
         {
-            indexCount = 0;
             return null;
         }
 
@@ -149,10 +292,25 @@ internal sealed partial class Solid
         var texSetCount = r.Read7BitEncodedInt();
 
         // Parse texture coordinates        
-        Span<byte> uvs = r.ReadBytes(texSetCount * vertexCount * 2 * sizeof(float));
+        Span<byte> uvData = r.ReadBytes(texSetCount * vertexCount * 2 * sizeof(float));
 
         // Parse vertices
-        Span<byte> vertices = r.ReadBytes(vertexCount * 3 * sizeof(float));
+        Span<byte> vertexData = r.ReadBytes(vertexCount * 3 * sizeof(float));
+        
+        if (rot != Mat3.Identity || pos != Vector3.Zero)
+        {
+            var vertices = MemoryMarshal.Cast<byte, Vec3>(vertexData);
+
+            for (var i = 0; i < vertices.Length; i++)
+            {
+                var vertex = vertices[i];
+                vertices[i] = new Vec3(
+                    vertex.X * rot.XX + vertex.Y * rot.XY + vertex.Z * rot.XZ + pos.X,
+                    vertex.X * rot.YZ + vertex.Y * rot.YY + vertex.Z * rot.YZ + pos.Y,
+                    vertex.X * rot.ZX + vertex.Y * rot.ZY + vertex.Z * rot.ZZ + pos.Z
+                );
+            }
+        }
 
         Span<byte> normals = [];
 
@@ -162,10 +320,8 @@ internal sealed partial class Solid
             normals = r.ReadBytes(vertexCount * 3 * sizeof(float));
         }
 
-        var stopwatch = Stopwatch.StartNew();
-
         // Parse indices
-        indexCount = r.Read7BitEncodedInt();
+        var indexCount = r.Read7BitEncodedInt();
         var intSize = r.ReadByte();
 
         Span<byte> indexBuffer = r.ReadBytes(indexCount * intSize);
@@ -175,14 +331,14 @@ internal sealed partial class Solid
         switch (intSize)
         {
             case 1:
-                for (int i = 0; i < indexCount; i++)
+                for (var i = 0; i < indexCount; i++)
                 {
                     indices[i] = indexBuffer[i];
                 }
                 break;
             case 2:
                 var ushortInds = MemoryMarshal.Cast<byte, ushort>(indexBuffer);
-                for (int i = 0; i < indexCount; i++)
+                for (var i = 0; i < indexCount; i++)
                 {
                     indices[i] = ushortInds[i];
                 }
@@ -191,8 +347,75 @@ internal sealed partial class Solid
                 indices = MemoryMarshal.Cast<byte, int>(indexBuffer);
                 break;
         }
+        
+        indexCounter += indexCount;
 
-        return CreateVisual(vertices, normals, indices, uvs, expectedMeshCount);
+        return CreateGeometry(vertexData, normals, indices, uvData);
+    }
+
+    private static JSObject? ReadSurface(AdjustedBinaryReader r)
+    {
+        if (!r.ReadBoolean())
+        {
+            return null;
+        }
+
+        switch ((SurfaceType)r.Read7BitEncodedInt())
+        {
+            case SurfaceType.Sphere:
+                var size = r.ReadSingle();
+                break;
+            case SurfaceType.Ellipsoid:
+                var sizeX = r.ReadSingle();
+                var sizeY = r.ReadSingle();
+                var sizeZ = r.ReadSingle();
+                break;
+            case SurfaceType.Mesh:
+                var vertexCount = r.Read7BitEncodedInt();
+                Span<byte> vertices = r.ReadBytes(vertexCount * 3 * sizeof(float));
+                
+                var triCount = r.Read7BitEncodedInt();
+                var intSize = r.ReadByte();
+
+                // 1 mat index byte, 3 floats
+                Span<byte> triBuffer = r.ReadBytes(triCount * (1 + intSize * 3));
+
+                Span<int> triBufferInts = stackalloc int[triCount * 4];
+
+                switch (intSize)
+                {
+                    case 1:
+                        for (var i = 0; i < triBufferInts.Length; i++)
+                        {
+                            triBufferInts[i] = triBuffer[i];
+                        }
+                        break;
+                    case 2:
+                        for (var i = 0; i < triCount; i++)
+                        {
+                            triBufferInts[i * 4] = triBuffer[i * 7];
+                            triBufferInts[i * 4 + 1] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 1, 2));
+                            triBufferInts[i * 4 + 2] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 3, 2));
+                            triBufferInts[i * 4 + 3] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 5, 2));
+                        }
+                        break;
+                    case 4:
+                        for (var i = 0; i < triCount; i++)
+                        {
+                            triBufferInts[i * 4] = triBuffer[i * 13];
+                            triBufferInts[i * 4 + 1] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 1, 4));
+                            triBufferInts[i * 4 + 2] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 5, 4));
+                            triBufferInts[i * 4 + 3] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 9, 4));
+                        }
+                        break;
+                }
+                
+                break;
+            default:
+                throw new InvalidDataException("Unknown surface type");
+        }
+
+        return null;
     }
 
     private static Mat3 ReadMatrix3(AdjustedBinaryReader reader)

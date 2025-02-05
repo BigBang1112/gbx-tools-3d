@@ -1,0 +1,235 @@
+﻿@rendermode InteractiveWebAssembly
+@using System.Runtime.InteropServices.JavaScript
+@using System.Security.Cryptography
+@using System.Text
+@using GBX.NET
+@using GBX.NET.Engines.Game
+@using GbxTools3D.Client.Dtos
+@using GbxTools3D.Client.Models
+@using GbxTools3D.Client.Modules
+@inject HttpClient Http
+
+<canvas></canvas>
+
+@code {
+    private Scene? scene;
+    private JSObject? camera;
+    private JSObject? renderer;
+
+    private bool contentLoading;
+    private bool contentLoaded;
+    
+    [Parameter]
+    public CGameCtnChallenge? Map { get; set; }
+    
+    private Dictionary<string, BlockInfoDto>? blockInfos;
+    private CancellationTokenSource cts = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        if (firstRender)
+        {
+            await LoadSceneAsync(cts.Token);
+        }
+        
+        await TryLoadMapAsync(cts.Token);
+    }
+
+    private async Task LoadSceneAsync(CancellationToken cancellationToken)
+    {
+        await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js", cancellationToken);
+        await JSHost.ImportAsync(nameof(Scene), "../js/scene.js", cancellationToken);
+        await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
+        await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
+        await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
+
+        scene = new Scene();
+        camera = Camera.Create();
+
+        renderer = Renderer.Create();
+        Renderer.Scene = scene;
+
+        Renderer.SetCamera(camera);
+    }
+    
+    public async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
+    {
+        if (Map is null || camera is null || renderer is null || contentLoading || contentLoaded)
+        {
+            return false;
+        }
+        
+        contentLoading = true;
+        
+        using var blockInfosTask = Http.GetAsync($"/api/blocks/TMF/{Map.Collection}", cancellationToken);
+        using var decorationTask = Http.GetAsync($"/api/decoration/TMF/{Map.Collection}", cancellationToken);
+
+        var baseHeight = 5;
+        
+        var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
+        var center = new Vec3(Map.Size.X * blockSize.X / 2f, baseHeight * blockSize.Y, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
+        Camera.SetPosition(camera, center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
+
+        var controls = Camera.CreateMapControls(camera, renderer, center.X, center.Y, center.Z);
+        Renderer.SetControls(controls);
+        
+        using var blockInfosResponse = await blockInfosTask;
+        using var decorationResponse = await decorationTask;
+        
+        if (!blockInfosResponse.IsSuccessStatusCode)
+        {
+            // show note message that user has to wait, if the block list isnt available yet
+            return contentLoading = false;
+        }
+        
+        blockInfos = (await blockInfosResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
+            .ToDictionary(x => x.Name);
+        
+        var uniqueBlockVariants = Map.GetBlocks()
+            .Where(x => !x.IsClip)
+            .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant));
+
+        var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
+
+        var counter = 0;
+        foreach (var uniqueGroup in uniqueBlockVariants)
+        {
+            var (name, isGround, variant, subVariant) = uniqueGroup.Key;
+
+            var toHash = $"GbxTools3D|Solid|TMF|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*";
+            var hash = HashStr(toHash);
+
+            responseTasks.Add(uniqueGroup.Key, Http.GetAsync($"/api/mesh/{hash}", cancellationToken));
+
+            if (counter > 20)
+            {
+                await Task.Delay(20, cancellationToken);
+                counter = 0;
+            }
+
+            await ProcessResponses(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, Map, cancellationToken);
+
+            counter++;
+        }
+
+        while (responseTasks.Count > 0)
+        {
+            await Task.Delay(20, cancellationToken);
+            await ProcessResponses(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, Map, cancellationToken);
+        }
+        
+        return contentLoaded = true;
+    }
+
+    private async Task ProcessResponses(
+        Dictionary<UniqueVariant, Task<HttpResponseMessage>> responseTasks,
+        int? maxRequestsToProcess,
+        ILookup<UniqueVariant, CGameCtnBlock> uniqueBlockVariantLookup,
+        CGameCtnChallenge map,
+        CancellationToken cancellationToken)
+    {
+        var tasksToRemove = new List<UniqueVariant>();
+        
+        foreach (var (variant, task) in responseTasks.Where(task => task.Value.IsCompleted))
+        {
+            using var response = await task;
+
+            if (response.IsSuccessStatusCode)
+            {
+                await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+                var expectedCount = uniqueBlockVariantLookup[variant].Count();
+                var solid = await Solid.ParseAsync(stream, expectedCount);
+                
+                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], map.Collection.GetValueOrDefault().GetBlockSize());
+            }
+
+            tasksToRemove.Add(variant);
+
+            if (maxRequestsToProcess.HasValue && tasksToRemove.Count >= maxRequestsToProcess)
+            {
+                break;
+            }
+        }
+
+        foreach (var variant in tasksToRemove)
+        {
+            responseTasks[variant].Dispose();
+            responseTasks.Remove(variant);
+        }
+    }
+
+    private static string HashStr(string str)
+    {
+        Span<byte> bytes = stackalloc byte[str.Length * 2];
+        if (!Encoding.UTF8.TryGetBytes(str, bytes, out var bytesWritten))
+        {
+            throw new InvalidOperationException("Failed to encode string");
+        }
+
+        Span<byte> hash = stackalloc byte[32];
+        
+        if (!SHA256.TryHashData(bytes[..bytesWritten], hash, out _))
+        {
+            throw new InvalidOperationException("Failed to hash string");
+        }
+        
+        return Convert.ToHexString(hash);
+    }
+
+    private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize)
+    {
+        if (scene is null)
+        {
+            return;
+        }
+        
+        var blockCoordSize = new Int3(1, 1, 1);
+        var height = 0;
+        
+        if (blockInfos?.TryGetValue(variant.Name, out var blockInfo) == true)
+        {
+            var airUnits = blockInfo.AirUnits;
+            var groundUnits = blockInfo.GroundUnits;
+            blockCoordSize = variant.IsGround
+                ? (groundUnits.Length > 1 ? new Int3(
+                    groundUnits.Max(unit => unit.Offset.X) + 1, 
+                    groundUnits.Max(unit => unit.Offset.Y) + 1, 
+                    groundUnits.Max(unit => unit.Offset.Z) + 1) : blockCoordSize)
+                : (airUnits.Length > 1 ? new Int3(
+                    airUnits.Max(unit => unit.Offset.X) + 1,
+                    airUnits.Max(unit => unit.Offset.Y) + 1, 
+                    airUnits.Max(unit => unit.Offset.Z) + 1) : blockCoordSize);
+            height = blockInfo.Height ?? 0;
+        }
+
+        var instanceInfos = new List<JSObject>();
+        
+        var index = 0;
+        foreach (var block in blocks)
+        {
+            var actualCoord = block.Coord + block.Direction switch
+            {
+                Direction.North => (0, 0, 0),
+                Direction.East => (blockCoordSize.Z, 0, 0),
+                Direction.South => (blockCoordSize.X, 0, blockCoordSize.Z),
+                Direction.West => (0, 0, blockCoordSize.X),
+                _ => throw new ArgumentException("Invalid block direction")
+            };
+            
+            var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height, 0)) * blockSize, block.Direction);
+            
+            instanceInfos.Add(instanceInfo);
+            
+            index++;
+        }
+
+        solid.Instantiate(instanceInfos.ToArray());
+        scene.Add(solid);
+    }
+}

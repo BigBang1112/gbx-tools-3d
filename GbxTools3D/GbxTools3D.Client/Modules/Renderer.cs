@@ -10,7 +10,13 @@ internal static partial class Renderer
     public static partial JSObject Create();
 
     [JSImport("setScene", nameof(Renderer))]
-    public static partial void SetScene(JSObject scene);
+    private static partial void SetScene(JSObject scene);
+
+    [JSImport("setControls", nameof(Renderer))]
+    public static partial void SetControls(JSObject controls);
+
+    [JSImport("setCamera", nameof(Renderer))]
+    public static partial void SetCamera(JSObject camera);
 
     public static Scene Scene
     {

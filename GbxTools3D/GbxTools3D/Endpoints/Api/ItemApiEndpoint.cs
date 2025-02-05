@@ -4,6 +4,7 @@ using GbxTools3D.Enums;
 using GbxTools3D.External;
 using Microsoft.Extensions.Caching.Hybrid;
 using System.Text;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -20,7 +21,7 @@ public class ItemApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
     }
 
-    private static async Task<IResult> GetItemFromIx(
+    private static async Task<Results<Ok<ItemContentDto>, NotFound, StatusCodeHttpResult>> GetItemFromIx(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -36,7 +37,7 @@ public class ItemApiEndpoint
 
         if (itemResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         itemResponse.EnsureSuccessStatusCode();
@@ -45,16 +46,11 @@ public class ItemApiEndpoint
 
         var etag = Convert.ToBase64String(Encoding.ASCII.GetBytes($"ix-{id}-{itemContentLength}"));
 
-        if (etag is null)
-        {
-            return Results.NotFound();
-        }
-
         context.Response.Headers.ETag = etag;
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var itemData = await itemResponse.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -63,7 +59,7 @@ public class ItemApiEndpoint
 
         var itemInfoDto = default(ItemInfoDto);
 
-        if (itemInfoResponse?.IsSuccessStatusCode == true)
+        if (itemInfoResponse.IsSuccessStatusCode)
         {
             var itemInfos = await itemInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.IxItemInfoArray, cancellationToken);
 
@@ -91,7 +87,7 @@ public class ItemApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new ItemContentDto
+        return TypedResults.Ok(new ItemContentDto
         {
             Item = itemInfoDto,
             Content = itemData

@@ -1,6 +1,7 @@
 ﻿using GbxTools3D.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using GbxTools3D.Client.Models;
 
 namespace GbxTools3D.Data;
 
@@ -10,6 +11,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public required DbSet<BlockInfo> BlockInfos { get; set; }
     public required DbSet<BlockVariant> BlockVariants { get; set; }
     public required DbSet<Mesh> Meshes { get; set; }
+    public required DbSet<ObjectLink> ObjectLinks { get; set; }
+    public required DbSet<Decoration> Decorations { get; set; }
+    public required DbSet<DecorationSize> DecorationSizes { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -25,6 +25,11 @@ internal partial class Scene
         Add(scene, obj);
     }
 
+    public void Add(Solid solid)
+    {
+        Add(scene, solid.Object);
+    }
+
     public void Remove(JSObject obj)
     {
         Remove(scene, obj);

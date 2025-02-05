@@ -1,10 +1,12 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
 using GBX.NET;
+using GBX.NET.Components;
 using GBX.NET.Engines.Game;
 using GBX.NET.Engines.GameData;
 using GBX.NET.Engines.Plug;
 using GBX.NET.Engines.Scene;
+using GbxTools3D.Client.Models;
 using GbxTools3D.Data;
 using GbxTools3D.Data.Entities;
 using GbxTools3D.Enums;
@@ -36,8 +38,12 @@ internal sealed class CollectionService
 
     public async Task CreateOrUpdateCollectionAsync(string datasetPath, CancellationToken cancellationToken)
     {
-        const string gameFolder = "TMF";
+        var gameVersion = GameVersion.TMF;
+        var gameFolder = gameVersion.ToString();
 
+        var usedMaterials = new Dictionary<string, CPlugMaterial?>();
+
+        // not quite collection related
         foreach (var vehicleFilePath in Directory.EnumerateFiles(
                      Path.Combine(datasetPath, gameFolder, "Vehicles", "TrackManiaVehicle"), "*.Gbx"))
         {
@@ -54,6 +60,8 @@ internal sealed class CollectionService
             {
                 continue;
             }
+            
+            PopulateUsedMaterials(usedMaterials, solid, Path.Combine(datasetPath, gameFolder));
 
             var hash = HashStr($"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?");
 
@@ -76,13 +84,24 @@ internal sealed class CollectionService
                 collection = new Collection
                 {
                     Name = collectionNode.Collection ?? "",
-                    DisplayName = collectionNode.DisplayName ?? "",
+                    DisplayName = collectionNode.DisplayName == collectionNode.Collection ? null : collectionNode.DisplayName,
+                    GameVersion = gameVersion
                 };
 
                 await db.Collections.AddAsync(collection, cancellationToken);
             }
 
-            collection.Name = collectionNode.DisplayName ?? "";
+            collection.Name = collectionNode.Collection ?? "";
+            collection.UpdatedAt = DateTime.UtcNow;
+
+            var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone.Node switch
+            {
+                CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ??
+                                                 throw new Exception("BlockInfoFrontier is null"),
+                CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ??
+                                         throw new Exception("BlockInfoFlat is null"),
+                _ => throw new Exception("Unknown zone type")
+            }, x => x.Node ?? throw new Exception("Zone node is null")) ?? [];
 
             foreach (var decorationFilePath in Directory.EnumerateFiles(
                 Path.Combine(datasetPath, gameFolder, collectionNode.FolderDecoration!), "*.Gbx"))
@@ -91,13 +110,14 @@ internal sealed class CollectionService
                     (CGameCtnDecoration?)await Gbx.ParseNodeAsync(decorationFilePath,
                         cancellationToken: cancellationToken);
 
-                if (decorationNode is null)
+                if (decorationNode?.DecoSize is null)
                 {
-                    continue;
+                    throw new Exception("Not a decoration type or DecoSize is null");
                 }
+                
+                var hash = HashStr($"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{decorationNode.DecoSize.Size.X}x{decorationNode.DecoSize.Size.Y}x{decorationNode.DecoSize.Size.Z}|Je te hais");
 
-                var hash = HashStr($"GbxTools3D|Decoration|{gameFolder}|{decorationNode.Ident.Id}|Je te hais");
-
+                var baseHeight = decorationNode.DecoSize.BaseHeightBase;
                 // TODO
             }
 
@@ -131,10 +151,15 @@ internal sealed class CollectionService
                 blockInfo.AirUnits = blockInfoNode.AirBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToArray() ?? [];
                 blockInfo.GroundUnits = blockInfoNode.GroundBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToArray() ?? [];
 
+                if (zoneDict.TryGetValue(blockName, out var zone))
+                {
+                    blockInfo.Height = (byte)zone.Height;
+                }
+
                 await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, datasetPath, gameFolder, blockName,
-                    isGround: false, blockInfo, cancellationToken);
+                    isGround: false, blockInfo, usedMaterials, cancellationToken);
                 await ProcessBlockVariantsAsync(blockInfoNode.GroundMobils, datasetPath, gameFolder, blockName,
-                    isGround: true, blockInfo, cancellationToken);
+                    isGround: true, blockInfo, usedMaterials, cancellationToken);
             }
 
             await db.SaveChangesAsync(cancellationToken);
@@ -149,54 +174,138 @@ internal sealed class CollectionService
         string blockName,
         bool isGround,
         BlockInfo blockInfo,
+        Dictionary<string, CPlugMaterial?> usedMaterials,
         CancellationToken cancellationToken)
     {
-        if (mobils is not null)
+        if (mobils is null)
         {
-            for (var i = 0; i < mobils.Length; i++)
+            return;
+        }
+
+        for (var i = 0; i < mobils.Length; i++)
+        {
+            for (var j = 0; j < mobils[i].Length; j++)
             {
-                for (var j = 0; j < mobils[i].Length; j++)
+                var mobil = mobils[i][j];
+                var variant = mobil.Node;
+
+                if (variant is null)
                 {
-                    var variant = mobils[i][j].Node;
+                    continue;
+                }
 
-                    if (variant is null)
+                var variantPath = mobil.File is null
+                    ? null
+                    : Path.GetRelativePath(Path.Combine(datasetPath, gameFolder), mobil.File.GetFullPath());
+
+                var solid = GetSolidFromMobil(variant, Path.Combine(datasetPath, gameFolder), out var path);
+
+                if (solid is null)
+                {
+                    continue;
+                }
+
+                PopulateUsedMaterials(usedMaterials, solid, Path.Combine(datasetPath, gameFolder));
+
+                var hash = HashStr(
+                    $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*");
+
+                var mesh = await meshService.GetOrCreateMeshAsync(hash, path, solid, vehicle: null,
+                    cancellationToken);
+
+                var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
+
+                if (blockVariant is null)
+                {
+                    blockVariant = new BlockVariant
+                    {
+                        BlockInfo = blockInfo,
+                        Mesh = mesh,
+                    };
+
+                    await db.BlockVariants.AddAsync(blockVariant, cancellationToken);
+                }
+
+                blockVariant.BlockInfo = blockInfo;
+                blockVariant.Ground = isGround;
+                blockVariant.Variant = (byte)i;
+                blockVariant.SubVariant = (byte)j;
+                blockVariant.Mesh = mesh;
+                blockVariant.Path = variantPath;
+
+                var k = 0;
+                foreach (var link in variant.ObjectLink ?? [])
+                {
+                    if (link.Mobil is null)
                     {
                         continue;
                     }
-
-                    var solid = GetSolidFromMobil(variant, Path.Combine(datasetPath, gameFolder), out var path);
                     
-                    if (solid is null)
+                    var objectLinkSolid = GetSolidFromMobil(link.Mobil, Path.Combine(datasetPath, gameFolder), out var objectLinkSolidPath);
+                    
+                    if (objectLinkSolid is null)
                     {
                         continue;
                     }
+                    
+                    PopulateUsedMaterials(usedMaterials, solid, Path.Combine(datasetPath, gameFolder));
 
-                    var hash = HashStr(
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*");
-
-                    var mesh = await meshService.GetOrCreateMeshAsync(hash, path, solid, vehicle: null,
+                    var solidHash = HashStr(
+                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|Hella{isGround}|{i}|{j}|{k}|marosisPakPakGhidraGang");
+                    
+                    var objectLinkMesh = await meshService.GetOrCreateMeshAsync(solidHash, objectLinkSolidPath, objectLinkSolid, vehicle: null,
                         cancellationToken);
-
-                    var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
-
-                    if (blockVariant is null)
+                    
+                    var objectLink = await db.ObjectLinks
+                        .Include(x => x.Variant)
+                        .FirstOrDefaultAsync(x => x.Variant.Id == blockVariant.Id && x.Index == k, cancellationToken);
+                    
+                    if (objectLink is null)
                     {
-                        blockVariant = new BlockVariant
+                        objectLink = new ObjectLink
                         {
-                            BlockInfo = blockInfo,
-                            Mesh = mesh,
+                            Variant = blockVariant,
+                            Mesh = objectLinkMesh,
+                            Index = k,
                         };
-
-                        await db.BlockVariants.AddAsync(blockVariant, cancellationToken);
+                        await db.ObjectLinks.AddAsync(objectLink, cancellationToken);
                     }
+                    
+                    objectLink.Variant = blockVariant;
+                    objectLink.Index = k;
+                    objectLink.Path = link.MobilFile is null
+                        ? null
+                        : Path.GetRelativePath(Path.Combine(datasetPath, gameFolder), link.MobilFile.GetFullPath());
+                    objectLink.XX = link.RelativeLocation.XX;
+                    objectLink.XY = link.RelativeLocation.XY;
+                    objectLink.XZ = link.RelativeLocation.XZ;
+                    objectLink.YX = link.RelativeLocation.YX;
+                    objectLink.YY = link.RelativeLocation.YY;
+                    objectLink.YZ = link.RelativeLocation.YZ;
+                    objectLink.ZX = link.RelativeLocation.ZX;
+                    objectLink.ZY = link.RelativeLocation.ZY;
+                    objectLink.ZZ = link.RelativeLocation.ZZ;
+                    objectLink.TX = link.RelativeLocation.TX;
+                    objectLink.TY = link.RelativeLocation.TY;
+                    objectLink.TZ = link.RelativeLocation.TZ;
 
-                    blockVariant.BlockInfo = blockInfo;
-                    blockVariant.Ground = true;
-                    blockVariant.Variant = (byte)i;
-                    blockVariant.SubVariant = (byte)j;
-                    blockVariant.Mesh = mesh;
+                    k++;
                 }
             }
+        }
+    }
+
+    private static void PopulateUsedMaterials(Dictionary<string, CPlugMaterial?> materials, CPlugSolid solid, string relativeTo)
+    {
+        var materialFiles = ((CPlugTree?)solid.Tree)?
+            .GetAllChildren()
+            .Where(x => x.ShaderFile is not null)
+            .Select(x => (x.ShaderFile!, x.Shader as CPlugMaterial)) ?? [];
+
+        foreach (var (materialFile, material) in materialFiles)
+        {
+            var materialRelPath = Path.GetRelativePath(relativeTo, materialFile.GetFullPath());
+            materials.TryAdd(materialRelPath, material);
         }
     }
 

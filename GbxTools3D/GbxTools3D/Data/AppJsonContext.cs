@@ -3,6 +3,7 @@ using GbxTools3D.External;
 using GbxTools3D.External.MX;
 using GbxTools3D.External.TMX;
 using System.Text.Json.Serialization;
+using GbxTools3D.Client.Models;
 
 namespace GbxTools3D.Data;
 

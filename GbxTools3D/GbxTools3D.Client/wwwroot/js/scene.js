@@ -1,7 +1,10 @@
 ﻿import * as THREE from 'three';
 
 export function create() {
-    return new THREE.Scene();
+    var scene = new THREE.Scene();
+    var ambientLight = new THREE.AmbientLight(0x7F7F7F);
+    scene.add(ambientLight);
+    return scene;
 }
 
 export function test(scene) {
@@ -21,12 +24,6 @@ export function test(scene) {
     plane.receiveShadow = true;
     add(scene, plane);
 
-    // Create an ambient light
-    var ambientLight = new THREE.AmbientLight(0x7F7F7F);
-
-    // Add the light to the scene
-    add(scene, ambientLight);
-
     // Create a directional light
     let directionalLight = new THREE.DirectionalLight(0xffffff, 1);
 
@@ -39,6 +36,9 @@ export function test(scene) {
 
     // Add the light to the scene
     add(scene, directionalLight);
+
+    const helper = new THREE.CameraHelper( directionalLight.shadow.camera );
+    add(scene, helper);
 
     const gridHelper = new THREE.GridHelper(1024, 1024);
     add(scene, gridHelper);

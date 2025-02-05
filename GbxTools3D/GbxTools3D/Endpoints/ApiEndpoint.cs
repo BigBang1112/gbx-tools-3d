@@ -18,5 +18,7 @@ public static class ApiEndpoint
         ReplayApiEndpoint.Map(group.MapGroup("/replay"));
         MapApiEndpoint.Map(group.MapGroup("/map"));
         ItemApiEndpoint.Map(group.MapGroup("/item"));
+        BlockApiEndpoint.Map(group.MapGroup("/blocks"));
+        DecorationApiEndpoint.Map(group.MapGroup("/decoration"));
     }
 }

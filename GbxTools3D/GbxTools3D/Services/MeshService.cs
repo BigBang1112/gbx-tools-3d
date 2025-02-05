@@ -12,7 +12,13 @@ internal sealed class MeshService
     private readonly ILogger<MeshService> logger;
 
     private static readonly Func<AppDbContext, string, Task<MeshHq?>> MeshHqFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
-        .Select(x => new MeshHq { Hash = x.Hash, Data = x.Data, CreatedAt = x.CreatedAt })
+        .Select(x => new MeshHq { Hash = x.Hash, Data = x.Data, CreatedAt = x.UpdatedAt })
+        .AsNoTracking()
+        .FirstOrDefault(x => x.Hash == hash));
+
+    private static readonly Func<AppDbContext, string, Task<MeshHq?>> MeshSurfFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
+        .Where(x => x.DataSurf != null)
+        .Select(x => new MeshHq { Hash = x.Hash, Data = x.DataSurf!, CreatedAt = x.UpdatedAt })
         .AsNoTracking()
         .FirstOrDefault(x => x.Hash == hash));
     
@@ -25,9 +31,14 @@ internal sealed class MeshService
         this.logger = logger;
     }
     
-    public async Task<MeshHq?> GetMeshByHashHqAsync(string hash, CancellationToken cancellationToken = default)
+    public async Task<MeshHq?> GetMeshHqByHashAsync(string hash, CancellationToken cancellationToken = default)
     {
         return await MeshHqFirstOrDefaultAsync(db, hash);
+    }
+    
+    public async Task<MeshHq?> GetMeshSurfByHashAsync(string hash, CancellationToken cancellationToken = default)
+    {
+        return await MeshSurfFirstOrDefaultAsync(db, hash);
     }
 
     public async Task<int> GetMeshCountAsync(CancellationToken cancellationToken = default)
@@ -65,7 +76,8 @@ internal sealed class MeshService
 
         mesh.Data = data;
         mesh.DataLQ = data.Length == dataLq.Length ? null : dataLq;
-        mesh.DataELQ = dataELq is null || dataLq.Length == dataELq.Length ? null : dataELq;
+        mesh.DataVLQ = dataELq is null || dataLq.Length == dataELq.Length ? null : dataELq;
+        mesh.DataSurf = MeshSerializer.Serialize(solid, vehicle: vehicle, collision: true);
 
         return mesh;
     }

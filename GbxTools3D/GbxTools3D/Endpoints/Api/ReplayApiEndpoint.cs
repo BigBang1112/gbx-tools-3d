@@ -4,6 +4,7 @@ using GbxTools3D.Enums;
 using GbxTools3D.External;
 using Microsoft.Extensions.Caching.Hybrid;
 using System.Text;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -21,7 +22,7 @@ public static class ReplayApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
     }
 
-    private static async Task<IResult> GetReplayFromTmx(
+    private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromTmx(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -36,7 +37,7 @@ public static class ReplayApiEndpoint
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         response.EnsureSuccessStatusCode();
@@ -47,22 +48,20 @@ public static class ReplayApiEndpoint
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var replayData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        response.Dispose();
-
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new ReplayContentDto
+        return TypedResults.Ok(new ReplayContentDto
         {
             Content = replayData
         });
     }
 
-    private static async Task<IResult> GetReplayFromTmxWithMapInfo(
+    private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromTmxWithMapInfo(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -82,7 +81,7 @@ public static class ReplayApiEndpoint
 
         if (replayResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         replayResponse.EnsureSuccessStatusCode();
@@ -95,7 +94,7 @@ public static class ReplayApiEndpoint
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var replayData = await replayResponse.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -104,7 +103,7 @@ public static class ReplayApiEndpoint
 
         var mapInfoDto = default(MapInfoDto);
 
-        if (trackInfoResponse?.IsSuccessStatusCode == true)
+        if (trackInfoResponse.IsSuccessStatusCode)
         {
             var trackInfo = await trackInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxTrackInfo, cancellationToken);
 
@@ -128,7 +127,7 @@ public static class ReplayApiEndpoint
 
         var replayInfoDto = default(ReplayInfoDto);
 
-        if (replayInfoResponse?.IsSuccessStatusCode == true)
+        if (replayInfoResponse.IsSuccessStatusCode)
         {
             var replayInfoData = await replayInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxReplayInfo, cancellationToken);
             if (replayInfoData?.Results.Length > 0)
@@ -146,7 +145,7 @@ public static class ReplayApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new ReplayContentDto
+        return TypedResults.Ok(new ReplayContentDto
         {
             Map = mapInfoDto,
             Replay = replayInfoDto,
@@ -154,7 +153,7 @@ public static class ReplayApiEndpoint
         });
     }
 
-    private static async Task<IResult> GetReplayFromMx(
+    private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromMx(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -171,7 +170,7 @@ public static class ReplayApiEndpoint
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         response.EnsureSuccessStatusCode();
@@ -182,22 +181,20 @@ public static class ReplayApiEndpoint
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var replayData = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
-        response.Dispose();
-
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new ReplayContentDto
+        return TypedResults.Ok(new ReplayContentDto
         {
             Content = replayData
         });
     }
 
-    private static async Task<IResult> GetReplayFromMxWithMapInfo(
+    private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromMxWithMapInfo(
         HttpContext context,
         AppDbContext db,
         HybridCache cache,
@@ -217,7 +214,7 @@ public static class ReplayApiEndpoint
 
         if (replayResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
-            return Results.NotFound();
+            return TypedResults.NotFound();
         }
 
         replayResponse.EnsureSuccessStatusCode();
@@ -230,7 +227,7 @@ public static class ReplayApiEndpoint
 
         if (context.Request.Headers.IfNoneMatch == etag)
         {
-            return Results.StatusCode(StatusCodes.Status304NotModified);
+            return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
 
         var replayData = await replayResponse.Content.ReadAsByteArrayAsync(cancellationToken);
@@ -239,7 +236,7 @@ public static class ReplayApiEndpoint
 
         var mapInfoDto = default(MapInfoDto);
 
-        if (mapInfoResponse?.IsSuccessStatusCode == true)
+        if (mapInfoResponse.IsSuccessStatusCode)
         {
             var mapInfo = await mapInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseMxMapInfo, cancellationToken);
 
@@ -263,7 +260,7 @@ public static class ReplayApiEndpoint
 
         var replayInfoDto = default(ReplayInfoDto);
 
-        if (replayInfoResponse?.IsSuccessStatusCode == true)
+        if (replayInfoResponse.IsSuccessStatusCode)
         {
             var replayInfoData = await replayInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxReplayInfo, cancellationToken);
             if (replayInfoData?.Results.Length > 0)
@@ -281,7 +278,7 @@ public static class ReplayApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return Results.Ok(new ReplayContentDto
+        return TypedResults.Ok(new ReplayContentDto
         {
             Map = mapInfoDto,
             Replay = replayInfoDto,

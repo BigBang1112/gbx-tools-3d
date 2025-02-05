@@ -1,0 +1,72 @@
+﻿@page "/view/map"
+@rendermode InteractiveWebAssembly
+@using GBX.NET
+@using GBX.NET.Engines.Game
+@using GbxTools3D.Client.Dtos
+@inject HttpClient Http
+
+@if (IsDragAndDrop)
+{
+    <InputFile></InputFile>
+}
+else
+{
+    <View3D Map="map" @ref="view3d"></View3D>
+}
+
+@code {
+    private View3D? view3d;
+    
+    [SupplyParameterFromQuery(Name = "tmx")]
+    private string? TmxSite { get; set; }
+    
+    [SupplyParameterFromQuery(Name = "mx")]
+    private string? MxSite { get; set; }
+    
+    [SupplyParameterFromQuery(Name = "id")]
+    private string? MapId { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
+
+    private CGameCtnChallenge? map;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        if (IsDragAndDrop || !RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        string endpoint;
+        if (!string.IsNullOrEmpty(TmxSite))
+        {
+            endpoint = $"/api/map/tmx/{TmxSite}/{MapId}";
+        }
+        else if (!string.IsNullOrEmpty(MxSite))
+        {
+            endpoint = $"/api/map/mx/{MxSite}/{MapId}";
+        }
+        else
+        {
+            throw new Exception();
+        }
+
+        using var response = await Http.GetAsync(endpoint);
+        var content = await response.Content.ReadFromJsonAsync<MapContentDto>(AppClientJsonContext.Default.MapContentDto);
+
+        if (content is null)
+        {
+            return;
+        }
+
+        await using var ms = new MemoryStream(content.Content);
+        map = Gbx.ParseNode<CGameCtnChallenge>(ms);
+        
+        if (view3d is not null)
+        {
+            await view3d.TryLoadMapAsync();
+        }
+    }
+}

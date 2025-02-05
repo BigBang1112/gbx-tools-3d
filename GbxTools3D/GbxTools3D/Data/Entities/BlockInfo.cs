@@ -1,5 +1,5 @@
-﻿using GBX.NET;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using GbxTools3D.Client.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Data.Entities;
@@ -12,13 +12,13 @@ public class BlockInfo
     public int CollectionId { get; set; }
     public required Collection Collection { get; set; }
 
-    public GameVersion GameVersion { get; set; }
-
     [StringLength(byte.MaxValue)]
     public required string Name { get; set; }
 
     public BlockUnit[] AirUnits { get; set; } = [];
     public BlockUnit[] GroundUnits { get; set; } = [];
+    
+    public byte? Height { get; set; }
 
     public ICollection<BlockVariant> Variants { get; set; } = [];
 
