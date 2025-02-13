@@ -64,8 +64,9 @@ internal sealed class MaterialService
         logger.LogInformation("Saving materials...");
         await db.SaveChangesAsync(cancellationToken);
         await outputCache.EvictByTagAsync("material", cancellationToken);
+        await outputCache.EvictByTagAsync("texture", cancellationToken);
         
-        var alreadyProcessedShaderPaths = new HashSet<string>();
+        var alreadyProcessedShaders = new Dictionary<string, Material>();
 
         logger.LogInformation("Processing shader materials...");
         foreach (var (parentPath, parentNode) in materials)
@@ -77,12 +78,11 @@ internal sealed class MaterialService
             
             var path = Path.GetRelativePath(gamePath, parentNode.ShaderFile?.GetFullPath() ?? throw new Exception("Shader has instance but no file"));
             
-            if (!alreadyProcessedShaderPaths.Add(path))
+            if (!alreadyProcessedShaders.TryGetValue(path, out var shaderMaterial))
             {
-                continue;
+                shaderMaterial = await AddOrUpdateMaterial(gamePath, gameVersion, path, shaderMaterialNode, alreadyProcessedTexturePaths, cancellationToken);
+                alreadyProcessedShaders.Add(path, shaderMaterial);
             }
-
-            var shaderMaterial = await AddOrUpdateMaterial(gamePath, gameVersion, path, shaderMaterialNode, alreadyProcessedTexturePaths, cancellationToken);
             
             var parentName = GbxPath.GetFileNameWithoutExtension(parentPath);
             var material = await db.Materials.FirstOrDefaultAsync(x =>
@@ -99,6 +99,7 @@ internal sealed class MaterialService
         logger.LogInformation("Saving shader materials...");
         await db.SaveChangesAsync(cancellationToken);
         await outputCache.EvictByTagAsync("material", cancellationToken);
+        await outputCache.EvictByTagAsync("texture", cancellationToken); // probably not needed, but just to be sure
     }
 
     private async Task<Material> AddOrUpdateMaterial(string gamePath, GameVersion gameVersion,

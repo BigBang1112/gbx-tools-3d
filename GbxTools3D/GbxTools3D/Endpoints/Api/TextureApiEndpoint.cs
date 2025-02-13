@@ -1,4 +1,5 @@
-﻿using GbxTools3D.Data;
+﻿using GbxTools3D.Client.Dtos;
+using GbxTools3D.Data;
 using GbxTools3D.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +10,20 @@ public static class TextureApiEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
+        group.MapGet("/", GetTextureInfo)
+            .CacheOutput(x => x.Tag("texture"));
         group.MapGet("/{hash}", GetTextureByHash); // cache output questionable due to larger memory usage
+    }
+
+    private static async Task<Ok<TextureInfoDto>> GetTextureInfo(AppDbContext db, CancellationToken cancellationToken)
+    {
+        var textureCount = await db.Textures.CountAsync(cancellationToken);
+
+        return TypedResults.Ok(new TextureInfoDto
+        {
+            Count = textureCount,
+            Format = "webp"
+        });
     }
     
     private static readonly Func<AppDbContext, string, Task<CacheableHiddenData?>> TextureFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Textures
