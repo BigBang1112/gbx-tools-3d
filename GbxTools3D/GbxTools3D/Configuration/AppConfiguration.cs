@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 using Scalar.AspNetCore;
@@ -24,7 +25,9 @@ internal static class AppConfiguration
     public static void AddDomainServices(this IServiceCollection services)
     {
         services.AddHostedService<PopulateDbService>();
+        services.AddScoped<VehicleService>();
         services.AddScoped<CollectionService>();
+        services.AddScoped<MaterialService>();
         services.AddScoped<MeshService>();
     }
     
@@ -33,7 +36,8 @@ internal static class AppConfiguration
         services.AddDbContextFactory<AppDbContext>(options =>
         {
             var connectionStr = config.GetConnectionString("DefaultConnection");
-            options.UseMySql(connectionStr, ServerVersion.AutoDetect(connectionStr));
+            options.UseMySql(connectionStr, ServerVersion.AutoDetect(connectionStr))
+                .ConfigureWarnings(w => w.Ignore(RelationalEventId.CommandExecuted)); // should be configurable
             //options.UseInMemoryDatabase("GbxTools3D");
         });
     }
@@ -98,7 +102,7 @@ internal static class AppConfiguration
 
         services.ConfigureHttpJsonOptions(options =>
         {
-            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+            options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
             options.SerializerOptions.Converters.Add(new JsonInt3Converter());
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });

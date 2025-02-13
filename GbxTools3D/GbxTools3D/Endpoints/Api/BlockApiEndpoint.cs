@@ -11,11 +11,13 @@ public static class BlockApiEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/{gameVersion}/{collectionName}", GetBlockInfos);
-        group.MapGet("/{gameVersion}/{collectionName}/{blockName}", GetBlockInfoByName);
+        group.MapGet("/{gameVersion}/{collectionName}", GetBlockInfos)
+            .CacheOutput(x => x.Tag("block"));
+        group.MapGet("/{gameVersion}/{collectionName}/{blockName}", GetBlockInfoByName)
+            .CacheOutput(x => x.Tag("block"));
     }
 
-    private static async Task<Results<Ok<List<BlockInfoDto>>, NotFound, StatusCodeHttpResult>> GetBlockInfos(
+    private static async Task<Results<Ok<IEnumerable<BlockInfoDto>>, NotFound, StatusCodeHttpResult>> GetBlockInfos(
         AppDbContext db, 
         GameVersion gameVersion, 
         string collectionName, 
@@ -23,6 +25,7 @@ public static class BlockApiEndpoint
         CancellationToken cancellationToken)
     {
         var collection = await db.Collections
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Name == collectionName, cancellationToken);
 
         if (collection is null)
@@ -41,11 +44,12 @@ public static class BlockApiEndpoint
             .Include(x => x.Collection)
             .Include(x => x.Variants)
             .Where(x => x.Collection == collection)
+            .AsNoTracking()
             .ToListAsync(cancellationToken);
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.Ok(blockInfos.Select(MapBlockInfo).ToList());
+        return TypedResults.Ok(blockInfos.Select(MapBlockInfo));
     }
 
     private static async Task<Results<Ok<BlockInfoDto>, NotFound, StatusCodeHttpResult>> GetBlockInfoByName(
@@ -57,6 +61,7 @@ public static class BlockApiEndpoint
         CancellationToken cancellationToken)
     {
         var collection = await db.Collections
+            .AsNoTracking()
             .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Name == collectionName, cancellationToken);
 
         if (collection is null)
@@ -74,6 +79,7 @@ public static class BlockApiEndpoint
         var blockInfo = await db.BlockInfos
             .Include(x => x.Collection)
             .Include(x => x.Variants)
+            .AsNoTracking()
             .FirstOrDefaultAsync(
                 x => x.Collection == collection && x.Name == blockName, cancellationToken);
 
@@ -93,6 +99,9 @@ public static class BlockApiEndpoint
         Collection = blockInfo.Collection.Name,
         AirUnits = blockInfo.AirUnits,
         GroundUnits = blockInfo.GroundUnits,
+        HasAirHelper = blockInfo.HasAirHelper,
+        HasGroundHelper = blockInfo.HasGroundHelper,
+        HasConstructionModeHelper = blockInfo.HasConstructionModeHelper,
         AirVariants = blockInfo.Variants.Where(x => !x.Ground).Select(MapVariant).ToList(),
         GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(MapVariant).ToList(),
         Height = blockInfo.Height,

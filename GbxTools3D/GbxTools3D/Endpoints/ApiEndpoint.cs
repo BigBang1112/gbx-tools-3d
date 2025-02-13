@@ -19,6 +19,8 @@ public static class ApiEndpoint
         MapApiEndpoint.Map(group.MapGroup("/map"));
         ItemApiEndpoint.Map(group.MapGroup("/item"));
         BlockApiEndpoint.Map(group.MapGroup("/blocks"));
-        DecorationApiEndpoint.Map(group.MapGroup("/decoration"));
+        DecorationApiEndpoint.Map(group.MapGroup("/decorations"));
+        MaterialApiEndpoint.Map(group.MapGroup("/materials"));
+        TextureApiEndpoint.Map(group.MapGroup("/texture"));
     }
 }

@@ -41,13 +41,22 @@ namespace GbxTools3D.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("HasAirHelper")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("HasConstructionModeHelper")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("HasGroundHelper")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<byte?>("Height")
                         .HasColumnType("tinyint unsigned");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.HasKey("Id");
 
@@ -102,6 +111,10 @@ namespace GbxTools3D.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("DefaultZoneBlock")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
                     b.Property<string>("DisplayName")
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
@@ -114,12 +127,152 @@ namespace GbxTools3D.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<int>("SortIndex")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SquareHeight")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SquareSize")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("VehicleAuthor")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("VehicleCollection")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("VehicleId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.HasKey("Id");
 
                     b.ToTable("Collections");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.Decoration", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DecorationSizeId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Musics")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("varchar(32)");
+
+                    b.Property<string>("Remap")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Sounds")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DecorationSizeId");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("Decorations");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.DecorationSize", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BaseHeight")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CollectionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Scene")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("SizeX")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SizeY")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SizeZ")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CollectionId");
+
+                    b.HasIndex("SizeX", "SizeY", "SizeZ");
+
+                    b.ToTable("DecorationSizes");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.Material", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("GameVersion")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsShader")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int?>("ShaderId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SurfaceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Textures")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShaderId");
+
+                    b.HasIndex("GameVersion", "Name");
+
+                    b.ToTable("Materials");
                 });
 
             modelBuilder.Entity("GbxTools3D.Data.Entities.Mesh", b =>
@@ -233,6 +386,49 @@ namespace GbxTools3D.Migrations
                     b.ToTable("ObjectLinks");
                 });
 
+            modelBuilder.Entity("GbxTools3D.Data.Entities.Texture", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
+
+                    b.Property<int>("GameVersion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Hash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("ImagePath")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Hash")
+                        .IsUnique();
+
+                    b.HasIndex("Path", "GameVersion");
+
+                    b.ToTable("Textures");
+                });
+
             modelBuilder.Entity("GbxTools3D.Data.Entities.BlockInfo", b =>
                 {
                     b.HasOne("GbxTools3D.Data.Entities.Collection", "Collection")
@@ -261,6 +457,37 @@ namespace GbxTools3D.Migrations
                     b.Navigation("BlockInfo");
 
                     b.Navigation("Mesh");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.Decoration", b =>
+                {
+                    b.HasOne("GbxTools3D.Data.Entities.DecorationSize", "DecorationSize")
+                        .WithMany("Decorations")
+                        .HasForeignKey("DecorationSizeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DecorationSize");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.DecorationSize", b =>
+                {
+                    b.HasOne("GbxTools3D.Data.Entities.Collection", "Collection")
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Collection");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.Material", b =>
+                {
+                    b.HasOne("GbxTools3D.Data.Entities.Material", "Shader")
+                        .WithMany()
+                        .HasForeignKey("ShaderId");
+
+                    b.Navigation("Shader");
                 });
 
             modelBuilder.Entity("GbxTools3D.Data.Entities.ObjectLink", b =>
@@ -295,6 +522,11 @@ namespace GbxTools3D.Migrations
             modelBuilder.Entity("GbxTools3D.Data.Entities.Collection", b =>
                 {
                     b.Navigation("BlockInfos");
+                });
+
+            modelBuilder.Entity("GbxTools3D.Data.Entities.DecorationSize", b =>
+                {
+                    b.Navigation("Decorations");
                 });
 #pragma warning restore 612, 618
         }

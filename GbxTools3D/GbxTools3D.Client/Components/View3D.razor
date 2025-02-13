@@ -5,6 +5,7 @@
 @using GBX.NET
 @using GBX.NET.Engines.Game
 @using GbxTools3D.Client.Dtos
+@using GbxTools3D.Client.Extensions
 @using GbxTools3D.Client.Models
 @using GbxTools3D.Client.Modules
 @inject HttpClient Http
@@ -23,6 +24,9 @@
     public CGameCtnChallenge? Map { get; set; }
     
     private Dictionary<string, BlockInfoDto>? blockInfos;
+    private Dictionary<Int3, DecorationSizeDto>? decorations;
+    private Dictionary<string, MaterialDto>? materials;
+    
     private CancellationTokenSource cts = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -67,19 +71,12 @@
         contentLoading = true;
         
         using var blockInfosTask = Http.GetAsync($"/api/blocks/TMF/{Map.Collection}", cancellationToken);
-        using var decorationTask = Http.GetAsync($"/api/decoration/TMF/{Map.Collection}", cancellationToken);
-
-        var baseHeight = 5;
-        
-        var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
-        var center = new Vec3(Map.Size.X * blockSize.X / 2f, baseHeight * blockSize.Y, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
-        Camera.SetPosition(camera, center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
-
-        var controls = Camera.CreateMapControls(camera, renderer, center.X, center.Y, center.Z);
-        Renderer.SetControls(controls);
+        using var decorationTask = Http.GetAsync($"/api/decorations/TMF/{Map.Collection}", cancellationToken);
+        using var materialTask = Http.GetAsync($"/api/materials/TMF", cancellationToken);
         
         using var blockInfosResponse = await blockInfosTask;
         using var decorationResponse = await decorationTask;
+        using var materialResponse = await materialTask;
         
         if (!blockInfosResponse.IsSuccessStatusCode)
         {
@@ -89,6 +86,63 @@
         
         blockInfos = (await blockInfosResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
             .ToDictionary(x => x.Name);
+        
+        var baseHeight = 5;
+        
+        if (decorationResponse.IsSuccessStatusCode)
+        {
+            decorations = (await decorationResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListDecorationSizeDto, cancellationToken))?
+                .ToDictionary(x => x.Size);
+
+            if (decorations?.TryGetValue(Map.Size, out var decoSize) == true)
+            {
+                var deco = decoSize.Decorations
+                    .FirstOrDefault(x => x.Name == Map.Decoration.Id);
+
+                baseHeight = decoSize.BaseHeight;
+                var size = $"{Map.Size.X}x{Map.Size.Y}x{Map.Size.Z}";
+                
+                var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
+                
+                foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
+                {
+                    if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
+                    {
+                        continue;
+                    }
+                    
+                    var hash = $"GbxTools3D|Decoration|TMF|{Map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
+
+                    tasks.Add(Http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
+                }
+
+                await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
+                {
+                    using var meshResponse = await meshResponseTask;
+
+                    if (!meshResponse.IsSuccessStatusCode)
+                    {
+                        continue;
+                    }
+                    
+                    await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+                    var solid = await Solid.ParseAsync(stream, expectedMeshCount: null, receiveShadow: false, castShadow: false);
+                    solid.Location = tasks[meshResponseTask];
+                    scene?.Add(solid);
+                }
+            }
+        }
+        
+        if (materialResponse.IsSuccessStatusCode)
+        {
+            materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
+        }
+        
+        var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
+        var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
+        Camera.SetPosition(camera, center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
+
+        Camera.CreateMapControls(camera, renderer, center.X, center.Y, center.Z);
         
         var uniqueBlockVariants = Map.GetBlocks()
             .Where(x => !x.IsClip)
@@ -101,8 +155,7 @@
         {
             var (name, isGround, variant, subVariant) = uniqueGroup.Key;
 
-            var toHash = $"GbxTools3D|Solid|TMF|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*";
-            var hash = HashStr(toHash);
+            var hash = $"GbxTools3D|Solid|TMF|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
 
             responseTasks.Add(uniqueGroup.Key, Http.GetAsync($"/api/mesh/{hash}", cancellationToken));
 
@@ -162,24 +215,6 @@
             responseTasks[variant].Dispose();
             responseTasks.Remove(variant);
         }
-    }
-
-    private static string HashStr(string str)
-    {
-        Span<byte> bytes = stackalloc byte[str.Length * 2];
-        if (!Encoding.UTF8.TryGetBytes(str, bytes, out var bytesWritten))
-        {
-            throw new InvalidOperationException("Failed to encode string");
-        }
-
-        Span<byte> hash = stackalloc byte[32];
-        
-        if (!SHA256.TryHashData(bytes[..bytesWritten], hash, out _))
-        {
-            throw new InvalidOperationException("Failed to hash string");
-        }
-        
-        return Convert.ToHexString(hash);
     }
 
     private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize)

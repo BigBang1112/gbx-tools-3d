@@ -44,7 +44,7 @@ public static class MeshApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.File(mesh.Data, "application/octet-stream", lastModified: mesh.CreatedAt);
+        return TypedResults.File(mesh.Data, "application/octet-stream", lastModified: mesh.UpdatedAt);
     }
 
     private static async Task<Results<FileContentHttpResult, NotFound, BadRequest<string>, RedirectHttpResult>> GetMeshLodByHash(AppDbContext db, string hash, int lod, CancellationToken cancellationToken)

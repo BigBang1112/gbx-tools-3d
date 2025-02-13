@@ -19,6 +19,33 @@ internal sealed partial class Solid(JSObject obj)
 
     public JSObject Object { get; } = obj;
 
+    public Vec3 Position
+    {
+        set
+        {
+            SetPosition(obj, value.X, value.Y, value.Z);
+            UpdateMatrix(obj);
+            UpdateMatrixWorld(obj);
+        }
+    }
+
+    public Mat3 Rotation
+    {
+        set
+        {
+            SetRotation(obj, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+        }
+    }
+
+    public Iso4 Location
+    {
+        set
+        {
+            SetRotation(obj, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            SetPosition(obj, value.TX, value.TY, value.TZ);
+        }
+    }
+
     [JSImport("create", nameof(Solid))]
     private static partial JSObject Create();
 
@@ -53,11 +80,17 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("mergeGeometries", nameof(Solid))]
     private static partial JSObject MergeGeometries(JSObject[] geometries);
 
-    [JSImport("createVisual", nameof(Solid))]
-    private static partial JSObject CreateVisualMultipleMaterials(JSObject geometry, JSObject[] materials, int expectedMeshCount);
+    [JSImport("createInstancedMesh", nameof(Solid))]
+    private static partial JSObject CreateInstancedMeshMultipleMaterials(JSObject geometry, JSObject[] materials, int expectedMeshCount, bool receiveShadow, bool castShadow);
 
-    [JSImport("createVisual", nameof(Solid))]
-    private static partial JSObject CreateVisualSingleMaterial(JSObject geometry, JSObject material, int expectedMeshCount);
+    [JSImport("createInstancedMesh", nameof(Solid))]
+    private static partial JSObject CreateInstancedMeshSingleMaterial(JSObject geometry, JSObject material, int expectedMeshCount, bool receiveShadow, bool castShadow);
+
+    [JSImport("createMesh", nameof(Solid))]
+    private static partial JSObject CreateMeshMultipleMaterials(JSObject geometry, JSObject[] materials, bool receiveShadow, bool castShadow);
+
+    [JSImport("createMesh", nameof(Solid))]
+    private static partial JSObject CreateMeshSingleMaterial(JSObject geometry, JSObject material, bool receiveShadow, bool castShadow);
     
     [JSImport("getInstanceInfoFromBlock", nameof(Solid))]
     private static partial JSObject GetInstanceInfoFromBlock(int x, int y, int z, int dir);
@@ -68,7 +101,12 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("instantiate", nameof(Solid))]
     private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);
 
-    public static async Task<Solid> ParseAsync(Stream stream, int expectedMeshCount, bool optimized = true)
+    public static async Task<Solid> ParseAsync(
+        Stream stream, 
+        int? expectedMeshCount = null, 
+        bool optimized = true, 
+        bool receiveShadow = true,
+        bool castShadow = true)
     {
         using var rd = new AdjustedBinaryReader(stream);
 
@@ -101,28 +139,29 @@ internal sealed partial class Solid(JSObject obj)
             var materials = new List<JSObject>();
             await ReadTreeAsSingleGeometryAsync(r, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials);
             
-            if (geometries.Count == 0)
+            switch (geometries.Count)
             {
-                tree = Create();
-            }
-            else if (geometries.Count == 1)
-            {
-                tree = CreateVisualSingleMaterial(geometries[0], materials[0], expectedMeshCount);
-            }
-            else
-            {
-                var geometry = MergeGeometries(geometries.ToArray());
-                tree = CreateVisualMultipleMaterials(geometry, materials.ToArray(), expectedMeshCount);
-            }
-
-            if (geometries.Count != materials.Count)
-            {
-                
+                case 0:
+                    tree = Create();
+                    break;
+                case 1:
+                    tree = expectedMeshCount.HasValue
+                        ? CreateInstancedMeshSingleMaterial(geometries[0], materials[0], expectedMeshCount.Value, receiveShadow, castShadow)
+                        : CreateMeshSingleMaterial(geometries[0], materials[0], receiveShadow, castShadow);
+                    break;
+                default:
+                {
+                    var geometry = MergeGeometries(geometries.ToArray());
+                    tree = expectedMeshCount.HasValue
+                        ? CreateInstancedMeshMultipleMaterials(geometry, materials.ToArray(), expectedMeshCount.Value, receiveShadow, castShadow)
+                        : CreateMeshMultipleMaterials(geometry, materials.ToArray(), receiveShadow, castShadow);
+                    break;
+                }
             }
         }
         else
         {
-            tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount);
+            tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow);
             UpdateMatrixWorld(tree);
         }
 
@@ -212,7 +251,11 @@ internal sealed partial class Solid(JSObject obj)
         }
     }
 
-    private static async Task<JSObject> ReadTreeAsNestedObjectsAsync(AdjustedBinaryReader r, int expectedMeshCount)
+    private static async Task<JSObject> ReadTreeAsNestedObjectsAsync(
+        AdjustedBinaryReader r, 
+        int? expectedMeshCount, 
+        bool receiveShadow, 
+        bool castShadow)
     {
         var tree = Create();
 
@@ -236,11 +279,12 @@ internal sealed partial class Solid(JSObject obj)
 
         if (geometry is not null)
         {
-
             var materialName = r.ReadString();
             var additionalMaterialProperties = r.ReadBoolean();
             
-            var visual = CreateVisualSingleMaterial(geometry, Material.Get(materialName), expectedMeshCount);
+            var visual = expectedMeshCount.HasValue
+                ? CreateInstancedMeshSingleMaterial(geometry, Material.Get(materialName), expectedMeshCount.Value, receiveShadow, castShadow)
+                : CreateMeshSingleMaterial(geometry, Material.Get(materialName), receiveShadow, castShadow);
             Add(tree, visual);
         }
 
@@ -259,7 +303,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount);
+                var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow);
 
                 AddLod(lod, lodTree, distance);
             }
@@ -273,7 +317,7 @@ internal sealed partial class Solid(JSObject obj)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            Add(tree, await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount));
+            Add(tree, await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow));
         }
 
         return tree;

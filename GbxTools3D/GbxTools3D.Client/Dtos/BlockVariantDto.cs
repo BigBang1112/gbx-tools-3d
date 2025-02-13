@@ -2,7 +2,7 @@
 
 public sealed class BlockVariantDto
 {
-    public required byte Variant { get; set; }
-    public required byte SubVariant { get; set; }
+    public byte Variant { get; set; }
+    public byte SubVariant { get; set; }
     public List<ObjectLinkDto>? ObjectLinks { get; set; }
 }

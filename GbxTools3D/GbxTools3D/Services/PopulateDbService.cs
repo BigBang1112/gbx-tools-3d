@@ -31,8 +31,10 @@ public sealed class PopulateDbService : BackgroundService
         }
 
         await using var scope = serviceProvider.CreateAsyncScope();
+        var vehicleService = scope.ServiceProvider.GetRequiredService<VehicleService>();
         var collectionService = scope.ServiceProvider.GetRequiredService<CollectionService>();
 
-        await collectionService.CreateOrUpdateCollectionAsync(datasetPath, stoppingToken);
+        await vehicleService.CreateOrUpdateVehiclesAsync(datasetPath, stoppingToken);
+        await collectionService.CreateOrUpdateCollectionsAsync(datasetPath, stoppingToken);
     }, stoppingToken);
 }

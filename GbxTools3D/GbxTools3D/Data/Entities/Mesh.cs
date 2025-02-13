@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 namespace GbxTools3D.Data.Entities;
 
 [Index(nameof(Hash), IsUnique = true)]
-public class Mesh
+public sealed class Mesh
 {
     public int Id { get; set; }
 

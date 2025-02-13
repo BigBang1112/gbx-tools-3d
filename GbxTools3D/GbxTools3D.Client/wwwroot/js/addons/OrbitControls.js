@@ -783,7 +783,7 @@ class OrbitControls extends Controls {
 
 			case this.keys.UP:
 
-				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+				if ( event.ctrlKey || event.metaKey ) {
 
 					if ( this.enableRotate ) {
 
@@ -806,7 +806,7 @@ class OrbitControls extends Controls {
 
 			case this.keys.BOTTOM:
 
-				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+				if ( event.ctrlKey || event.metaKey ) {
 
 					if ( this.enableRotate ) {
 
@@ -829,7 +829,7 @@ class OrbitControls extends Controls {
 
 			case this.keys.LEFT:
 
-				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+				if ( event.ctrlKey || event.metaKey ) {
 
 					if ( this.enableRotate ) {
 
@@ -852,7 +852,7 @@ class OrbitControls extends Controls {
 
 			case this.keys.RIGHT:
 
-				if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+				if ( event.ctrlKey || event.metaKey ) {
 
 					if ( this.enableRotate ) {
 
@@ -1269,7 +1269,7 @@ function onMouseDown( event ) {
 
 		case MOUSE.ROTATE:
 
-			if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+			if ( event.ctrlKey || event.metaKey ) {
 
 				if ( this.enablePan === false ) return;
 
@@ -1291,7 +1291,7 @@ function onMouseDown( event ) {
 
 		case MOUSE.PAN:
 
-			if ( event.ctrlKey || event.metaKey || event.shiftKey ) {
+			if ( event.ctrlKey || event.metaKey ) {
 
 				if ( this.enableRotate === false ) return;
 

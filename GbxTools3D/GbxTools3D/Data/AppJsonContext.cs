@@ -12,4 +12,6 @@ namespace GbxTools3D.Data;
 [JsonSerializable(typeof(MxResponse<TmxReplayInfo>))]
 [JsonSerializable(typeof(MxResponse<MxMapInfo>))]
 [JsonSerializable(typeof(IxItemInfo[]))]
+[JsonSerializable(typeof(SceneObject[]))]
+[JsonSerializable(typeof(Dictionary<string, string>))]
 internal partial class AppJsonContext : JsonSerializerContext;

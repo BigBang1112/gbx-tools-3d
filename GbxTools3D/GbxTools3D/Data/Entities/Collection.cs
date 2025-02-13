@@ -3,7 +3,7 @@ using GBX.NET;
 
 namespace GbxTools3D.Data.Entities;
 
-public class Collection
+public sealed class Collection
 {
     public int Id { get; set; }
     
@@ -17,6 +17,23 @@ public class Collection
 
     [Required]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    
+    public int SquareHeight { get; set; }
+    public int SquareSize { get; set; }
+    
+    [StringLength(byte.MaxValue)]
+    public required string VehicleId { get; set; }
+    
+    [StringLength(byte.MaxValue)]
+    public required string VehicleCollection { get; set; }
+    
+    [StringLength(byte.MaxValue)]
+    public required string VehicleAuthor { get; set; }
+    
+    [StringLength(byte.MaxValue)]
+    public string? DefaultZoneBlock { get; set; }
+    
+    public int SortIndex { get; set; }
 
     public ICollection<BlockInfo> BlockInfos { get; set; } = [];
 }

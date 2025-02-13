@@ -1,7 +1,6 @@
 ﻿import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 import { InstancedMesh2 } from '@three.ez/instanced-mesh';
-import { getRenderer } from './renderer.js';
 
 const material = new THREE.MeshMatcapMaterial({ color: 0xAD9000 });
 
@@ -90,12 +89,22 @@ export function mergeGeometries(geometries) {
     return BufferGeometryUtils.mergeGeometries(geometries, true);
 }
 
-export function createVisual(geometry, materials, expectedMeshCount) {
+export function createInstancedMesh(geometry, materials, expectedMeshCount, receiveShadow, castShadow) {
     const mesh = new THREE.InstancedMesh(geometry, materials, expectedMeshCount);
     //mesh.perObjectFrustumCulled = false;
     //mesh.computeBVH({ margin: 0 });
-    mesh.receiveShadow = true;
-    mesh.castShadow = true;
+    mesh.receiveShadow = receiveShadow;
+    mesh.castShadow = castShadow;
+    return mesh;
+}
+
+export function createMesh(geometry, materials, receiveShadow, castShadow) {
+    const mesh = new THREE.Mesh(geometry, materials);
+    mesh.receiveShadow = receiveShadow;
+    mesh.castShadow = castShadow;
+    mesh.matrixAutoUpdate = true;
+    mesh.matrixWorldAutoUpdate = true;
+    mesh.material.needsUpdate = true;
     return mesh;
 }
 

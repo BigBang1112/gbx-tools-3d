@@ -12,9 +12,6 @@ internal static partial class Renderer
     [JSImport("setScene", nameof(Renderer))]
     private static partial void SetScene(JSObject scene);
 
-    [JSImport("setControls", nameof(Renderer))]
-    public static partial void SetControls(JSObject controls);
-
     [JSImport("setCamera", nameof(Renderer))]
     public static partial void SetCamera(JSObject camera);
 

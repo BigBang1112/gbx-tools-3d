@@ -1,6 +1,7 @@
 ﻿using GBX.NET.Engines.Plug;
 using GbxTools3D.Data;
 using GbxTools3D.Data.Entities;
+using GbxTools3D.Models;
 using GbxTools3D.Serializers;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,14 +12,14 @@ internal sealed class MeshService
     private readonly AppDbContext db;
     private readonly ILogger<MeshService> logger;
 
-    private static readonly Func<AppDbContext, string, Task<MeshHq?>> MeshHqFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
-        .Select(x => new MeshHq { Hash = x.Hash, Data = x.Data, CreatedAt = x.UpdatedAt })
+    private static readonly Func<AppDbContext, string, Task<CacheableHiddenData?>> MeshHqFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
+        .Select(x => new CacheableHiddenData { Hash = x.Hash, Data = x.Data, UpdatedAt = x.UpdatedAt })
         .AsNoTracking()
         .FirstOrDefault(x => x.Hash == hash));
 
-    private static readonly Func<AppDbContext, string, Task<MeshHq?>> MeshSurfFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
+    private static readonly Func<AppDbContext, string, Task<CacheableHiddenData?>> MeshSurfFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Meshes
         .Where(x => x.DataSurf != null)
-        .Select(x => new MeshHq { Hash = x.Hash, Data = x.DataSurf!, CreatedAt = x.UpdatedAt })
+        .Select(x => new CacheableHiddenData { Hash = x.Hash, Data = x.DataSurf!, UpdatedAt = x.UpdatedAt })
         .AsNoTracking()
         .FirstOrDefault(x => x.Hash == hash));
     
@@ -31,12 +32,12 @@ internal sealed class MeshService
         this.logger = logger;
     }
     
-    public async Task<MeshHq?> GetMeshHqByHashAsync(string hash, CancellationToken cancellationToken = default)
+    public async Task<CacheableHiddenData?> GetMeshHqByHashAsync(string hash, CancellationToken cancellationToken = default)
     {
         return await MeshHqFirstOrDefaultAsync(db, hash);
     }
     
-    public async Task<MeshHq?> GetMeshSurfByHashAsync(string hash, CancellationToken cancellationToken = default)
+    public async Task<CacheableHiddenData?> GetMeshSurfByHashAsync(string hash, CancellationToken cancellationToken = default)
     {
         return await MeshSurfFirstOrDefaultAsync(db, hash);
     }
@@ -49,8 +50,6 @@ internal sealed class MeshService
     public async Task<Mesh> GetOrCreateMeshAsync(string hash, string? path, CPlugSolid solid, CPlugVehicleVisModelShared? vehicle, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        
-        logger.LogInformation("New mesh: {Hash} (path: {Path})", hash, path);
 
         var mesh = await MeshFirstOrDefaultAsync(db, hash);
 
@@ -65,6 +64,8 @@ internal sealed class MeshService
 
         if (mesh is null)
         {
+            logger.LogInformation("New mesh: {Hash} (path: {Path})", hash, path);
+            
             mesh = new Mesh
             {
                 Hash = hash,
@@ -78,14 +79,8 @@ internal sealed class MeshService
         mesh.DataLQ = data.Length == dataLq.Length ? null : dataLq;
         mesh.DataVLQ = dataELq is null || dataLq.Length == dataELq.Length ? null : dataELq;
         mesh.DataSurf = MeshSerializer.Serialize(solid, vehicle: vehicle, collision: true);
+        mesh.UpdatedAt = DateTime.UtcNow;
 
         return mesh;
-    }
-
-    internal class MeshHq
-    {
-        public required string Hash { get; init; }
-        public required byte[] Data { get; init; }
-        public required DateTime CreatedAt { get; init; }
     }
 }

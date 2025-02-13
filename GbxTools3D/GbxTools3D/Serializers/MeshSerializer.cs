@@ -99,7 +99,7 @@ public class MeshSerializer
                 if (int.TryParse(level.Name, out var treeIndex))
                 {
                     var lod = treeIndex * 16;
-                    visualMip.Levels.Add(new(lod, level));
+                    visualMip.Levels.Add(new CPlugTreeVisualMip.Level(lod, level));
                 }
             }
 
@@ -150,9 +150,7 @@ public class MeshSerializer
             return;
         }
 
-        if (trans.Value.XX == 1 && trans.Value.XY == 0 && trans.Value.XZ == 0
-         && trans.Value.YX == 0 && trans.Value.YY == 1 && trans.Value.YZ == 0
-         && trans.Value.ZX == 0 && trans.Value.ZY == 0 && trans.Value.ZZ == 1)
+        if (trans.Value is { XX: 1, XY: 0, XZ: 0, YX: 0, YY: 1, YZ: 0, ZX: 0, ZY: 0, ZZ: 1 })
         {
             w.Write(false);
         }
@@ -170,7 +168,7 @@ public class MeshSerializer
             w.Write(trans.Value.ZZ);
         }
 
-        if (trans.Value.TX == 0 && trans.Value.TY == 0 && trans.Value.TZ == 0)
+        if (trans.Value is { TX: 0, TY: 0, TZ: 0 })
         {
             w.Write(false);
         }
@@ -185,7 +183,7 @@ public class MeshSerializer
 
     private bool WriteVisual(AdjustedBinaryWriter w, CPlugVisual? visual)
     {
-        if (collision || visual is null || visual is CPlugVisualSprite)
+        if (collision || visual is null || visual is CPlugVisualSprite || visual is not CPlugVisualIndexed indexed)
         {
             w.Write(false);
             return false;
@@ -193,10 +191,7 @@ public class MeshSerializer
 
         w.Write(true);
 
-        if (visual is not CPlugVisual3D visual3d)
-        {
-            throw new Exception("Visual is not 3D");
-        }
+        var visual3d = indexed;
 
         if (visual3d.VertexStreams.Count == 0)
         {

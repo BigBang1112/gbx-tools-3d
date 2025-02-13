@@ -14,6 +14,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public required DbSet<ObjectLink> ObjectLinks { get; set; }
     public required DbSet<Decoration> Decorations { get; set; }
     public required DbSet<DecorationSize> DecorationSizes { get; set; }
+    public required DbSet<Material> Materials { get; set; }
+    public required DbSet<Texture> Textures { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -26,6 +28,34 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(x => x.GroundUnits).HasConversion(
                 obj => JsonSerializer.Serialize(obj, AppJsonContext.Default.BlockUnitArray),
                 json => JsonSerializer.Deserialize(json, AppJsonContext.Default.BlockUnitArray) ?? Array.Empty<BlockUnit>()
+            );
+        });
+        
+        modelBuilder.Entity<DecorationSize>(entity =>
+        {
+            entity.Property(x => x.Scene).HasConversion(
+                obj => JsonSerializer.Serialize(obj, AppJsonContext.Default.SceneObjectArray),
+                json => JsonSerializer.Deserialize(json, AppJsonContext.Default.SceneObjectArray) ?? Array.Empty<SceneObject>()
+            );
+        });
+        
+        modelBuilder.Entity<Decoration>(entity =>
+        {
+            entity.Property(x => x.Musics).HasConversion(
+                obj => JsonSerializer.Serialize(obj, AppJsonContext.Default.DictionaryStringString),
+                json => JsonSerializer.Deserialize(json, AppJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>()
+            );
+            entity.Property(x => x.Sounds).HasConversion(
+                obj => JsonSerializer.Serialize(obj, AppJsonContext.Default.DictionaryStringString),
+                json => JsonSerializer.Deserialize(json, AppJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>()
+            );
+        });
+        
+        modelBuilder.Entity<Material>(entity =>
+        {
+            entity.Property(x => x.Textures).HasConversion(
+                obj => JsonSerializer.Serialize(obj, AppJsonContext.Default.DictionaryStringString),
+                json => JsonSerializer.Deserialize(json, AppJsonContext.Default.DictionaryStringString) ?? new Dictionary<string, string>()
             );
         });
     }

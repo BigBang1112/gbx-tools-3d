@@ -2,7 +2,7 @@
 
 namespace GbxTools3D.Data.Entities;
 
-public class BlockVariant
+public sealed class BlockVariant
 {
     public int Id { get; set; }
 
