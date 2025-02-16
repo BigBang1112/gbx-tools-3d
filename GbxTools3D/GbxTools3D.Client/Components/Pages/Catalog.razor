@@ -1,0 +1,13 @@
+﻿@page "/catalog"
+@rendermode InteractiveWebAssembly
+
+<div class="container">
+    @if (!RendererInfo.IsInteractive)
+    {
+        <Loader></Loader>
+    }
+</div>
+
+@code {
+
+}

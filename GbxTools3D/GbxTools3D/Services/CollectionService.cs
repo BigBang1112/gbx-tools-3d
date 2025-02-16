@@ -108,8 +108,6 @@ internal sealed class CollectionService
 
                 var decoName = decorationNode.Ident.Id;
                 
-                logger.LogInformation("Checking decoration {Decoration}...", decoName);
-                
                 if (decorationNode.DecoSize?.Size is null)
                 {
                     throw new Exception("Decoration size is null");

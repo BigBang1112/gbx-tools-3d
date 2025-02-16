@@ -1,7 +1,5 @@
 ﻿@rendermode InteractiveWebAssembly
 @using System.Runtime.InteropServices.JavaScript
-@using System.Security.Cryptography
-@using System.Text
 @using GBX.NET
 @using GBX.NET.Engines.Game
 @using GbxTools3D.Client.Dtos
@@ -10,7 +8,14 @@
 @using GbxTools3D.Client.Modules
 @inject HttpClient Http
 
-<canvas></canvas>
+@if (RendererInfo.IsInteractive)
+{
+    <canvas></canvas>
+}
+else
+{
+    <Loader></Loader>
+}
 
 @code {
     private Scene? scene;
@@ -126,16 +131,11 @@
                     }
                     
                     await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
-                    var solid = await Solid.ParseAsync(stream, expectedMeshCount: null, receiveShadow: false, castShadow: false);
+                    var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
                     solid.Location = tasks[meshResponseTask];
                     scene?.Add(solid);
                 }
             }
-        }
-        
-        if (materialResponse.IsSuccessStatusCode)
-        {
-            materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
         }
         
         var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
@@ -143,6 +143,11 @@
         Camera.SetPosition(camera, center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
 
         Camera.CreateMapControls(camera, renderer, center.X, center.Y, center.Z);
+        
+        if (materialResponse.IsSuccessStatusCode)
+        {
+            materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
+        }
         
         var uniqueBlockVariants = Map.GetBlocks()
             .Where(x => !x.IsClip)
@@ -197,7 +202,7 @@
                 await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
-                var solid = await Solid.ParseAsync(stream, expectedCount);
+                var solid = await Solid.ParseAsync(stream, materials, expectedCount);
                 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], map.Collection.GetValueOrDefault().GetBlockSize());
             }
@@ -245,7 +250,6 @@
 
         var instanceInfos = new List<JSObject>();
         
-        var index = 0;
         foreach (var block in blocks)
         {
             var actualCoord = block.Coord + block.Direction switch
@@ -260,8 +264,6 @@
             var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height, 0)) * blockSize, block.Direction);
             
             instanceInfos.Add(instanceInfo);
-            
-            index++;
         }
 
         solid.Instantiate(instanceInfos.ToArray());

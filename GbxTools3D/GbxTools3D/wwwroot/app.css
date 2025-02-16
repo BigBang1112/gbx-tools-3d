@@ -8,7 +8,6 @@
 html, body {
     font-family: "Mona Sans";
     background-color: #111;
-    font-size: 100%;
     font-weight: 400;
     margin: 0;
     padding: 0;
@@ -17,6 +16,25 @@ html, body {
     background-size: cover;
     background-position: center center;
     background-attachment: fixed;
+}
+
+button {
+    all: unset;
+}
+
+.container {
+    padding: 20px;
+    width: 75%;
+    margin-right: auto;
+    margin-left: auto;
+    transition: width 0.2s ease;
+}
+
+@media (max-width: 850px) {
+    .container {
+        width: calc(100% - 3rem);
+        text-align: center;
+    }
 }
 
 a, .btn-link {

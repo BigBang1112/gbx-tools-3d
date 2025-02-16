@@ -1,0 +1,17 @@
+﻿@page "/view"
+@rendermode InteractiveWebAssembly
+
+<div class="container">
+    @if (RendererInfo.IsInteractive)
+    {
+        <InputFile></InputFile>
+    }
+    else
+    {
+        <Loader></Loader>
+    }
+</div>
+
+@code {
+
+}

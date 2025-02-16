@@ -1,0 +1,9 @@
+﻿<div class="loader" style="width: @(Size)px; padding: @(Thickness)px;"></div>
+
+@code {
+    [Parameter]
+    public int Size { get; set; } = 50;
+
+    [Parameter]
+    public int Thickness { get; set; } = 8;
+}

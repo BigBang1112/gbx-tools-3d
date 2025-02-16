@@ -5,6 +5,7 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using GBX.NET;
 using GbxTools3D.Client.Deserializers;
+using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Enums;
 
 namespace GbxTools3D.Client.Modules;
@@ -103,6 +104,7 @@ internal sealed partial class Solid(JSObject obj)
 
     public static async Task<Solid> ParseAsync(
         Stream stream, 
+        Dictionary<string, MaterialDto>? availableMaterials,
         int? expectedMeshCount = null, 
         bool optimized = true, 
         bool receiveShadow = true,
@@ -137,7 +139,7 @@ internal sealed partial class Solid(JSObject obj)
         {
             var geometries = new List<JSObject>();
             var materials = new List<JSObject>();
-            await ReadTreeAsSingleGeometryAsync(r, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials);
+            await ReadTreeAsSingleGeometryAsync(r, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials);
             
             switch (geometries.Count)
             {
@@ -178,7 +180,8 @@ internal sealed partial class Solid(JSObject obj)
         Mat3 rot, 
         Vector3 pos,
         List<JSObject> geometries,
-        List<JSObject> materials)
+        List<JSObject> materials,
+        Dictionary<string, MaterialDto>? availableMaterials)
     {
         var childrenCount = r.Read7BitEncodedInt();
 
@@ -215,7 +218,7 @@ internal sealed partial class Solid(JSObject obj)
             var materialName = r.ReadString();
             var additionalMaterialProperties = r.ReadBoolean();
             
-            materials.Add(Material.Get(materialName));
+            materials.Add(Material.Get(materialName, availableMaterials));
         }
 
         await RestAsync(indexCounter);
@@ -233,7 +236,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                await ReadTreeAsSingleGeometryAsync(r, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : []);
+                await ReadTreeAsSingleGeometryAsync(r, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials);
 
                 //AddLod(lod, lodTree, distance);
             }
@@ -247,7 +250,7 @@ internal sealed partial class Solid(JSObject obj)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            await ReadTreeAsSingleGeometryAsync(r, rot, pos, geometries, materials);
+            await ReadTreeAsSingleGeometryAsync(r, rot, pos, geometries, materials, availableMaterials);
         }
     }
 
@@ -255,7 +258,8 @@ internal sealed partial class Solid(JSObject obj)
         AdjustedBinaryReader r, 
         int? expectedMeshCount, 
         bool receiveShadow, 
-        bool castShadow)
+        bool castShadow,
+        Dictionary<string, MaterialDto>? availableMaterials = null)
     {
         var tree = Create();
 
@@ -283,8 +287,8 @@ internal sealed partial class Solid(JSObject obj)
             var additionalMaterialProperties = r.ReadBoolean();
             
             var visual = expectedMeshCount.HasValue
-                ? CreateInstancedMeshSingleMaterial(geometry, Material.Get(materialName), expectedMeshCount.Value, receiveShadow, castShadow)
-                : CreateMeshSingleMaterial(geometry, Material.Get(materialName), receiveShadow, castShadow);
+                ? CreateInstancedMeshSingleMaterial(geometry, Material.Get(materialName, availableMaterials), expectedMeshCount.Value, receiveShadow, castShadow)
+                : CreateMeshSingleMaterial(geometry, Material.Get(materialName, availableMaterials), receiveShadow, castShadow);
             Add(tree, visual);
         }
 
