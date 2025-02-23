@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public required DbSet<DecorationSize> DecorationSizes { get; set; }
     public required DbSet<Material> Materials { get; set; }
     public required DbSet<Texture> Textures { get; set; }
+    public required DbSet<DataImport> DataImports { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,4 +1,5 @@
 ﻿@rendermode InteractiveWebAssembly
+@implements IDisposable
 @using System.Runtime.InteropServices.JavaScript
 @using GBX.NET
 @using GBX.NET.Engines.Game
@@ -18,6 +19,12 @@ else
 }
 
 @code {
+    private JSObject? rendererModule;
+    private JSObject? sceneModule;
+    private JSObject? cameraModule;
+    private JSObject? solidModule;
+    private JSObject? materialModule;
+
     private Scene? scene;
     private JSObject? camera;
     private JSObject? renderer;
@@ -51,11 +58,11 @@ else
 
     private async Task LoadSceneAsync(CancellationToken cancellationToken)
     {
-        await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js", cancellationToken);
-        await JSHost.ImportAsync(nameof(Scene), "../js/scene.js", cancellationToken);
-        await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
-        await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
-        await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
+        rendererModule = await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js", cancellationToken);
+        sceneModule = await JSHost.ImportAsync(nameof(Scene), "../js/scene.js", cancellationToken);
+        cameraModule = await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
+        solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
+        materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
 
         scene = new Scene();
         camera = Camera.Create();
@@ -91,6 +98,11 @@ else
         
         blockInfos = (await blockInfosResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
             .ToDictionary(x => x.Name);
+
+        if (materialResponse.IsSuccessStatusCode)
+        {
+            materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
+        }
         
         var baseHeight = 5;
         
@@ -143,11 +155,6 @@ else
         Camera.SetPosition(camera, center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
 
         Camera.CreateMapControls(camera, renderer, center.X, center.Y, center.Z);
-        
-        if (materialResponse.IsSuccessStatusCode)
-        {
-            materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
-        }
         
         var uniqueBlockVariants = Map.GetBlocks()
             .Where(x => !x.IsClip)
@@ -268,5 +275,16 @@ else
 
         solid.Instantiate(instanceInfos.ToArray());
         scene.Add(solid);
+    }
+
+    public void Dispose()
+    {
+        cts.Dispose();
+
+        rendererModule?.Dispose();
+        sceneModule?.Dispose();
+        cameraModule?.Dispose();
+        solidModule?.Dispose();
+        materialModule?.Dispose();
     }
 }

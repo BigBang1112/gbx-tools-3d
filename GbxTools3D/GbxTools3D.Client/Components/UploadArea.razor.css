@@ -1,0 +1,41 @@
+﻿::deep input {
+    left: -3px;
+    top: -3px;
+    width: calc(100% + 6px);
+    height: calc(100% + 6px);
+    opacity: 0;
+    position: absolute;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.upload-area {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    position: relative;
+    box-sizing: border-box;
+    padding: 10px 20px;
+    text-align: center;
+    min-width: 250px;
+    border-radius: 5px;
+    border: 3px dashed #FFF5;
+    background-color: #FFF1;
+    font-weight: bold;
+    color: #AAA;
+    transition: background-color 0.2s ease;
+}
+
+    .upload-area:hover, .upload-area.drag {
+        background-color: #FFF2;
+    }
+
+    .upload-area span {
+        margin-top: 5px;
+    }
+
+        .upload-area span.note {
+            font-size: 70%;
+            color: #666;
+        }

@@ -1,4 +1,4 @@
-﻿@page "/view/map"
+﻿@page "/view/replay"
 @rendermode InteractiveWebAssembly
 @implements IDisposable
 
@@ -8,7 +8,7 @@
 @inject HttpClient Http
 @inject GbxService GbxService
 
-@if (IsDragAndDrop && map is null)
+@if (IsDragAndDrop && replay?.Challenge is null)
 {
     <div class="container">
         <br />
@@ -17,7 +17,7 @@
 }
 else
 {
-    <View3D Map="map" @ref="view3d"></View3D>
+    <View3D Map="replay?.Challenge" @ref="view3d"></View3D>
 }
 
 @code {
@@ -34,7 +34,7 @@ else
 
     public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
 
-    private CGameCtnChallenge? map;
+    private CGameCtnReplayRecord? replay;
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,9 +47,9 @@ else
 
         if (IsDragAndDrop)
         {
-            map = GbxService.SelectedMap?.Node;
+            replay = GbxService.SelectedReplay?.Node;
 
-            if (map is not null)
+            if (replay is not null)
             {
                 await TryLoadMapAsync();
             }
@@ -60,11 +60,11 @@ else
         string endpoint;
         if (!string.IsNullOrEmpty(TmxSite))
         {
-            endpoint = $"/api/map/tmx/{TmxSite}/{MapId}";
+            endpoint = $"/api/replay/tmx/{TmxSite}/{MapId}";
         }
         else if (!string.IsNullOrEmpty(MxSite))
         {
-            endpoint = $"/api/map/mx/{MxSite}/{MapId}";
+            endpoint = $"/api/replay/mx/{MxSite}/{MapId}";
         }
         else
         {
@@ -72,7 +72,7 @@ else
         }
 
         using var response = await Http.GetAsync(endpoint);
-        var content = await response.Content.ReadFromJsonAsync<MapContentDto>(AppClientJsonContext.Default.MapContentDto);
+        var content = await response.Content.ReadFromJsonAsync<ReplayContentDto>(AppClientJsonContext.Default.ReplayContentDto);
 
         if (content is null)
         {
@@ -80,7 +80,7 @@ else
         }
 
         await using var ms = new MemoryStream(content.Content);
-        map = Gbx.ParseNode<CGameCtnChallenge>(ms);
+        replay = Gbx.ParseNode<CGameCtnReplayRecord>(ms);
 
         await TryLoadMapAsync();
     }
@@ -90,10 +90,10 @@ else
         using var ms = new MemoryStream(e.Data);
         var gbx = await Gbx.ParseAsync(ms);
 
-        if (gbx is Gbx<CGameCtnChallenge> map)
+        if (gbx is Gbx<CGameCtnReplayRecord> replay)
         {
-            GbxService.Add(map);
-            this.map = map.Node;
+            GbxService.Add(replay);
+            this.replay = replay.Node;
             await TryLoadMapAsync();
         }
     }

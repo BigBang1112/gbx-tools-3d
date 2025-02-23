@@ -1,6 +1,7 @@
 ﻿using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using GbxTools3D.Client.Converters;
+using GbxTools3D.Client.Services;
 using GbxTools3D.Components;
 using GbxTools3D.Data;
 using GbxTools3D.Endpoints;
@@ -29,6 +30,9 @@ internal static class AppConfiguration
         services.AddScoped<CollectionService>();
         services.AddScoped<MaterialService>();
         services.AddScoped<MeshService>();
+
+        // client-sided services
+        services.AddSingleton<GbxService>();
     }
     
     public static void AddDataServices(this IServiceCollection services, IConfiguration config)

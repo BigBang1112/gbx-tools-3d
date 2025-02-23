@@ -1,17 +1,118 @@
 ﻿@page "/view"
+@using GBX.NET
+@using GBX.NET.Engines.Game
+@using GBX.NET.Engines.GameData
 @rendermode InteractiveWebAssembly
 
-<div class="container">
-    @if (RendererInfo.IsInteractive)
-    {
-        <InputFile></InputFile>
-    }
-    else
-    {
-        <Loader></Loader>
-    }
-</div>
+@inject GbxService GbxService
+@inject NavigationManager NavManager
+
+<section class="content">
+    <div class="container">
+        <h2>View any 3D content from any Nadeo game. It's real.</h2>
+
+        <UploadArea OnUpload="(args) => OnUploadAsync(args, null)" Height="200" FontSize="125"></UploadArea>
+
+        <h3 class="supported">Supported 3D content types:</h3>
+
+        <div class="view-types">
+            @foreach (var viewType in viewTypes)
+            {
+                <div class="view-type">
+                    <a href="view/@viewType.Link" class="view-link"></a>
+                    <h3>@viewType.Name</h3>
+                    <ul>
+                        @foreach (var point in viewType.Points)
+                        {
+                            <li>@point</li>
+                        }
+                    </ul>
+                    <UploadArea OnUpload="(args) => OnUploadAsync(args, viewType.Link)" Extensions="@viewType.Extensions" FontSize="100"></UploadArea>
+                </div>
+            }
+        </div>
+    </div>
+</section>
 
 @code {
+    private static ViewType[] viewTypes =
+    [
+        new ViewType(
+            Name: "Replay",
+            Points: [
+                "Lorem ipsum dolor sit amet",
+                            "Consectetuer adipiscing elit",
+                            "Etiam commodo dui eget wisi"
+            ],
+            Link: "replay",
+            Extensions: ["Replay.Gbx"]),
+        new ViewType(
+            Name: "Map",
+            Points: [
+                "Lorem ipsum dolor sit amet",
+                "Consectetuer adipiscing elit",
+                "Etiam commodo dui eget wisi"
+            ],
+            Link: "map",
+            Extensions: ["Map.Gbx"]),
+        new ViewType(
+            Name: "Item",
+            Points: [
+                "Lorem ipsum dolor sit amet",
+                "Consectetuer adipiscing elit",
+                "Etiam commodo dui eget wisi"
+            ],
+            Link: "item",
+            Extensions: ["Item.Gbx", "Block.Gbx"]),
+        new ViewType(
+            Name: "Ghost",
+            Points: [
+                "Lorem ipsum dolor sit amet",
+                "Consectetuer adipiscing elit",
+                "Etiam commodo dui eget wisi"
+            ],
+            Link: "ghost",
+            Extensions: ["Ghost.Gbx"]),
+        new ViewType(
+            Name: "Skin",
+            Points: [
+                "Lorem ipsum dolor sit amet",
+                "Consectetuer adipiscing elit",
+                "Etiam commodo dui eget wisi"
+            ],
+            Link: "skin",
+            Extensions: ["zip", "Pack.Gbx"]),
+    ];
 
+    private async Task OnUploadAsync(UploadEventArgs e, string? type)
+    {
+        using var ms = new MemoryStream(e.Data);
+        var gbx = await Gbx.ParseAsync(ms);
+
+        switch (gbx)
+        {
+            case Gbx<CGameCtnChallenge> map:
+                if (type is not null && type != "map") return;
+                GbxService.Add(map);
+                NavManager.NavigateTo("/view/map");
+                break;
+            case Gbx<CGameCtnReplayRecord> replay:
+                if (type is not null && type != "replay") return;
+                GbxService.Add(replay);
+                NavManager.NavigateTo("/view/replay");
+                break;
+            case Gbx<CGameCtnGhost> ghost:
+                if (type is not null && type != "ghost") return;
+                NavManager.NavigateTo("/view/ghost");
+                break;
+            case Gbx<CGameItemModel> item:
+                if (type is not null && type != "item") return;
+                NavManager.NavigateTo("/view/item");
+                break;
+            default:
+                return;
+        }
+
+        GbxService.List.Add(gbx);
+    }
 }

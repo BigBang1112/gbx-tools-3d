@@ -18,8 +18,34 @@ html, body {
     background-attachment: fixed;
 }
 
+footer.fixed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+h1 {
+    outline: none;
+}
+
+ul {
+    list-style-type: "\1F44D";
+}
+
 button {
     all: unset;
+}
+
+section.scene {
+    width: 100%;
+    background: black;
+    border-bottom: 2px solid #333;
+}
+
+section.content {
+    width: 100%;
+    background: #111;
 }
 
 .container {
@@ -37,26 +63,19 @@ button {
     }
 }
 
+footer {
+    margin: 20px 0;
+    color: gray;
+    text-align: center;
+    padding: 10px;
+}
+
 a, .btn-link {
     color: #006bb7;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
-}
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
-}
-
 .content {
     padding-top: 1.1rem;
-}
-
-h1:focus {
-    outline: none;
 }
 
 .valid.modified:not([type=checkbox]) {
