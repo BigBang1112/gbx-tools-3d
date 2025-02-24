@@ -13,10 +13,18 @@ internal static partial class Renderer
     private static partial void SetScene(JSObject scene);
 
     [JSImport("setCamera", nameof(Renderer))]
-    public static partial void SetCamera(JSObject camera);
+    private static partial void SetCamera(JSObject camera);
+
+    [JSImport("dispose", nameof(Renderer))]
+    public static partial void Dispose();
 
     public static Scene Scene
     {
         set => SetScene((JSObject)value);
+    }
+
+    public static Camera Camera
+    {
+        set => SetCamera(value.Object);
     }
 }

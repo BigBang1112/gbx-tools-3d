@@ -1,5 +1,5 @@
 ﻿@rendermode InteractiveWebAssembly
-@implements IDisposable
+@implements IAsyncDisposable
 @using System.Runtime.InteropServices.JavaScript
 @using GBX.NET
 @using GBX.NET.Engines.Game
@@ -11,7 +11,9 @@
 
 @if (RendererInfo.IsInteractive)
 {
-    <canvas></canvas>
+    <div class="canvas-wrap">
+        <canvas></canvas>
+    </div>
 }
 else
 {
@@ -25,20 +27,20 @@ else
     private JSObject? solidModule;
     private JSObject? materialModule;
 
-    private Scene? scene;
-    private JSObject? camera;
     private JSObject? renderer;
+    private Scene? scene;
+    private Camera? camera;
 
     private bool contentLoading;
     private bool contentLoaded;
-    
+
     [Parameter]
     public CGameCtnChallenge? Map { get; set; }
-    
+
     private Dictionary<string, BlockInfoDto>? blockInfos;
     private Dictionary<Int3, DecorationSizeDto>? decorations;
     private Dictionary<string, MaterialDto>? materials;
-    
+
     private CancellationTokenSource cts = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -52,7 +54,7 @@ else
         {
             await LoadSceneAsync(cts.Token);
         }
-        
+
         await TryLoadMapAsync(cts.Token);
     }
 
@@ -61,41 +63,44 @@ else
         rendererModule = await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js", cancellationToken);
         sceneModule = await JSHost.ImportAsync(nameof(Scene), "../js/scene.js", cancellationToken);
         cameraModule = await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
-        solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
-        materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
 
-        scene = new Scene();
-        camera = Camera.Create();
+        // if i put these below created renderer, the lights wont work immediately
 
         renderer = Renderer.Create();
+        scene = new Scene();
+        camera = new Camera();
+        Renderer.Camera = camera;
         Renderer.Scene = scene;
-
-        Renderer.SetCamera(camera);
     }
-    
+
     public async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
     {
         if (Map is null || camera is null || renderer is null || contentLoading || contentLoaded)
         {
             return false;
         }
-        
+
         contentLoading = true;
-        
+
+        var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
+        var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
+        camera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
+        camera.CreateMapControls(renderer, center);
+
         using var blockInfosTask = Http.GetAsync($"/api/blocks/TMF/{Map.Collection}", cancellationToken);
         using var decorationTask = Http.GetAsync($"/api/decorations/TMF/{Map.Collection}", cancellationToken);
         using var materialTask = Http.GetAsync($"/api/materials/TMF", cancellationToken);
-        
+
         using var blockInfosResponse = await blockInfosTask;
         using var decorationResponse = await decorationTask;
         using var materialResponse = await materialTask;
-        
+
         if (!blockInfosResponse.IsSuccessStatusCode)
         {
             // show note message that user has to wait, if the block list isnt available yet
             return contentLoading = false;
         }
-        
+
         blockInfos = (await blockInfosResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
             .ToDictionary(x => x.Name);
 
@@ -103,9 +108,12 @@ else
         {
             materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
         }
-        
+
+        solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
+        materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
+
         var baseHeight = 5;
-        
+
         if (decorationResponse.IsSuccessStatusCode)
         {
             decorations = (await decorationResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListDecorationSizeDto, cancellationToken))?
@@ -118,16 +126,16 @@ else
 
                 baseHeight = decoSize.BaseHeight;
                 var size = $"{Map.Size.X}x{Map.Size.Y}x{Map.Size.Z}";
-                
+
                 var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
-                
+
                 foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
                 {
                     if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
                     {
                         continue;
                     }
-                    
+
                     var hash = $"GbxTools3D|Decoration|TMF|{Map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
 
                     tasks.Add(Http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
@@ -141,7 +149,7 @@ else
                     {
                         continue;
                     }
-                    
+
                     await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
                     var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
                     solid.Location = tasks[meshResponseTask];
@@ -149,13 +157,7 @@ else
                 }
             }
         }
-        
-        var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
-        var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
-        Camera.SetPosition(camera, center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
 
-        Camera.CreateMapControls(camera, renderer, center.X, center.Y, center.Z);
-        
         var uniqueBlockVariants = Map.GetBlocks()
             .Where(x => !x.IsClip)
             .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant));
@@ -187,7 +189,7 @@ else
             await Task.Delay(20, cancellationToken);
             await ProcessResponses(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, Map, cancellationToken);
         }
-        
+
         return contentLoaded = true;
     }
 
@@ -199,7 +201,7 @@ else
         CancellationToken cancellationToken)
     {
         var tasksToRemove = new List<UniqueVariant>();
-        
+
         foreach (var (variant, task) in responseTasks.Where(task => task.Value.IsCompleted))
         {
             using var response = await task;
@@ -210,7 +212,7 @@ else
 
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
                 var solid = await Solid.ParseAsync(stream, materials, expectedCount);
-                
+
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], map.Collection.GetValueOrDefault().GetBlockSize());
             }
 
@@ -235,10 +237,10 @@ else
         {
             return;
         }
-        
+
         var blockCoordSize = new Int3(1, 1, 1);
         var height = 0;
-        
+
         if (blockInfos?.TryGetValue(variant.Name, out var blockInfo) == true)
         {
             var airUnits = blockInfo.AirUnits;
@@ -256,7 +258,7 @@ else
         }
 
         var instanceInfos = new List<JSObject>();
-        
+
         foreach (var block in blocks)
         {
             var actualCoord = block.Coord + block.Direction switch
@@ -267,9 +269,9 @@ else
                 Direction.West => (0, 0, blockCoordSize.X),
                 _ => throw new ArgumentException("Invalid block direction")
             };
-            
+
             var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height, 0)) * blockSize, block.Direction);
-            
+
             instanceInfos.Add(instanceInfo);
         }
 
@@ -277,14 +279,24 @@ else
         scene.Add(solid);
     }
 
-    public void Dispose()
+    public ValueTask DisposeAsync()
     {
         cts.Dispose();
+
+        if (RendererInfo.IsInteractive)
+        {
+            Renderer.Dispose();
+        }
+        
+        scene = null;
+        camera = null;
 
         rendererModule?.Dispose();
         sceneModule?.Dispose();
         cameraModule?.Dispose();
         solidModule?.Dispose();
         materialModule?.Dispose();
+
+        return ValueTask.CompletedTask;
     }
 }

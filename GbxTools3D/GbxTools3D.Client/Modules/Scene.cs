@@ -6,7 +6,7 @@ namespace GbxTools3D.Client.Modules;
 [SupportedOSPlatform("browser")]
 internal partial class Scene
 {
-    private readonly JSObject scene = Create();
+    private JSObject Object { get; } = Create();
 
     [JSImport("create", nameof(Scene))]
     private static partial JSObject Create();
@@ -22,23 +22,23 @@ internal partial class Scene
 
     public void Add(JSObject obj)
     {
-        Add(scene, obj);
+        Add(Object, obj);
     }
 
     public void Add(Solid solid)
     {
-        Add(scene, solid.Object);
+        Add(Object, solid.Object);
     }
 
     public void Remove(JSObject obj)
     {
-        Remove(scene, obj);
+        Remove(Object, obj);
     }
 
     public void Test()
     {
-        Test(scene);
+        Test(Object);
     }
 
-    public static explicit operator JSObject(Scene scene) => scene.scene;
+    public static explicit operator JSObject(Scene scene) => scene.Object;
 }

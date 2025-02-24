@@ -2,7 +2,6 @@
 import { updateCamera } from './camera.js';
 
 let renderer, scene, camera, stats;
-let directionalLight, shadowHelper;
 
 export function create() {
     THREE.Object3D.DEFAULT_MATRIX_AUTO_UPDATE = false;
@@ -31,11 +30,27 @@ export function getRenderer() {
 
 export function setScene(newScene) {
     scene = newScene;
-    directionalLight = createDirectionalLight();
 }
 
 export function setCamera(newCamera) {
     camera = newCamera;
+}
+
+
+export function dispose() {
+    window.removeEventListener('resize', onWindowResize);
+
+    //disposeInstances();
+
+    if (renderer) {
+        renderer.dispose();
+        if (renderer.domElement && renderer.domElement.parentNode) {
+            renderer.domElement.parentNode.removeChild(renderer.domElement);
+        }
+    }
+    scene = null;
+    renderer = null;
+    camera = null;
 }
 
 function update() {
@@ -45,52 +60,15 @@ function update() {
         updateCamera(camera);
         renderer.render(scene, camera);
     }
+
     stats.end();
 }
 
 function onWindowResize() {
     // Update camera aspect ratio and renderer size
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
+    if (camera) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+    }
     renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-function createDirectionalLight() {
-    THREE.Object3D.DEFAULT_MATRIX_AUTO_UPDATE = true;
-    THREE.Object3D.DEFAULT_MATRIX_WORLD_AUTO_UPDATE = true;
-    
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-
-    light.position.set(3072, 2048, 3072); // Position the light in the scene
-    light.target.position.set(0, 0, 0); // Point the light at the center
-
-    //light.shadow.camera.position.set(1024*8, 1024, 1024*8); // Position the light in the scene
-    //light.shadow.camera.lookAt(0, 0, 0); // Point the light at the center
-
-    // Enable Shadows
-    light.castShadow = true;
-
-    // Adjust shadow map size for better quality
-    light.shadow.mapSize.width = 4096;
-    light.shadow.mapSize.height = 4096;
-
-    // Set shadow camera parameters to cover the 1024x1024 scene
-    light.shadow.camera.left = -2048;
-    light.shadow.camera.right = 2048;
-    light.shadow.camera.top = 2048;
-    light.shadow.camera.bottom = -2048;
-    light.shadow.camera.near = 512;
-    light.shadow.camera.far = 5120;
-    //light.shadow.autoUpdate = false;
-    //light.shadow.needsUpdate = true;
-    
-    scene.add(light);
-
-    //shadowHelper = new THREE.CameraHelper(light.shadow.camera);
-    //scene.add(shadowHelper);
-
-    THREE.Object3D.DEFAULT_MATRIX_AUTO_UPDATE = false;
-    THREE.Object3D.DEFAULT_MATRIX_WORLD_AUTO_UPDATE = false;
-    
-    return light;
 }

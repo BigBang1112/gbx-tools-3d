@@ -56,7 +56,6 @@ export function createMapControls(camera, renderer, targetX, targetY, targetZ) {
     // set screenSpacePanning based on pressed shift key
     window.addEventListener("keydown", (event) => {
         controls.screenSpacePanning = event.shiftKey;
-        console.log(controls.screenSpacePanning);
     });
 
     window.addEventListener("keyup", (event) => {

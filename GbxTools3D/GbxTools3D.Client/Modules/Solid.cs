@@ -24,9 +24,9 @@ internal sealed partial class Solid(JSObject obj)
     {
         set
         {
-            SetPosition(obj, value.X, value.Y, value.Z);
-            UpdateMatrix(obj);
-            UpdateMatrixWorld(obj);
+            SetPosition(Object, value.X, value.Y, value.Z);
+            UpdateMatrix(Object);
+            UpdateMatrixWorld(Object);
         }
     }
 
@@ -34,7 +34,7 @@ internal sealed partial class Solid(JSObject obj)
     {
         set
         {
-            SetRotation(obj, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            SetRotation(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
         }
     }
 
@@ -42,8 +42,8 @@ internal sealed partial class Solid(JSObject obj)
     {
         set
         {
-            SetRotation(obj, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
-            SetPosition(obj, value.TX, value.TY, value.TZ);
+            SetRotation(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            SetPosition(Object, value.TX, value.TY, value.TZ);
         }
     }
 
@@ -172,7 +172,7 @@ internal sealed partial class Solid(JSObject obj)
 
     public void Instantiate(JSObject[] instanceInfos)
     {
-        Instantiate(obj, instanceInfos);
+        Instantiate(Object, instanceInfos);
     }
 
     private static async Task ReadTreeAsSingleGeometryAsync(

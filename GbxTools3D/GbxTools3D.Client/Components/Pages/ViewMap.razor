@@ -1,6 +1,6 @@
 ﻿@page "/view/map"
 @rendermode InteractiveWebAssembly
-@implements IDisposable
+@implements IAsyncDisposable
 
 @using GBX.NET
 @using GBX.NET.Engines.Game
@@ -104,14 +104,14 @@ else
         {
             return false;
         }
-        
+
         return await view3d.TryLoadMapAsync();
     }
 
-    public void Dispose()
+    public ValueTask DisposeAsync()
     {
-        view3d?.Dispose();
-
         GbxService.Deselect(); // can be more flexible
+
+        return ValueTask.CompletedTask;
     }
 }
