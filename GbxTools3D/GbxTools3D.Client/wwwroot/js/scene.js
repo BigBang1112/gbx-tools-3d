@@ -4,7 +4,7 @@ export function create() {
     const scene = new THREE.Scene();
     add(scene, new THREE.AmbientLight(0x7F7F7F));
     add(scene, createDirectionalLight());
-    scene.updateMatrixWorld(true);
+    scene.updateMatrixWorld();
     return scene;
 }
 

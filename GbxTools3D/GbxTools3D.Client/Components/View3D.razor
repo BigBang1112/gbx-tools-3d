@@ -64,8 +64,6 @@ else
         sceneModule = await JSHost.ImportAsync(nameof(Scene), "../js/scene.js", cancellationToken);
         cameraModule = await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
 
-        // if i put these below created renderer, the lights wont work immediately
-
         renderer = Renderer.Create();
         scene = new Scene();
         camera = new Camera();
@@ -102,7 +100,7 @@ else
         }
 
         blockInfos = (await blockInfosResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
-            .ToDictionary(x => x.Name);
+            .ToDictionary(x => x.Name) ?? [];
 
         if (materialResponse.IsSuccessStatusCode)
         {
@@ -158,8 +156,14 @@ else
             }
         }
 
+        var coveredZoneBlocks = GetCoveredZoneBlocks().ToHashSet();
+
+        var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
+        var baseZoneBlocks = GetBaseZoneBlocks(baseZoneBlock, baseHeight);
+
         var uniqueBlockVariants = Map.GetBlocks()
-            .Where(x => !x.IsClip)
+            .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
+            .Concat(baseZoneBlocks)
             .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
@@ -278,6 +282,136 @@ else
         solid.Instantiate(instanceInfos.ToArray());
         scene.Add(solid);
     }
+
+    private IEnumerable<CGameCtnBlock> GetCoveredZoneBlocks()
+    {
+        if (Map is null || blockInfos is null)
+        {
+            yield break;
+        }
+
+        const bool isManiaPlanet = false;
+        var groundPositions = new List<Int3>();
+
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
+            {
+                continue;
+            }
+
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+            if (units.Length == 1)
+            {
+                groundPositions.Add(block.Coord);
+                continue;
+            }
+
+            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
+
+            // Determine minimum X and Z after rotation.
+            var minX = int.MaxValue;
+            var minZ = int.MaxValue;
+            for (int i = 0; i < units.Length; i++)
+            {
+                var rotated = RotateUnit(units[i].Offset, block.Direction);
+                rotatedUnits[i] = rotated;
+                if (rotated.X < minX) minX = rotated.X;
+                if (rotated.Z < minZ) minZ = rotated.Z;
+            }
+
+            // Adjust positions so the minimum X and Z become 0.
+            foreach (var rotated in rotatedUnits)
+            {
+                groundPositions.Add(block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ));
+            }
+        }
+
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!block.IsGround || !blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height is null)
+            {
+                continue;
+            }
+
+            if (groundPositions.Contains(block.Coord + (0, isManiaPlanet ? 0 : 1, 0)))
+            {
+                yield return block;
+            }
+        }
+    }
+
+    private IEnumerable<CGameCtnBlock> GetBaseZoneBlocks(BlockInfoDto? baseZoneInfo, int baseHeight)
+    {
+        if (Map is null || blockInfos is null || baseZoneInfo is null)
+        {
+            yield break;
+        }
+
+        var groundHeight = baseHeight + 1 + Map.DecoBaseHeightOffset;
+        var occupied = new HashSet<(int X, int Z)>();
+
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
+            {
+                occupied.Add((block.Coord.X, block.Coord.Z));
+                continue;
+            }
+
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
+
+            // Determine minimum X and Z after rotation.
+            var minX = int.MaxValue;
+            var minZ = int.MaxValue;
+            for (int i = 0; i < units.Length; i++)
+            {
+                var rotated = RotateUnit(units[i].Offset, block.Direction);
+                rotatedUnits[i] = rotated;
+                if (rotated.X < minX) minX = rotated.X;
+                if (rotated.Z < minZ) minZ = rotated.Z;
+            }
+
+            // Adjust positions so the minimum X and Z become 0.
+            foreach (var rotated in rotatedUnits)
+            {
+                var unit = block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ);
+                if (unit.Y == groundHeight)
+                {
+                    occupied.Add((unit.X, unit.Z));
+                }
+            }
+        }
+
+        // Iterate through the entire zone; if a coordinate isn't occupied, yield a new block.
+        for (int x = 0; x < Map.Size.X; x++)
+        {
+            for (int z = 0; z < Map.Size.Z; z++)
+            {
+                if (!occupied.Contains((x, z)))
+                {
+                    yield return new CGameCtnBlock
+                        {
+                            Name = baseZoneInfo.Name,
+                            Coord = new Int3(x, groundHeight - 1, z),
+                            Direction = Direction.North,
+                            IsGround = true
+                        };
+                }
+            }
+        }
+    }
+
+    private static Int3 RotateUnit(Int3 unit, Direction direction) => direction switch
+    {
+        Direction.East => new Int3(-unit.Z, unit.Y, unit.X),
+        Direction.South => new Int3(-unit.X, unit.Y, -unit.Z),
+        Direction.West => new Int3(unit.Z, unit.Y, -unit.X),
+        _ => unit,
+    };
 
     public ValueTask DisposeAsync()
     {
