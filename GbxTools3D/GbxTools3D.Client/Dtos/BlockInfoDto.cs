@@ -5,7 +5,6 @@ namespace GbxTools3D.Client.Dtos;
 public sealed class BlockInfoDto
 {
     public required string Name { get; set; }
-    public required string Collection { get; set; }
     public required BlockUnit[] AirUnits { get; set; }
     public required BlockUnit[] GroundUnits { get; set; }
     public bool HasAirHelper { get; set; }
@@ -14,4 +13,5 @@ public sealed class BlockInfoDto
     public required List<BlockVariantDto> AirVariants { get; set; }
     public required List<BlockVariantDto> GroundVariants { get; set; }
     public byte? Height { get; set; }
+    public bool IsDefaultZone { get; set; }
 }

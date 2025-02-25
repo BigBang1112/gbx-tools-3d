@@ -96,7 +96,6 @@ public static class BlockApiEndpoint
     private static BlockInfoDto MapBlockInfo(BlockInfo blockInfo) => new()
     {
         Name = blockInfo.Name,
-        Collection = blockInfo.Collection.Name,
         AirUnits = blockInfo.AirUnits,
         GroundUnits = blockInfo.GroundUnits,
         HasAirHelper = blockInfo.HasAirHelper,
@@ -105,6 +104,7 @@ public static class BlockApiEndpoint
         AirVariants = blockInfo.Variants.Where(x => !x.Ground).Select(MapVariant).ToList(),
         GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(MapVariant).ToList(),
         Height = blockInfo.Height,
+        IsDefaultZone = blockInfo.Collection.DefaultZoneBlock == blockInfo.Name
     };
 
     private static BlockVariantDto MapVariant(BlockVariant variant) => new()
