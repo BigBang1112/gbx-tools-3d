@@ -14,4 +14,5 @@ public sealed class BlockInfoDto
     public required List<BlockVariantDto> GroundVariants { get; set; }
     public byte? Height { get; set; }
     public bool IsDefaultZone { get; set; }
+    public bool HasIcon { get; set; }
 }

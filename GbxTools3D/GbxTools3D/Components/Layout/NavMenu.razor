@@ -1,7 +1,11 @@
 ﻿@rendermode InteractiveServer
 @inject NavigationManager NavManager
 
-<div class="navbar @(IsAbsolute ? $"navbar-absolute" : "")">
+@{
+    var isAbsolute = IsAbsolute || Is3DPage();
+}
+
+<div class="navbar @(isAbsolute ? $"navbar-absolute" : "")">
     <div class="container">
         <div class="navbar-left">
             <a class="navbar-brand" href="">gbx.tools</a>
@@ -69,7 +73,7 @@
             </button>
         </div>
     </div>
-    @if (IsAbsolute)
+    @if (isAbsolute)
     {
         <div class="navbar-hoverable"></div>
     }
@@ -89,13 +93,22 @@
             if (showBurger)
             {
                 showBurger = false;
-                StateHasChanged();
             }
+            StateHasChanged();
         };
     }
 
     private void ToggleBurger()
     {
         showBurger = !showBurger;
+    }
+
+    bool Is3DPage()
+    {
+        var currentPath = NavManager.Uri.Replace(NavManager.BaseUri, ""); // Get relative path
+        return currentPath.StartsWith("view/map") ||
+               currentPath.StartsWith("view/replay") ||
+               currentPath.StartsWith("view/skin") ||
+               currentPath.StartsWith("catalog");
     }
 }

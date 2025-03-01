@@ -24,6 +24,9 @@ public sealed class BlockInfo
     
     public byte? Height { get; set; }
 
+    public int? IconId { get; set; }
+    public Icon? Icon { get; set; }
+
     public ICollection<BlockVariant> Variants { get; set; } = [];
 
     public override string ToString()

@@ -28,7 +28,6 @@ public static class TextureApiEndpoint
     
     private static readonly Func<AppDbContext, string, Task<CacheableHiddenData?>> TextureFirstOrDefaultAsync = EF.CompileAsyncQuery((AppDbContext db, string hash) => db.Textures
         .Select(x => new CacheableHiddenData { Hash = x.Hash, Data = x.Data, UpdatedAt = x.UpdatedAt })
-        .AsNoTracking()
         .FirstOrDefault(x => x.Hash == hash));
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetTextureByHash(

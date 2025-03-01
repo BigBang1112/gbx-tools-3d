@@ -1,9 +1,9 @@
 .discord {
-    background-color: #5865F2 !important;
+    background-color: #5865F2DD !important;
 }
 
     .discord:hover {
-        background-color: #6373ED !important;
+        background-color: #6373EDDD !important;
     }
 
 .navbar {
@@ -16,6 +16,7 @@
 
 .navbar-absolute {
     position: absolute;
+    top: 0;
 }
 
 .navbar-hoverable {

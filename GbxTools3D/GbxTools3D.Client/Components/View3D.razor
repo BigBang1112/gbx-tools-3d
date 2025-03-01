@@ -161,9 +161,9 @@ else
         var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
         var baseZoneBlocks = GetBaseZoneBlocks(baseZoneBlock, baseHeight);
 
-        var uniqueBlockVariants = Map.GetBlocks()
+        var uniqueBlockVariants = baseZoneBlocks
+            .Concat(Map.GetBlocks())
             .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
-            .Concat(baseZoneBlocks)
             .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();

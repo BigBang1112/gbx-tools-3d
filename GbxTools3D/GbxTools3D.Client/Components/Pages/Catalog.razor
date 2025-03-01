@@ -26,7 +26,7 @@
         <div class="collections">
             @foreach (var collection in CollectionClientService.Collections)
             {
-                <NavLink href="@($"/catalog/{GameVersionEnum}/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="icons/TMS.webp" width="48" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
+                <NavLink href="@($"/catalog/{GameVersionEnum}/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/{collection.Name}/environment")" width="48" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
             }
         </div>
     }
@@ -56,13 +56,23 @@
         </div>
     }
 
-    @if (AssetTypeEnum != Enums.AssetType.None)
+    @if (AssetTypeEnum != Enums.AssetType.None && SelectedCollection is not null)
     {
         <div class="assets">
             @if (AssetTypeEnum == Enums.AssetType.Block)
             {
                 <Virtualize ItemsProvider="(req) => FilterAssets(BlockClientService.Blocks, x => x.Name, req)" Context="block" @ref="blocksVirtualize">
-                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/blocks?selected={block.Name}")"><img src="icons/TMS.webp" width="24" height="24" />@block.Name</NavLink>
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/blocks?selected={block.Name}")">
+                        @if (block.HasIcon)
+                        {
+                            <img src="@($"api/icon/{GameVersionEnum}/{SelectedCollection.Name}/block/{block.Name}")" width="24" height="24" />
+                        }
+                        else
+                        {
+                            <img src="icons/noicon.webp" width="24" height="24" />
+                        }
+                        @block.Name
+                    </NavLink>
                 </Virtualize>
             }
 
@@ -70,7 +80,7 @@
             {
                 @foreach (var decoration in DecorationClientService.DecorationSizes)
                 {
-                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}")"><img src="icons/TMS.webp" width="24" height="24" />@decoration.Size</NavLink>
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}")">@decoration.Size</NavLink>
                 }
             }
         </div>
@@ -191,11 +201,17 @@
         {
             case Enums.AssetType.Block:
                 await BlockClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
+                if (blocksVirtualize is not null)
+                {
+                    await blocksVirtualize.RefreshDataAsync();
+                }
                 break;
             case Enums.AssetType.Decoration:
                 await DecorationClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
                 break;
         }
+
+        StateHasChanged();
     }
 
     private string? GetAssetTypeString()

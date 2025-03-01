@@ -4,6 +4,7 @@ using GbxTools3D.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GbxTools3D.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250301182609_FixIconIdNull")]
+    partial class FixIconIdNull
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,9 +133,6 @@ namespace GbxTools3D.Migrations
                     b.Property<int?>("IconId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("IconSmallId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -168,8 +168,6 @@ namespace GbxTools3D.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IconId");
-
-                    b.HasIndex("IconSmallId");
 
                     b.ToTable("Collections");
                 });
@@ -530,13 +528,7 @@ namespace GbxTools3D.Migrations
                         .WithMany()
                         .HasForeignKey("IconId");
 
-                    b.HasOne("GbxTools3D.Data.Entities.Icon", "IconSmall")
-                        .WithMany()
-                        .HasForeignKey("IconSmallId");
-
                     b.Navigation("Icon");
-
-                    b.Navigation("IconSmall");
                 });
 
             modelBuilder.Entity("GbxTools3D.Data.Entities.Decoration", b =>

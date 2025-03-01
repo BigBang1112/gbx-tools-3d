@@ -24,5 +24,6 @@ public static class ApiEndpoint
         TextureApiEndpoint.Map(group.MapGroup("/texture"));
         DataImportApiEndpoint.Map(group.MapGroup("/dataimport"));
         CollectionApiEndpoint.Map(group.MapGroup("/collections"));
+        IconApiEndpoint.Map(group.MapGroup("/icon"));
     }
 }

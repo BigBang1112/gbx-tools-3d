@@ -36,6 +36,12 @@ public sealed class Collection
     
     public int SortIndex { get; set; }
 
+    public int? IconId { get; set; }
+    public Icon? Icon { get; set; }
+
+    public int? IconSmallId { get; set; }
+    public Icon? IconSmall { get; set; }
+
     public ICollection<BlockInfo> BlockInfos { get; set; } = [];
     public ICollection<DecorationSize> DecorationSizes { get; set; } = [];
 }

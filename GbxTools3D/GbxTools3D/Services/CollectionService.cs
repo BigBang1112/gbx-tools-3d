@@ -11,6 +11,9 @@ using GbxTools3D.Enums;
 using GbxTools3D.Extensions;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
+using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp;
+using GBX.NET.Imaging.ImageSharp;
 
 namespace GbxTools3D.Services;
 
@@ -24,7 +27,7 @@ internal sealed class CollectionService
     
     private static readonly Func<AppDbContext, string, int, Task<BlockInfo?>> BlockInfoFirstOrDefaultAsync =
         EF.CompileAsyncQuery((AppDbContext db, string blockName, int collectionId) =>
-            db.BlockInfos.FirstOrDefault(x => x.Name == blockName && x.CollectionId == collectionId));
+            db.BlockInfos.Include(x => x.Icon).FirstOrDefault(x => x.Name == blockName && x.CollectionId == collectionId));
     
     private static readonly Func<AppDbContext, int, bool, int, int, Task<BlockVariant?>> BlockVariantFirstOrDefaultAsync =
         EF.CompileAsyncQuery((AppDbContext db, int blockInfoId, bool isGround, int i, int j) =>
@@ -58,7 +61,9 @@ internal sealed class CollectionService
             logger.LogInformation("Checking collection {Collection}...", collectionNode.Collection);
 
             var collection =
-                await db.Collections.FirstOrDefaultAsync(x => x.Name == collectionNode.Collection, cancellationToken);
+                await db.Collections
+                    .Include(x => x.Icon)
+                    .FirstOrDefaultAsync(x => x.Name == collectionNode.Collection, cancellationToken);
 
             if (collection is null)
             {
@@ -86,6 +91,74 @@ internal sealed class CollectionService
             collection.VehicleAuthor = collectionNode.Vehicle?.Author ?? "";
             collection.DefaultZoneBlock = collectionNode.DefaultZoneId;
             collection.SortIndex = collectionNode.SortIndex;
+
+            if (collectionNode.IconFidFile is not null)
+            {
+                if (collection.Icon is null)
+                {
+                    collection.Icon = new Icon();
+                    await db.Icons.AddAsync(collection.Icon, cancellationToken);
+                }
+
+                collection.Icon.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(collectionNode.IconFidFile.GetFullPath(), null));
+                collection.Icon.UpdatedAt = DateTime.UtcNow;
+
+                var imageFullPath = collectionNode.IconFid?.ImageFile?.GetFullPath();
+
+                if (imageFullPath is not null)
+                {
+                    collection.Icon.ImagePath = Path.GetRelativePath(gamePath, imageFullPath);
+
+                    byte[] data;
+                    using (var image = DdsUtils.ToImageSharp(imageFullPath))
+                    using (var ms = new MemoryStream())
+                    {
+                        await image.SaveAsWebpAsync(ms, new WebpEncoder { Method = WebpEncodingMethod.Fastest },
+                            cancellationToken);
+                        data = ms.ToArray();
+                    }
+
+                    collection.Icon.Data = data;
+                }
+            }
+            else
+            {
+                collection.Icon = null;
+            }
+
+            if (collectionNode.CollectionIconFidFile is not null)
+            {
+                if (collection.IconSmall is null)
+                {
+                    collection.IconSmall = new Icon();
+                    await db.Icons.AddAsync(collection.IconSmall, cancellationToken);
+                }
+
+                collection.IconSmall.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(collectionNode.CollectionIconFidFile.GetFullPath(), null));
+                collection.IconSmall.UpdatedAt = DateTime.UtcNow;
+
+                var imageFullPath = collectionNode.CollectionIconFid?.ImageFile?.GetFullPath();
+
+                if (imageFullPath is not null)
+                {
+                    collection.IconSmall.ImagePath = Path.GetRelativePath(gamePath, imageFullPath);
+
+                    byte[] data;
+                    using (var image = DdsUtils.ToImageSharp(imageFullPath))
+                    using (var ms = new MemoryStream())
+                    {
+                        await image.SaveAsWebpAsync(ms, new WebpEncoder { Method = WebpEncodingMethod.Fastest },
+                            cancellationToken);
+                        data = ms.ToArray();
+                    }
+
+                    collection.IconSmall.Data = data;
+                }
+            }
+            else
+            {
+                collection.IconSmall = null;
+            }
 
             var usedMaterials = new Dictionary<string, CPlugMaterial?>();
             var addedMeshHashes = new HashSet<string>();
@@ -245,7 +318,7 @@ internal sealed class CollectionService
                             continue;
                         }
                         
-                        var fullFileWithoutExtension = Path.ChangeExtension(Path.ChangeExtension(extNode.File.GetFullPath(), null), null);
+                        var fullFileWithoutExtension = GbxPath.ChangeExtension(extNode.File.GetFullPath(), null);
                         musics[key] = Path.GetRelativePath(gamePath, fullFileWithoutExtension);
                     }
                     
@@ -256,7 +329,7 @@ internal sealed class CollectionService
                             continue;
                         }
 
-                        var fullFileWithoutExtension = Path.ChangeExtension(Path.ChangeExtension(extNode.File.GetFullPath(), null), null);
+                        var fullFileWithoutExtension = GbxPath.ChangeExtension(extNode.File.GetFullPath(), null);
                         sounds[key] = Path.GetRelativePath(gamePath, fullFileWithoutExtension);
                     }
                     
@@ -353,6 +426,19 @@ internal sealed class CollectionService
                         gamePath,
                         $"GbxTools3D|Solid|{gameFolder}|{blockName}|Auris or Aurimas? WirtuaL",
                         cancellationToken);
+                }
+
+                using var iconMs = new MemoryStream();
+                if (await blockInfoNode.ExportIconAsync(iconMs, new WebpEncoder { FileFormat = WebpFileFormatType.Lossless }, cancellationToken))
+                {
+                    if (blockInfo.Icon is null)
+                    {
+                        blockInfo.Icon = new Icon();
+                        await db.Icons.AddAsync(blockInfo.Icon, cancellationToken);
+                    }
+
+                    blockInfo.Icon.Data = iconMs.ToArray();
+                    blockInfo.Icon.UpdatedAt = DateTime.UtcNow;
                 }
             }
 
