@@ -1,13 +1,227 @@
-﻿@page "/catalog"
-@rendermode InteractiveWebAssembly
+﻿@page "/catalog/{GameVersion?}/{CollectionName?}/{AssetType?}"
+@using GBX.NET
+@implements IAsyncDisposable
+@rendermode InteractiveAuto
 
-<div class="container">
-    @if (!RendererInfo.IsInteractive)
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject ICollectionClientService CollectionClientService
+@inject IBlockClientService BlockClientService
+@inject IDecorationClientService DecorationClientService
+
+<PageTitle>Catalog - 3D Gbx Tools</PageTitle>
+
+<div class="catalog">
+    <div class="games">
+        <NavLink href="/catalog/TMSX"><img src="icons/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
+        <NavLink href="/catalog/TMNESWC"><img src="icons/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
+        <NavLink href="/catalog/TMF"><img src="icons/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
+        <NavLink href="/catalog/TMT"><img src="icons/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
+        <NavLink href="/catalog/MP4"><img src="icons/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
+        <NavLink href="/catalog/TM2020"><img src="icons/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
+    </div>
+
+    @if (GameVersionEnum != GBX.NET.GameVersion.Unspecified)
     {
-        <Loader></Loader>
+        <div class="collections">
+            @foreach (var collection in CollectionClientService.Collections)
+            {
+                <NavLink href="@($"/catalog/{GameVersionEnum}/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="icons/TMS.webp" width="48" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
+            }
+        </div>
+    }
+
+    @if (SelectedCollection is not null)
+    {
+        <div class="asset-types">
+            @if (SelectedCollection.HasBlocks)
+            {
+                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/blocks")" class="button-generic">Blocks</NavLink>
+            }
+
+            @if (SelectedCollection.HasVehicles)
+            {
+                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/vehicles")" class="button-generic">Vehicles</NavLink>
+            }
+
+            @if (SelectedCollection.HasDecorations)
+            {
+                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/decorations")" class="button-generic">Decorations</NavLink>
+            }
+
+            @if (SelectedCollection.HasItems)
+            {
+                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/items")" class="button-generic">Items</NavLink>
+            }
+        </div>
+    }
+
+    @if (AssetTypeEnum != Enums.AssetType.None)
+    {
+        <div class="assets">
+            @if (AssetTypeEnum == Enums.AssetType.Block)
+            {
+                <Virtualize ItemsProvider="(req) => FilterAssets(BlockClientService.Blocks, x => x.Name, req)" Context="block" @ref="blocksVirtualize">
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/blocks?selected={block.Name}")"><img src="icons/TMS.webp" width="24" height="24" />@block.Name</NavLink>
+                </Virtualize>
+            }
+
+            @if (AssetTypeEnum == Enums.AssetType.Decoration)
+            {
+                @foreach (var decoration in DecorationClientService.DecorationSizes)
+                {
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}")"><img src="icons/TMS.webp" width="24" height="24" />@decoration.Size</NavLink>
+                }
+            }
+        </div>
+    }
+
+    @if (AssetTypeEnum == Enums.AssetType.Block)
+    {
+        <InputText @bind-Value="AssetSearchValue" @oninput="OnAssetSearchInput" placeholder="Search..." />
     }
 </div>
 
 @code {
+    private Virtualize<BlockInfoDto>? blocksVirtualize;
+    private IJSObjectReference? module;
 
+    [Parameter]
+    public string? GameVersion { get; set; }
+
+    [Parameter]
+    public string? CollectionName { get; set; }
+
+    [Parameter]
+    public string? AssetType { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "selected")]
+    public string? AssetName { get; set; }
+
+    public GameVersion GameVersionEnum { get; set; }
+    public AssetType AssetTypeEnum { get; set; }
+
+    public CollectionDto? SelectedCollection => CollectionClientService.Collections?.FirstOrDefault(c => c.Name == CollectionName);
+
+    private string assetSearchValue = "";
+
+    public string AssetSearchValue
+    {
+        get => assetSearchValue;
+        set
+        {
+            if (assetSearchValue == value)
+            {
+                return;
+            }
+
+            assetSearchValue = value;
+
+            blocksVirtualize?.RefreshDataAsync();
+        }
+    }
+
+    private void OnAssetSearchInput(ChangeEventArgs e)
+    {
+        AssetSearchValue = e.Value?.ToString() ?? "";
+    }
+
+    private ValueTask<ItemsProviderResult<T>> FilterAssets<T>(List<T> allAssets, Func<T, string> filterBy, ItemsProviderRequest request)
+    {
+        var filteredAssets = allAssets.Where(b => filterBy(b).Contains(AssetSearchValue, StringComparison.OrdinalIgnoreCase));
+
+        var totalCount = filteredAssets.Count();
+        var assets = filteredAssets
+            .Skip(request.StartIndex)
+            .Take(request.Count)
+            .ToList();
+
+        return ValueTask.FromResult(new ItemsProviderResult<T>(assets, totalCount));
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", $"./Components/Pages/Catalog.razor.js");
+            //await module.InvokeVoidAsync("addHandlers", assets);
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Enum.TryParse(GameVersion, true, out GameVersion gameVersion))
+        {
+            GameVersionEnum = gameVersion;
+        }
+        else
+        {
+            GameVersionEnum = GBX.NET.GameVersion.Unspecified;
+        }
+
+        AssetTypeEnum = AssetType?.ToLowerInvariant() switch
+        {
+            "blocks" => Enums.AssetType.Block,
+            "vehicles" => Enums.AssetType.Vehicle,
+            "decorations" => Enums.AssetType.Decoration,
+            "items" => Enums.AssetType.Item,
+            "macroblocks" => Enums.AssetType.Macroblock,
+            _ => Enums.AssetType.None
+        };
+
+        await FetchInfoAsync();
+    }
+
+    private async Task FetchInfoAsync(CancellationToken cancellationToken = default)
+    {
+        if (GameVersionEnum == GBX.NET.GameVersion.Unspecified)
+        {
+            return;
+        }
+
+        await CollectionClientService.FetchAllAsync(GameVersionEnum, cancellationToken);
+
+        if (AssetTypeEnum == Enums.AssetType.None || CollectionName is null)
+        {
+            return;
+        }
+
+        switch (AssetTypeEnum)
+        {
+            case Enums.AssetType.Block:
+                await BlockClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
+                break;
+            case Enums.AssetType.Decoration:
+                await DecorationClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
+                break;
+        }
+    }
+
+    private string? GetAssetTypeString()
+    {
+        return AssetTypeEnum switch
+        {
+            Enums.AssetType.Block => "blocks",
+            Enums.AssetType.Vehicle => "vehicles",
+            Enums.AssetType.Decoration => "decorations",
+            Enums.AssetType.Item => "items",
+            Enums.AssetType.Macroblock => "macroblocks",
+            _ => null
+        };
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        if (module is not null)
+        {
+            try
+            {
+                await module.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+    }
 }

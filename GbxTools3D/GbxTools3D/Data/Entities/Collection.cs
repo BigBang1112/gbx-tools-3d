@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using GBX.NET;
+using GbxTools3D.Client.Dtos;
 
 namespace GbxTools3D.Data.Entities;
 
@@ -36,4 +37,5 @@ public sealed class Collection
     public int SortIndex { get; set; }
 
     public ICollection<BlockInfo> BlockInfos { get; set; } = [];
+    public ICollection<DecorationSize> DecorationSizes { get; set; } = [];
 }

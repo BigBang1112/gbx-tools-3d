@@ -1,3 +1,11 @@
+.discord {
+    background-color: #5865F2 !important;
+}
+
+    .discord:hover {
+        background-color: #6373ED !important;
+    }
+
 .navbar {
     position: relative;
     z-index: 10;
@@ -46,10 +54,10 @@ nav {
     border-bottom: 2px solid #FFF3;
     border-radius: 4px;
     height: 2.5rem;
+    min-width: 3rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-width: 8rem;
     text-decoration: none;
     transition: background-color 0.05s ease;
     backdrop-filter: blur(5px);
@@ -59,23 +67,26 @@ nav {
         background-color: #3338;
     }
 
-
-.nav-item ::deep .nav-link img {
-    display: none;
-}
-
-@media (max-width: 1200px) and (min-width: 850px) {
-    .nav-item ::deep .nav-link {
-        min-width: 5rem;
+    .nav-item ::deep .nav-link.wide {
+        min-width: 8rem;
     }
 
-    .nav-item ::deep .nav-link span {
+    .nav-item ::deep .nav-link img.icon {
         display: none;
     }
 
-    .nav-item ::deep .nav-link img {
-        display: block;
+@media (max-width: 1350px) and (min-width: 1000px) {
+    .nav-item ::deep .nav-link.wide {
+        min-width: 5rem;
     }
+
+        .nav-item ::deep .nav-link span {
+            display: none;
+        }
+
+        .nav-item ::deep .nav-link img.icon {
+            display: block;
+        }
 }
 
 .nav-item ::deep a.active, .nav-item ::deep button.active {
@@ -92,7 +103,7 @@ nav {
     display: flex;
 }
 
-@media (max-width: 850px) {
+@media (max-width: 1000px) {
     nav {
         display: none;
         flex-direction: column;
@@ -105,11 +116,11 @@ nav {
         display: block;
     }
 
-        .burger ::deep .nav-link {
+        .burger ::deep .nav-link.wide {
             min-width: 5rem;
         }
 
-        .burger ::deep .nav-link img {
+        .burger ::deep .nav-link img.icon {
             display: block;
         }
 }

@@ -28,6 +28,9 @@ internal static class AppConfiguration
         services.AddHostedService<PopulateDbService>();
         services.AddScoped<VehicleService>();
         services.AddScoped<CollectionService>();
+        services.AddScoped<ICollectionClientService, CollectionClientService>();
+        services.AddScoped<IBlockClientService, BlockClientService>();
+        services.AddScoped<IDecorationClientService, DecorationClientService>();
         services.AddScoped<MaterialService>();
         services.AddScoped<MeshService>();
 

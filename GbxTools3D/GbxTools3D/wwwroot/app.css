@@ -70,6 +70,28 @@ footer {
     padding: 10px;
 }
 
+
+.button-generic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: #2225;
+    border-bottom: 2px solid #FFF3;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.05s ease;
+    padding: 10px 15px;
+}
+
+    .button-generic:hover {
+        background-color: #3338;
+    }
+
+    .button-generic.active {
+        background-color: #333C;
+    }
+
 a, .btn-link {
     color: #006bb7;
 }
@@ -111,4 +133,129 @@ a, .btn-link {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+
+.catalog {
+    position: fixed;
+    left: 0;
+    top: 120px;
+    bottom: 100px;
+    width: 500px;
+    box-sizing: border-box;
+    padding: 20px;
+    background-color: #111;
+    border: 2px solid #222;
+    border-left: 0;
+    border-radius: 0 10px 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+    .catalog .games {
+        display: flex;
+    }
+
+        .catalog .games a {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            padding: 10px;
+            flex: 1;
+            border-radius: 5px;
+        }
+
+            .catalog .games a:hover {
+                background-color: #333;
+            }
+
+            .catalog .games a.active {
+                background-color: #444;
+            }
+
+            .catalog .games a img {
+                border-radius: 3px;
+            }
+
+    .catalog .collections {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        background-color: #1A1A1A;
+        border: 1px solid #333;
+        border-radius: 5px;
+        padding: 5px;
+    }
+
+        .catalog .collections a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+        }
+
+            .catalog .collections a:hover {
+                background-color: #333;
+            }
+
+            .catalog .collections a.active {
+                background-color: #444;
+            }
+
+    .catalog .asset-types {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+    }
+
+        .catalog .asset-types a {
+            flex: 1;
+        }
+
+    .catalog .assets {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        background-color: #1A1A1A;
+        border: 1px solid #333;
+        border-radius: 5px;
+        overflow: hidden auto;
+    }
+        .catalog .assets a {
+            display: flex;
+            padding: 10px;
+            padding: 4px 6px;
+            gap: 6px;
+            align-items: center;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            animation: fadeIn 0.3s;
+        }
+
+            .catalog .assets a:hover {
+                background-color: #333;
+            }
+
+            .catalog .assets a.active {
+                background-color: #444;
+            }
+
+            .catalog .assets a img {
+                border-radius: 3px;
+            }
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }

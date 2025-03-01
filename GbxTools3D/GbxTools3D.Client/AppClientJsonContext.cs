@@ -9,6 +9,7 @@ namespace GbxTools3D.Client;
 [JsonSerializable(typeof(ReplayContentDto))]
 [JsonSerializable(typeof(List<BlockInfoDto>))]
 [JsonSerializable(typeof(List<DecorationSizeDto>))]
+[JsonSerializable(typeof(List<CollectionDto>))]
 [JsonSerializable(typeof(Dictionary<string, MaterialDto>))]
 [JsonSourceGenerationOptions(JsonSerializerDefaults.Web, 
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault, 

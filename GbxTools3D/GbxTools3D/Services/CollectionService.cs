@@ -1,9 +1,5 @@
-﻿using System.Security.Cryptography;
-using System.Text;
-using GBX.NET;
-using GBX.NET.Components;
+﻿using GBX.NET;
 using GBX.NET.Engines.Game;
-using GBX.NET.Engines.GameData;
 using GBX.NET.Engines.Graphic;
 using GBX.NET.Engines.Plug;
 using GBX.NET.Engines.Scene;
@@ -525,5 +521,12 @@ internal sealed class CollectionService
         }
         
         return await meshService.GetOrCreateMeshAsync(toHash.Hash(), path, solid, vehicle: null, cancellationToken);
+    }
+
+    public async Task<Collection?> GetAsync(GameVersion gameVersion, string collectionName, CancellationToken cancellationToken)
+    {
+        return await db.Collections
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Name == collectionName, cancellationToken);
     }
 }

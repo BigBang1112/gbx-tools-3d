@@ -1,9 +1,8 @@
 ﻿using GBX.NET;
 using GbxTools3D.Client.Dtos;
-using GbxTools3D.Data;
-using GbxTools3D.Data.Entities;
+using GbxTools3D.Client.Services;
+using GbxTools3D.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -17,16 +16,15 @@ public static class BlockApiEndpoint
             .CacheOutput(x => x.Tag("block"));
     }
 
-    private static async Task<Results<Ok<IEnumerable<BlockInfoDto>>, NotFound, StatusCodeHttpResult>> GetBlockInfos(
-        AppDbContext db, 
+    private static async Task<Results<Ok<List<BlockInfoDto>>, NotFound, StatusCodeHttpResult>> GetBlockInfos(
         GameVersion gameVersion, 
-        string collectionName, 
+        string collectionName,
+        CollectionService collectionService,
+        IBlockClientService blockClientService,
         HttpContext context,
         CancellationToken cancellationToken)
     {
-        var collection = await db.Collections
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Name == collectionName, cancellationToken);
+        var collection = await collectionService.GetAsync(gameVersion, collectionName, cancellationToken);
 
         if (collection is null)
         {
@@ -40,29 +38,23 @@ public static class BlockApiEndpoint
             return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
         
-        var blockInfos = await db.BlockInfos
-            .Include(x => x.Collection)
-            .Include(x => x.Variants)
-            .Where(x => x.Collection == collection)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+        var blockInfos = await blockClientService.GetAllAsync(gameVersion, collectionName, cancellationToken);
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.Ok(blockInfos.Select(MapBlockInfo));
+        return TypedResults.Ok(blockInfos);
     }
 
     private static async Task<Results<Ok<BlockInfoDto>, NotFound, StatusCodeHttpResult>> GetBlockInfoByName(
-        AppDbContext db,
         GameVersion gameVersion,
         string collectionName,
-        string blockName, 
+        string blockName,
+        CollectionService collectionService,
+        IBlockClientService blockClientService,
         HttpContext context, 
         CancellationToken cancellationToken)
     {
-        var collection = await db.Collections
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Name == collectionName, cancellationToken);
+        var collection = await collectionService.GetAsync(gameVersion, collectionName, cancellationToken);
 
         if (collection is null)
         {
@@ -75,13 +67,8 @@ public static class BlockApiEndpoint
         {
             return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
-        
-        var blockInfo = await db.BlockInfos
-            .Include(x => x.Collection)
-            .Include(x => x.Variants)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                x => x.Collection == collection && x.Name == blockName, cancellationToken);
+
+        var blockInfo = await blockClientService.GetAsync(gameVersion, collectionName, blockName, cancellationToken);
 
         if (blockInfo is null)
         {
@@ -90,30 +77,6 @@ public static class BlockApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.Ok(MapBlockInfo(blockInfo));
+        return TypedResults.Ok(blockInfo);
     }
-
-    private static BlockInfoDto MapBlockInfo(BlockInfo blockInfo) => new()
-    {
-        Name = blockInfo.Name,
-        AirUnits = blockInfo.AirUnits,
-        GroundUnits = blockInfo.GroundUnits,
-        HasAirHelper = blockInfo.HasAirHelper,
-        HasGroundHelper = blockInfo.HasGroundHelper,
-        HasConstructionModeHelper = blockInfo.HasConstructionModeHelper,
-        AirVariants = blockInfo.Variants.Where(x => !x.Ground).Select(MapVariant).ToList(),
-        GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(MapVariant).ToList(),
-        Height = blockInfo.Height,
-        IsDefaultZone = blockInfo.Collection.DefaultZoneBlock == blockInfo.Name
-    };
-
-    private static BlockVariantDto MapVariant(BlockVariant variant) => new()
-    {
-        Variant = variant.Variant,
-        SubVariant = variant.SubVariant,
-        ObjectLinks = variant.ObjectLinks.Count == 0 ? null : variant.ObjectLinks.Select(x => new ObjectLinkDto
-        {
-            Location = new Iso4(x.XX, x.XY, x.XZ, x.YX, x.YY, x.YZ, x.ZX, x.ZY, x.ZZ, x.TX, x.TY, x.TZ),
-        }).ToList()
-    };
 }

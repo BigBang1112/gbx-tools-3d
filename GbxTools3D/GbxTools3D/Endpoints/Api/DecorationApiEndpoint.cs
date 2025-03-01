@@ -1,9 +1,8 @@
 ﻿using GBX.NET;
 using GbxTools3D.Client.Dtos;
-using GbxTools3D.Data;
-using GbxTools3D.Data.Entities;
+using GbxTools3D.Client.Services;
+using GbxTools3D.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -15,16 +14,15 @@ public static class DecorationApiEndpoint
             .CacheOutput(x => x.Tag("decoration"));
     }
 
-    private static async Task<Results<Ok<IEnumerable<DecorationSizeDto>>, NotFound, StatusCodeHttpResult>> GetDecorations(
-        AppDbContext db, 
+    private static async Task<Results<Ok<List<DecorationSizeDto>>, NotFound, StatusCodeHttpResult>> GetDecorations(
         GameVersion gameVersion, 
-        string collectionName, 
+        string collectionName,
+        CollectionService collectionService,
+        IDecorationClientService decorationClientService,
         HttpContext context,
         CancellationToken cancellationToken)
     {
-        var collection = await db.Collections
-            .AsNoTracking()
-            .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Name == collectionName, cancellationToken);
+        var collection = await collectionService.GetAsync(gameVersion, collectionName, cancellationToken);
 
         if (collection is null)
         {
@@ -37,32 +35,11 @@ public static class DecorationApiEndpoint
         {
             return TypedResults.StatusCode(StatusCodes.Status304NotModified);
         }
-        
-        var decorations = await db.Decorations
-            .Include(x => x.DecorationSize)
-                .ThenInclude(x => x.Collection)
-            .Where(x => x.DecorationSize.Collection == collection)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+
+        var decorations = await decorationClientService.GetAllAsync(gameVersion, collectionName, cancellationToken);
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.Ok(MapDecorations(decorations));
+        return TypedResults.Ok(decorations);
     }
-
-    private static IEnumerable<DecorationSizeDto> MapDecorations(IEnumerable<Decoration> decos) =>
-        decos.GroupBy(x => new Int3(x.DecorationSize.SizeX, x.DecorationSize.SizeY, x.DecorationSize.SizeZ))
-            .Select(decoGroup => new DecorationSizeDto
-            {
-                Size = decoGroup.Key,
-                BaseHeight = decoGroup.First().DecorationSize.BaseHeight,
-                Decorations = decoGroup.Select(x => new DecorationDto
-                {
-                    Name = x.Name,
-                    Musics = x.Musics,
-                    Sounds = x.Sounds,
-                    Remap = x.Remap
-                }).ToList(),
-                Scene = decoGroup.First().DecorationSize.Scene
-            });
 }
