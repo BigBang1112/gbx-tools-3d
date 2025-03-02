@@ -17,6 +17,10 @@ export function create() {
 }
 
 export function createMapControls(camera, renderer, targetX, targetY, targetZ) {
+    if (controls) {
+        controls.dispose();
+    }
+
     controls = new MapControls(camera, renderer.domElement);
 
     controls.enableDamping = true; // an animation loop is required when either damping or auto-rotation are enabled

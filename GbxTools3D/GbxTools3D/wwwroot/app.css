@@ -18,6 +18,27 @@ html, body {
     background-attachment: fixed;
 }
 
+.black-background {
+    background-color: black;
+    height: 100vh;
+}
+
+.black-background-fade {
+    background-color: black;
+    height: 100vh;
+    animation: fadeToBlack 0.5s;
+}
+
+@keyframes fadeToBlack {
+    from {
+        background-color: transparent;
+    }
+
+    to {
+        background-color: black;
+    }
+}
+
 footer.fixed {
     position: fixed;
     bottom: 0;
@@ -92,6 +113,17 @@ footer {
         background-color: #333C;
     }
 
+input[type=text] {
+    border: 1px solid #333;
+    font-family: inherit;
+    border-radius: 5px;
+    color: inherit;
+    padding: 2px 10px;
+    height: 32px;
+    background-color: #1A1A1A;
+    font-size: inherit;
+}
+
 a, .btn-link {
     color: #006bb7;
 }
@@ -138,7 +170,6 @@ a, .btn-link {
 
 .catalog {
     position: fixed;
-    left: 0;
     top: 120px;
     bottom: 100px;
     width: 500px;
@@ -151,10 +182,17 @@ a, .btn-link {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    left: 0;
+    transition: left 0.4s ease;
 }
+
+    .catalog.closed {
+        left: -500px;
+    }
 
     .catalog .games {
         display: flex;
+        flex-flow: wrap;
     }
 
         .catalog .games a {
@@ -249,6 +287,32 @@ a, .btn-link {
             .catalog .assets a img {
                 border-radius: 3px;
             }
+
+    .catalog .opener {
+        display: flex;
+        position: absolute;
+        left: 100%;
+        padding: 0.8rem;
+        background-color: #111;
+        border: 2px solid #222;
+        border-left: 0;
+        border-radius: 0 10px 10px 0;
+        cursor: pointer;
+    }
+
+        .catalog .opener:hover {
+            background-color: #222;
+        }
+
+@media (max-width: 580px) {
+    .catalog {
+        width: calc(100% - 4rem);
+    }
+
+        .catalog.closed {
+            left: calc(-100% + 4rem);
+        }
+}
 
 @keyframes fadeIn {
     from {

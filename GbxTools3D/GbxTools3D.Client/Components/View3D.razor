@@ -31,15 +31,26 @@ else
     private Scene? scene;
     private Camera? camera;
 
+    private Solid? focusedSolid;
+
     private bool contentLoading;
     private bool contentLoaded;
+
+    [Parameter, EditorRequired]
+    public GameVersion GameVersion { get; set; }
+
+    [Parameter]
+    public string? CollectionName { get; set; }
 
     [Parameter]
     public CGameCtnChallenge? Map { get; set; }
 
-    private Dictionary<string, BlockInfoDto>? blockInfos;
-    private Dictionary<Int3, DecorationSizeDto>? decorations;
-    private Dictionary<string, MaterialDto>? materials;
+    [Parameter]
+    public string? BlockName { get; set; }
+
+    private Dictionary<string, BlockInfoDto> blockInfos = [];
+    private Dictionary<Int3, DecorationSizeDto> decorations = [];
+    private Dictionary<string, MaterialDto> materials = [];
 
     private CancellationTokenSource cts = new();
 
@@ -56,6 +67,7 @@ else
         }
 
         await TryLoadMapAsync(cts.Token);
+        await TryLoadBlockAsync(cts.Token);
     }
 
     private async Task LoadSceneAsync(CancellationToken cancellationToken)
@@ -63,12 +75,127 @@ else
         rendererModule = await JSHost.ImportAsync(nameof(Renderer), "../js/renderer.js", cancellationToken);
         sceneModule = await JSHost.ImportAsync(nameof(Scene), "../js/scene.js", cancellationToken);
         cameraModule = await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
+        solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
+        materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
 
         renderer = Renderer.Create();
         scene = new Scene();
         camera = new Camera();
+
         Renderer.Camera = camera;
         Renderer.Scene = scene;
+    }
+
+    private async Task<bool> TryFetchDataAsync(bool loadBlockInfos = false, bool loadDecorations = false, bool loadMaterials = false, CancellationToken cancellationToken = default)
+    {
+        var collection = CollectionName ?? Map?.Collection ?? throw new InvalidOperationException("No collection was found");
+
+        var tasks = new List<Task<HttpResponseMessage>>();
+        var blockInfosTask = loadBlockInfos && blockInfos.Count == 0 ? Http.GetAsync($"/api/blocks/{GameVersion}/{collection}", cts.Token) : null;
+        var decorationTask = loadDecorations && decorations.Count == 0 ? Http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
+        var materialTask = loadMaterials && materials.Count == 0 ? Http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
+
+        if (blockInfosTask is not null) tasks.Add(blockInfosTask);
+        if (decorationTask is not null) tasks.Add(decorationTask);
+        if (materialTask is not null) tasks.Add(materialTask);
+
+        if (tasks.Count == 0)
+        {
+            return false;
+        }
+
+        await foreach (var task in Task.WhenEach(tasks).WithCancellation(cts.Token))
+        {
+            task.Result.EnsureSuccessStatusCode(); // show note message that user has to wait, if the block list isnt available yet
+
+            if (task == blockInfosTask)
+            {
+                blockInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cts.Token))?
+                    .ToDictionary(x => x.Name) ?? [];
+            }
+            else if (task == decorationTask)
+            {
+                decorations = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListDecorationSizeDto, cts.Token))?
+                    .ToDictionary(x => x.Size) ?? [];
+            }
+            else if (task == materialTask)
+            {
+                materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cts.Token) ?? [];
+            }
+        }
+
+        return true;
+    }
+
+    public async Task<bool> TryLoadBlockAsync(CancellationToken cancellationToken = default)
+    {
+        if (camera is null || renderer is null || BlockName is null)
+        {
+            return false;
+        }
+
+        if (focusedSolid is not null)
+        {
+            scene?.Remove(focusedSolid);
+            //focusedSolid.Dispose();
+            focusedSolid = null;
+        }
+
+        // initial camera position
+        var center = new Vec3(16, 4, 16);
+        var position = center * (4, 6, 1);
+
+        camera.Position = position;
+        camera.CreateMapControls(renderer, center);
+        //
+
+        try
+        {
+            await TryFetchDataAsync(loadBlockInfos: true, loadMaterials: true, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            return false;
+        }
+
+        if (BlockName is null || !blockInfos.TryGetValue(BlockName, out var blockInfo))
+        {
+            return contentLoading = false;
+        }
+
+        var isGround = blockInfo.AirVariants.Count == 0;
+        var variant = 0;
+        var subVariant = 0;
+
+        var units = isGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+        var blockSize = CollectionName is null ? (32, 8, 32) : new Id(CollectionName).GetBlockSize();
+        var size = new Int3(units.Select(x => x.Offset.X).Max() + 1, units.Select(x => x.Offset.Y).Max() + 1, units.Select(x => x.Offset.Z).Max() + 1);
+        var realSize = size * blockSize;
+
+        // camera position after knowing block details
+        center = new Vec3(realSize.X / 2f, 4, realSize.Z / 2f);
+        position = center * (4, 6, 1);
+
+        camera.Position = position;
+        camera.CreateMapControls(renderer, center);
+        //
+
+        var hash = $"GbxTools3D|Solid|{GameVersion}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
+
+        using var meshResponse = await Http.GetAsync($"/api/mesh/{hash}", cancellationToken);
+
+        if (!meshResponse.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        scene?.Add(focusedSolid);
+
+        return true;
     }
 
     public async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
@@ -82,77 +209,50 @@ else
 
         var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
+        
+        // setup camera
         camera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
         camera.CreateMapControls(renderer, center);
 
-        using var blockInfosTask = Http.GetAsync($"/api/blocks/TMF/{Map.Collection}", cancellationToken);
-        using var decorationTask = Http.GetAsync($"/api/decorations/TMF/{Map.Collection}", cancellationToken);
-        using var materialTask = Http.GetAsync($"/api/materials/TMF", cancellationToken);
-
-        using var blockInfosResponse = await blockInfosTask;
-        using var decorationResponse = await decorationTask;
-        using var materialResponse = await materialTask;
-
-        if (!blockInfosResponse.IsSuccessStatusCode)
-        {
-            // show note message that user has to wait, if the block list isnt available yet
-            return contentLoading = false;
-        }
-
-        blockInfos = (await blockInfosResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
-            .ToDictionary(x => x.Name) ?? [];
-
-        if (materialResponse.IsSuccessStatusCode)
-        {
-            materials = await materialResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken);
-        }
-
-        solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
-        materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
+        await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken);
 
         var baseHeight = 5;
 
-        if (decorationResponse.IsSuccessStatusCode)
+        if (decorations.TryGetValue(Map.Size, out var decoSize) == true)
         {
-            decorations = (await decorationResponse.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListDecorationSizeDto, cancellationToken))?
-                .ToDictionary(x => x.Size);
+            var deco = decoSize.Decorations
+                .FirstOrDefault(x => x.Name == Map.Decoration.Id);
 
-            if (decorations?.TryGetValue(Map.Size, out var decoSize) == true)
+            baseHeight = decoSize.BaseHeight;
+            var size = $"{Map.Size.X}x{Map.Size.Y}x{Map.Size.Z}";
+
+            var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
+
+            foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
             {
-                var deco = decoSize.Decorations
-                    .FirstOrDefault(x => x.Name == Map.Decoration.Id);
-
-                baseHeight = decoSize.BaseHeight;
-                var size = $"{Map.Size.X}x{Map.Size.Y}x{Map.Size.Z}";
-
-                var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
-
-                foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
+                if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
                 {
-                    if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
-                    {
-                        continue;
-                    }
-
-                    var hash = $"GbxTools3D|Decoration|TMF|{Map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
-
-                    tasks.Add(Http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
+                    continue;
                 }
 
-                await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
+                var hash = $"GbxTools3D|Decoration|{GameVersion}|{Map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
+
+                tasks.Add(Http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
+            }
+
+            await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
+            {
+                using var meshResponse = await meshResponseTask;
+
+                if (!meshResponse.IsSuccessStatusCode)
                 {
-                    using var meshResponse = await meshResponseTask;
-
-                    if (!meshResponse.IsSuccessStatusCode)
-                    {
-                        continue;
-                    }
-
-                    await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
-                    var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
-                    solid.Location = tasks[meshResponseTask];
-                    scene?.Add(solid);
+                    continue;
                 }
+
+                await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+                var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
+                solid.Location = tasks[meshResponseTask];
+                scene?.Add(solid);
             }
         }
 
@@ -173,7 +273,7 @@ else
         {
             var (name, isGround, variant, subVariant) = uniqueGroup.Key;
 
-            var hash = $"GbxTools3D|Solid|TMF|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
 
             responseTasks.Add(uniqueGroup.Key, Http.GetAsync($"/api/mesh/{hash}", cancellationToken));
 

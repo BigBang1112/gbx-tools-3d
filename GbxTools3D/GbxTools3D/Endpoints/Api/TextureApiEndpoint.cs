@@ -45,6 +45,6 @@ public static class TextureApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.File(texture.Data, "image/webp", lastModified: texture.UpdatedAt);
+        return TypedResults.File(texture.Data, "image/webp", $"{hash}.webp", lastModified: texture.UpdatedAt);
     }
 }

@@ -1,7 +1,7 @@
 ﻿@page "/catalog/{GameVersion?}/{CollectionName?}/{AssetType?}"
 @using GBX.NET
 @implements IAsyncDisposable
-@rendermode InteractiveAuto
+@rendermode InteractiveWebAssembly
 
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -11,90 +11,123 @@
 
 <PageTitle>Catalog - 3D Gbx Tools</PageTitle>
 
-<div class="catalog">
-    <div class="games">
-        <NavLink href="/catalog/TMSX"><img src="icons/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
-        <NavLink href="/catalog/TMNESWC"><img src="icons/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
-        <NavLink href="/catalog/TMF"><img src="icons/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
-        <NavLink href="/catalog/TMT"><img src="icons/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
-        <NavLink href="/catalog/MP4"><img src="icons/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
-        <NavLink href="/catalog/TM2020"><img src="icons/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
-    </div>
+<div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
 
-    @if (GameVersionEnum != GBX.NET.GameVersion.Unspecified)
+    @if (!RendererInfo.IsInteractive)
     {
-        <div class="collections">
-            @foreach (var collection in CollectionClientService.Collections)
-            {
-                <NavLink href="@($"/catalog/{GameVersionEnum}/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/{collection.Name}/environment")" width="48" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
-            }
+        <div class="centered">
+            <Loader></Loader>
         </div>
     }
 
-    @if (SelectedCollection is not null)
+    @if (AssetName is not null)
     {
-        <div class="asset-types">
-            @if (SelectedCollection.HasBlocks)
-            {
-                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/blocks")" class="button-generic">Blocks</NavLink>
-            }
-
-            @if (SelectedCollection.HasVehicles)
-            {
-                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/vehicles")" class="button-generic">Vehicles</NavLink>
-            }
-
-            @if (SelectedCollection.HasDecorations)
-            {
-                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/decorations")" class="button-generic">Decorations</NavLink>
-            }
-
-            @if (SelectedCollection.HasItems)
-            {
-                <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/items")" class="button-generic">Items</NavLink>
-            }
-        </div>
+        <View3D GameVersion="GameVersionEnum" CollectionName="@CollectionName" BlockName="@(AssetTypeEnum == Enums.AssetType.Block ? AssetName : null)" @ref="view3d"></View3D>
     }
 
-    @if (AssetTypeEnum != Enums.AssetType.None && SelectedCollection is not null)
-    {
-        <div class="assets">
-            @if (AssetTypeEnum == Enums.AssetType.Block)
-            {
-                <Virtualize ItemsProvider="(req) => FilterAssets(BlockClientService.Blocks, x => x.Name, req)" Context="block" @ref="blocksVirtualize">
-                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/blocks?selected={block.Name}")">
-                        @if (block.HasIcon)
-                        {
-                            <img src="@($"api/icon/{GameVersionEnum}/{SelectedCollection.Name}/block/{block.Name}")" width="24" height="24" />
-                        }
-                        else
-                        {
-                            <img src="icons/noicon.webp" width="24" height="24" />
-                        }
-                        @block.Name
-                    </NavLink>
-                </Virtualize>
-            }
-
-            @if (AssetTypeEnum == Enums.AssetType.Decoration)
-            {
-                @foreach (var decoration in DecorationClientService.DecorationSizes)
-                {
-                    <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}")">@decoration.Size</NavLink>
-                }
-            }
-        </div>
-    }
-
-    @if (AssetTypeEnum == Enums.AssetType.Block)
-    {
-        <InputText @bind-Value="AssetSearchValue" @oninput="OnAssetSearchInput" placeholder="Search..." />
-    }
 </div>
 
+@if (!NoCatalog)
+{
+    <div class="catalog @(showCatalog ? "" : "closed")">
+        <div class="opener" @onclick="() => showCatalog = !showCatalog">
+            @if (showCatalog)
+            {
+                <img src="icons/keyboard_arrow_left.svg" width="32" height="32" />
+            }
+            else
+            {
+                <img src="icons/keyboard_arrow_right.svg" width="32" height="32" />
+            }
+        </div>
+        <div class="games">
+            <NavLink href="/catalog/TMSX"><img src="icons/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMNESWC"><img src="icons/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMF"><img src="icons/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMT"><img src="icons/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/MP4"><img src="icons/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TM2020"><img src="icons/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
+        </div>
+
+        @if (GameVersionEnum != GBX.NET.GameVersion.Unspecified)
+        {
+            <div class="collections">
+                @foreach (var collection in CollectionClientService.Collections)
+                {
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/{collection.Name}/environment")" width="48" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
+                }
+            </div>
+        }
+
+        @if (SelectedCollection is not null)
+        {
+            <div class="asset-types">
+                @if (SelectedCollection.HasBlocks)
+                {
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/blocks")" class="button-generic">Blocks</NavLink>
+                }
+
+                @if (SelectedCollection.HasVehicles)
+                {
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/vehicles")" class="button-generic">Vehicles</NavLink>
+                }
+
+                @if (SelectedCollection.HasDecorations)
+                {
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/decorations")" class="button-generic">Decorations</NavLink>
+                }
+
+                @if (SelectedCollection.HasItems)
+                {
+                    <NavLink href="@($"/catalog/{GameVersionEnum}/{SelectedCollection.Name}/items")" class="button-generic">Items</NavLink>
+                }
+            </div>
+        }
+
+        @if (AssetTypeEnum != Enums.AssetType.None && SelectedCollection is not null)
+        {
+            <div class="assets">
+                @if (AssetTypeEnum == Enums.AssetType.Block)
+                {
+                    <Virtualize ItemsProvider="(req) => FilterAssets(BlockClientService.Blocks, x => x.Name, req)" Context="block" @ref="blocksVirtualize">
+                        <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/blocks?selected={block.Name}")">
+                            @if (block.HasIcon)
+                            {
+                                <img src="@($"api/icon/{GameVersionEnum}/{SelectedCollection.Name}/block/{block.Name}")" width="24" height="24" />
+                            }
+                            else
+                            {
+                                <img src="icons/noicon.webp" width="24" height="24" />
+                            }
+                            @block.Name
+                        </NavLink>
+                    </Virtualize>
+                }
+
+                @if (AssetTypeEnum == Enums.AssetType.Decoration)
+                {
+                    @foreach (var decoration in DecorationClientService.DecorationSizes)
+                    {
+                        <NavLink href="@($"/catalog/{GameVersionEnum}/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}")">@decoration.Size</NavLink>
+                    }
+                }
+            </div>
+        }
+
+        @if (AssetTypeEnum == Enums.AssetType.Block)
+        {
+            <InputText type="text" @bind-Value="AssetSearchValue" @oninput="OnAssetSearchInput" placeholder="Search..." />
+        }
+    </div>
+}
+
 @code {
+    private View3D? view3d;
+
     private Virtualize<BlockInfoDto>? blocksVirtualize;
     private IJSObjectReference? module;
+
+    private bool showCatalog = true;
 
     [Parameter]
     public string? GameVersion { get; set; }
@@ -105,9 +138,13 @@
     [Parameter]
     public string? AssetType { get; set; }
 
-    [Parameter]
     [SupplyParameterFromQuery(Name = "selected")]
-    public string? AssetName { get; set; }
+    private string? AssetName { get; set; }
+
+    [SupplyParameterFromQuery(Name = "nocatalog")]
+    private bool NoCatalog { get; set; }
+
+    [Parameter]
 
     public GameVersion GameVersionEnum { get; set; }
     public AssetType AssetTypeEnum { get; set; }
@@ -210,8 +247,6 @@
                 await DecorationClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
                 break;
         }
-
-        StateHasChanged();
     }
 
     private string? GetAssetTypeString()

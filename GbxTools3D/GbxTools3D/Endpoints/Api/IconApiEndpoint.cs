@@ -59,7 +59,7 @@ public static class IconApiEndpoint
         }
 
         context.Response.Headers.CacheControl = "max-age=3600";
-        return TypedResults.File(icon.Data, "image/webp", lastModified: icon.UpdatedAt);
+        return TypedResults.File(icon.Data, "image/webp", $"{collectionName}.webp", lastModified: icon.UpdatedAt);
     }
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetSmallIconByCollectionName(
@@ -77,7 +77,7 @@ public static class IconApiEndpoint
         }
 
         context.Response.Headers.CacheControl = "max-age=3600";
-        return TypedResults.File(icon.Data, "image/webp", lastModified: icon.UpdatedAt);
+        return TypedResults.File(icon.Data, "image/webp", $"{collectionName}.webp", lastModified: icon.UpdatedAt);
     }
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetIconByBlockName(
@@ -97,6 +97,6 @@ public static class IconApiEndpoint
 
         context.Response.Headers.CacheControl = "max-age=3600";
 
-        return TypedResults.File(icon.Data, "image/webp", lastModified: icon.UpdatedAt);
+        return TypedResults.File(icon.Data, "image/webp", $"{blockName}.webp", lastModified: icon.UpdatedAt);
     }
 }

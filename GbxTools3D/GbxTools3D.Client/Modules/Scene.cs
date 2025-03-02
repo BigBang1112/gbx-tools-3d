@@ -35,6 +35,11 @@ internal partial class Scene
         Remove(Object, obj);
     }
 
+    public void Remove(Solid solid)
+    {
+        Remove(Object, solid.Object);
+    }
+
     public void Test()
     {
         Test(Object);

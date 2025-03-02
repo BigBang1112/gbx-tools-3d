@@ -61,7 +61,7 @@
         </nav>
 
         <div class="nav-item burger">
-            <button class="burger nav-link @(showBurger ? "active" : "")" @onclick="ToggleBurger">
+            <button class="burger nav-link @(showBurger ? "active" : "")" @onclick="() => showBurger = !showBurger">
                 @if (RendererInfo.IsInteractive)
                 {
                     <img src="icons/menu.svg" alt="Menu" width="32" height="32" />
@@ -96,11 +96,6 @@
             }
             StateHasChanged();
         };
-    }
-
-    private void ToggleBurger()
-    {
-        showBurger = !showBurger;
     }
 
     bool Is3DPage()

@@ -35,6 +35,8 @@ internal sealed partial class Solid(JSObject obj)
         set
         {
             SetRotation(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            UpdateMatrix(Object);
+            UpdateMatrixWorld(Object);
         }
     }
 
@@ -44,6 +46,8 @@ internal sealed partial class Solid(JSObject obj)
         {
             SetRotation(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
             SetPosition(Object, value.TX, value.TY, value.TZ);
+            UpdateMatrix(Object);
+            UpdateMatrixWorld(Object);
         }
     }
 
@@ -163,7 +167,7 @@ internal sealed partial class Solid(JSObject obj)
         }
         else
         {
-            tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow);
+            tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
             UpdateMatrixWorld(tree);
         }
 
@@ -307,7 +311,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow);
+                var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
 
                 AddLod(lod, lodTree, distance);
             }
@@ -321,7 +325,7 @@ internal sealed partial class Solid(JSObject obj)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            Add(tree, await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow));
+            Add(tree, await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials));
         }
 
         return tree;
