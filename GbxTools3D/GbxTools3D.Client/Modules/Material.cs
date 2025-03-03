@@ -19,7 +19,10 @@ internal sealed partial class Material
 
     private static readonly Dictionary<string, Properties> shaderProperties = new()
     {
-        ["Techno2/Media/Material/PDiff PDiff PA PX2 Grass2"] = new(WorldUV: true)
+        ["Techno2/Media/Material/PDiff PDiff PA PX2 Grass2"] = new(WorldUV: true),
+        ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass"] = new(WorldUV: true),
+        ["Techno/Media/Material/TDiff PX2 Trans"] = new(Transparent: true),
+        ["Techno/Media/Material/TDiff PX2 Trans 2Sided"] = new Properties(DoubleSided: true, Transparent: true)
     };
 
     private static readonly Dictionary<string, JSObject> textures = [];
@@ -29,8 +32,15 @@ internal sealed partial class Material
     private static partial JSObject CreateRandomMaterial();
     
     [JSImport("createMaterial", nameof(Material))]
-    private static partial JSObject CreateMaterial(JSObject? diffuseTexture, JSObject? normalTexture, JSObject? specularTexture, [JSMarshalAs<JSType.Any>] object properties);
-    
+    private static partial JSObject CreateMaterial(
+        JSObject? diffuseTexture, 
+        JSObject? normalTexture,
+        JSObject? specularTexture,
+        bool doubleSided,
+        bool worldUV,
+        bool transparent,
+        bool blend);
+
     [JSImport("createTexture", nameof(Material))]
     private static partial JSObject CreateTexture(string path);
     
@@ -75,16 +85,28 @@ internal sealed partial class Material
             return material;
         }
 
-        var properties = materialDto.Shader is null
-            ? Properties.Default
-            : shaderProperties.GetValueOrDefault(materialDto.Shader.Replace('\\', '/'))
-                ?? Properties.Default;
 
-        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse"));
+        if (materialDto.Shader is not null && shaderProperties.TryGetValue(materialDto.Shader.Replace('\\', '/'), out Properties? properties))
+        {
+
+        }
+        else
+        {
+            properties = Properties.Default;
+        }
+
+        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse")) ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend1"));
         var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"));
         var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"));
 
-        material = CreateMaterial(diffuseTexture, normalTexture, specularTexture, properties);
+        material = CreateMaterial(
+            diffuseTexture, 
+            normalTexture,
+            specularTexture, 
+            properties.DoubleSided, 
+            properties.WorldUV, 
+            properties.Transparent, 
+            properties.Blend);
         materials.Add(name, material);
         return material;
     }

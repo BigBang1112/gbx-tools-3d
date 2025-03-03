@@ -226,7 +226,7 @@ internal sealed partial class Solid(JSObject obj)
             var materialName = r.ReadString();
             var additionalMaterialProperties = r.ReadBoolean();
             
-            materials.Add(Material.Get(materialName, availableMaterials));
+            materials.Add(Material.GetOrCreateMaterial(materialName, availableMaterials));
         }
 
         await RestAsync(indexCounter);
@@ -295,8 +295,8 @@ internal sealed partial class Solid(JSObject obj)
             var additionalMaterialProperties = r.ReadBoolean();
             
             var visual = expectedMeshCount.HasValue
-                ? CreateInstancedMeshSingleMaterial(geometry, Material.Get(materialName, availableMaterials), expectedMeshCount.Value, receiveShadow, castShadow)
-                : CreateMeshSingleMaterial(geometry, Material.Get(materialName, availableMaterials), receiveShadow, castShadow);
+                ? CreateInstancedMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, availableMaterials), expectedMeshCount.Value, receiveShadow, castShadow)
+                : CreateMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, availableMaterials), receiveShadow, castShadow);
             Add(tree, visual);
         }
 

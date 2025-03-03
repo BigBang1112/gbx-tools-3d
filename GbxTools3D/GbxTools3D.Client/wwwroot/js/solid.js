@@ -1,6 +1,6 @@
 ﻿import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
-import { InstancedMesh2 } from '@three.ez/instanced-mesh';
+//import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
 const material = new THREE.MeshMatcapMaterial({ color: 0xAD9000 });
 
