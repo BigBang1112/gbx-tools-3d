@@ -2,15 +2,35 @@
 
 const textureLoader = new THREE.TextureLoader();
 
-export function get() {
+export function createRandomMaterial() {
     return new THREE.MeshStandardMaterial({ color: Math.floor(Math.random()*16777215) });
 }
 
-export function getWithTexture(texture) {
-    return new THREE.MeshStandardMaterial({ map: texture, transparent: true });
+export function createMaterial(diffuseTexture, normalTexture, properties) {
+    const material = new THREE.MeshStandardMaterial({
+        map: diffuseTexture,
+        normalMap: normalTexture,
+        transparent: properties.transparent,
+        side: properties.doubleSided ? THREE.DoubleSide : THREE.FrontSide
+    });
+
+    if (properties.worldUV) {
+        material.onBeforeCompile = (shader) => {
+            shader.uniforms.globalUvScale = { value: new THREE.Vector2(1, 1) };
+
+            // Replace the default UV calculation with one based on world position (x, z)
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <uv_vertex>',
+                [
+                    'vec4 worldPosition = modelMatrix * vec4(position, 1.0);',
+                    'vUv = worldPosition.xz * globalUvScale;'
+                ].join('\n')
+            );
+        };
+    }
 }
 
-export function loadTexture(path) {
+export function createTexture(path) {
     const texture = textureLoader.load(path);
     texture.wrapS = THREE.RepeatWrapping;
     texture.wrapT = THREE.RepeatWrapping;

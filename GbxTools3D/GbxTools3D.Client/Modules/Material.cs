@@ -8,64 +8,82 @@ namespace GbxTools3D.Client.Modules;
 [SupportedOSPlatform("browser")]
 internal sealed partial class Material
 {
+    private sealed record Properties(
+        bool DoubleSided = false,
+        bool WorldUV = false, 
+        bool Transparent = false)
+    {
+        public static readonly Properties Default = new();
+    }
+
+    private static readonly Dictionary<string, Properties> shaderProperties = new()
+    {
+        ["Techno2/Media/Material/PDiff PDiff PA PX2 Grass2"] = new(WorldUV: true)
+    };
+
     private static readonly Dictionary<string, JSObject> textures = [];
     private static readonly Dictionary<string, JSObject> materials = [];
     
-    [JSImport("get", nameof(Material))]
-    private static partial JSObject Get();
+    [JSImport("createRandomMaterial", nameof(Material))]
+    private static partial JSObject CreateRandomMaterial();
     
-    [JSImport("getWithTexture", nameof(Material))]
-    private static partial JSObject GetWithTexture(JSObject texture);
+    [JSImport("createMaterial", nameof(Material))]
+    private static partial JSObject CreateMaterial(JSObject? diffuseTexture, JSObject? normalTexture, [JSMarshalAs<JSType.Any>] object properties);
     
-    [JSImport("loadTexture", nameof(Material))]
-    private static partial JSObject LoadTexture(string path);
+    [JSImport("createTexture", nameof(Material))]
+    private static partial JSObject CreateTexture(string path);
     
-    private static JSObject GetTexture(string path)
+    private static JSObject? GetOrCreateTexture(string? path)
     {
+        if (path is null)
+        {
+            return null;
+        }
+
         if (textures.TryGetValue(path, out var texture))
         {
             return texture;
         }
         
         var hash = $"GbxTools3D|Texture|TMF|{path}|PeopleOnTheBusLikeDMCA".Hash();
-        texture = LoadTexture($"api/texture/{hash}");
+        texture = CreateTexture($"api/texture/{hash}");
         textures.Add(path, texture);
         
         return texture;
     }
     
-    public static JSObject Get(string name, Dictionary<string, MaterialDto>? availableMaterials)
+    public static JSObject GetOrCreateMaterial(string name, Dictionary<string, MaterialDto>? availableMaterials)
     {
         if (materials.TryGetValue(name, out var material))
         {
             return material;
         }
-        
-        if (availableMaterials?.TryGetValue(name, out var materialDto) == true)
+
+        if (availableMaterials is null || !availableMaterials.TryGetValue(name, out var materialDto))
         {
-            if (materialDto.Textures?.Count > 0)
-            {
-                if (materialDto.Textures.TryGetValue("Diffuse", out var texturePath))
-                {
-                    material = GetWithTexture(GetTexture(texturePath));
-                }
-                else
-                {
-                    material = GetWithTexture(GetTexture(materialDto.Textures.Values.First()));
-                }
-            }
-            else
-            {
-                material = Get();
-            }
-        }
-        else
-        {
-            material = Get();
+            material = CreateRandomMaterial();
+            materials.Add(name, material);
+            return material;
         }
 
+        if (materialDto.Textures is null or { Count: 0 })
+        {
+            // TODO: might be water shaders and other special cases
+            material = CreateRandomMaterial();
+            materials.Add(name, material);
+            return material;
+        }
+
+        var properties = materialDto.Shader is null
+            ? Properties.Default
+            : shaderProperties.GetValueOrDefault(materialDto.Shader.Replace('\\', '/'))
+                ?? Properties.Default;
+
+        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse"));
+        var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"));
+
+        material = CreateMaterial(diffuseTexture, normalTexture, properties);
         materials.Add(name, material);
-
         return material;
     }
 }
