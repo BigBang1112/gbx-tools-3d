@@ -6,10 +6,11 @@ export function createRandomMaterial() {
     return new THREE.MeshStandardMaterial({ color: Math.floor(Math.random()*16777215) });
 }
 
-export function createMaterial(diffuseTexture, normalTexture, properties) {
-    const material = new THREE.MeshStandardMaterial({
+export function createMaterial(diffuseTexture, normalTexture, specularTexture, properties) {
+    const material = new THREE.MeshPhongMaterial({
         map: diffuseTexture,
         normalMap: normalTexture,
+        specularMap: specularTexture,
         transparent: properties.transparent,
         side: properties.doubleSided ? THREE.DoubleSide : THREE.FrontSide
     });

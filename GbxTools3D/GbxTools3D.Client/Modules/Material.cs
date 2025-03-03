@@ -11,7 +11,8 @@ internal sealed partial class Material
     private sealed record Properties(
         bool DoubleSided = false,
         bool WorldUV = false, 
-        bool Transparent = false)
+        bool Transparent = false,
+        bool Blend = false)
     {
         public static readonly Properties Default = new();
     }
@@ -28,7 +29,7 @@ internal sealed partial class Material
     private static partial JSObject CreateRandomMaterial();
     
     [JSImport("createMaterial", nameof(Material))]
-    private static partial JSObject CreateMaterial(JSObject? diffuseTexture, JSObject? normalTexture, [JSMarshalAs<JSType.Any>] object properties);
+    private static partial JSObject CreateMaterial(JSObject? diffuseTexture, JSObject? normalTexture, JSObject? specularTexture, [JSMarshalAs<JSType.Any>] object properties);
     
     [JSImport("createTexture", nameof(Material))]
     private static partial JSObject CreateTexture(string path);
@@ -81,8 +82,9 @@ internal sealed partial class Material
 
         var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse"));
         var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"));
+        var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"));
 
-        material = CreateMaterial(diffuseTexture, normalTexture, properties);
+        material = CreateMaterial(diffuseTexture, normalTexture, specularTexture, properties);
         materials.Add(name, material);
         return material;
     }
