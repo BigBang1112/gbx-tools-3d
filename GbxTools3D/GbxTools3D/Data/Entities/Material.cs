@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Data.Entities;
 
-[Index(nameof(GameVersion), nameof(Name))]
+[Index(nameof(GameVersion))]
 public sealed class Material
 {
     public int Id { get; set; }
@@ -14,9 +14,6 @@ public sealed class Material
     
     [StringLength(byte.MaxValue)]
     public required string Name { get; set; }
-    
-    [StringLength(byte.MaxValue)]
-    public required string Path { get; set; }
     
     public CPlugSurface.MaterialId SurfaceId { get; set; }
     public bool IsShader { get; set; }

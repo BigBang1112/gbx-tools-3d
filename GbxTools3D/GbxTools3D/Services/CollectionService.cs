@@ -126,7 +126,7 @@ internal sealed class CollectionService
                 collection.Icon = null;
             }
 
-            if (collectionNode.CollectionIconFidFile is not null)
+            if (collectionNode.IconSmallFidFile is not null)
             {
                 if (collection.IconSmall is null)
                 {
@@ -134,10 +134,10 @@ internal sealed class CollectionService
                     await db.Icons.AddAsync(collection.IconSmall, cancellationToken);
                 }
 
-                collection.IconSmall.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(collectionNode.CollectionIconFidFile.GetFullPath(), null));
+                collection.IconSmall.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(collectionNode.IconSmallFidFile.GetFullPath(), null));
                 collection.IconSmall.UpdatedAt = DateTime.UtcNow;
 
-                var imageFullPath = collectionNode.CollectionIconFid?.ImageFile?.GetFullPath();
+                var imageFullPath = collectionNode.IconSmallFid?.ImageFile?.GetFullPath();
 
                 if (imageFullPath is not null)
                 {
@@ -249,7 +249,7 @@ internal sealed class CollectionService
                         continue;
                     }
                     
-                    await meshService.GetOrCreateMeshAsync(solidHash, path, solid, vehicle: null, cancellationToken);
+                    await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, cancellationToken);
                 }
                 
                 var lights = decorationNode.DecoSize.Scene.Lights ?? [];
@@ -496,7 +496,7 @@ internal sealed class CollectionService
 
                 var hash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
 
-                var mesh = await meshService.GetOrCreateMeshAsync(hash, path, solid, vehicle: null,
+                var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
                     cancellationToken);
 
                 var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
@@ -538,7 +538,7 @@ internal sealed class CollectionService
 
                     var solidHash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|Hella{isGround}|{i}|{j}|{k}|marosisPakPakGhidraGang".Hash();
                     
-                    var objectLinkMesh = await meshService.GetOrCreateMeshAsync(solidHash, objectLinkSolidPath, objectLinkSolid, vehicle: null,
+                    var objectLinkMesh = await meshService.GetOrCreateMeshAsync(gamePath, solidHash, objectLinkSolidPath, objectLinkSolid, vehicle: null,
                         cancellationToken);
                     
                     var objectLink = await db.ObjectLinks
@@ -606,7 +606,7 @@ internal sealed class CollectionService
             return null;
         }
         
-        return await meshService.GetOrCreateMeshAsync(toHash.Hash(), path, solid, vehicle: null, cancellationToken);
+        return await meshService.GetOrCreateMeshAsync(relativeTo, toHash.Hash(), path, solid, vehicle: null, cancellationToken);
     }
 
     public async Task<Collection?> GetAsync(GameVersion gameVersion, string collectionName, CancellationToken cancellationToken)

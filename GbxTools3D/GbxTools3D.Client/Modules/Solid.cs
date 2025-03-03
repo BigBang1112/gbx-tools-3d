@@ -106,6 +106,9 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("instantiate", nameof(Solid))]
     private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);
 
+    [JSImport("log", nameof(Solid))]
+    private static partial void Log(JSObject tree);
+
     public static async Task<Solid> ParseAsync(
         Stream stream, 
         Dictionary<string, MaterialDto>? availableMaterials,
@@ -169,6 +172,7 @@ internal sealed partial class Solid(JSObject obj)
         {
             tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
             UpdateMatrixWorld(tree);
+            Log(tree); // temporary
         }
 
         return new Solid(tree);

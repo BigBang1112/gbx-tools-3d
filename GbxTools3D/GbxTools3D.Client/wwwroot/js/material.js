@@ -7,7 +7,7 @@ export function get() {
 }
 
 export function getWithTexture(texture) {
-    return new THREE.MeshStandardMaterial({ map: texture });
+    return new THREE.MeshStandardMaterial({ map: texture, transparent: true });
 }
 
 export function loadTexture(path) {

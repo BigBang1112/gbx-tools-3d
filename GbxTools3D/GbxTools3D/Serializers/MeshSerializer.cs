@@ -2,7 +2,6 @@
 using GBX.NET.Components;
 using GBX.NET.Engines.Plug;
 using System.IO.Compression;
-using System.Xml.Linq;
 
 namespace GbxTools3D.Serializers;
 
@@ -24,20 +23,20 @@ public class MeshSerializer
             ? (byte)(vehicle.VisualVehicles.Length - 1) : lod;
     }
 
-    public static void Serialize(Stream stream, CPlugSolid solid, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
+    public static void Serialize(Stream stream, CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
     {
         var serializer = new MeshSerializer(solid, lod, collision, vehicle);
-        serializer.Serialize(stream);
+        serializer.Serialize(stream, gamePath);
     }
 
-    public static byte[] Serialize(CPlugSolid solid, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
+    public static byte[] Serialize(CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
     {
         using var ms = new MemoryStream();
-        Serialize(ms, solid, lod, collision, vehicle);
+        Serialize(ms, solid, gamePath, lod, collision, vehicle);
         return ms.ToArray();
     }
 
-    private void Serialize(Stream stream)
+    private void Serialize(Stream stream, string gamePath)
     {
         if (solid is not null && solid.Tree is not CPlugTree)
         {
@@ -64,7 +63,7 @@ public class MeshSerializer
 
         if (solid?.Tree is CPlugTree tree)
         {
-            WriteTree(w, tree, isRoot: true);
+            WriteTree(w, tree, gamePath, isRoot: true);
         }
 
         /*if (solid2 is not null)
@@ -75,7 +74,7 @@ public class MeshSerializer
         }*/
     }
 
-    private void WriteTree(AdjustedBinaryWriter w, CPlugTree tree, bool isRoot = false)
+    private void WriteTree(AdjustedBinaryWriter w, CPlugTree tree, string gamePath, bool isRoot = false)
     {
         ArgumentNullException.ThrowIfNull(tree);
 
@@ -86,7 +85,7 @@ public class MeshSerializer
 
         if (hasVisual)
         {
-            WriteShader(w, tree.ShaderFile);
+            WriteShader(w, tree.ShaderFile, gamePath);
         }
 
         if (vehicle is not null && isRoot && lod is null)
@@ -105,11 +104,11 @@ public class MeshSerializer
 
             visualMip.Levels.Sort((x, y) => x.FarZ.CompareTo(y.FarZ));
 
-            WriteVisualMip(w, visualMip);
+            WriteVisualMip(w, visualMip, gamePath);
         }
         else
         {
-            WriteVisualMip(w, tree as CPlugTreeVisualMip);
+            WriteVisualMip(w, tree as CPlugTreeVisualMip, gamePath);
         }
 
         WriteSurface(w, tree.Surface as CPlugSurface);
@@ -118,7 +117,7 @@ public class MeshSerializer
 
         foreach (var node in tree.Children.Where(x => ShouldIncludeTree(x, isRoot)))
         {
-            WriteTree(w, node);
+            WriteTree(w, node, gamePath);
         }
     }
 
@@ -285,7 +284,7 @@ public class MeshSerializer
         return true;
     }
 
-    private void WriteVisualMip(AdjustedBinaryWriter w, CPlugTreeVisualMip? mip)
+    private void WriteVisualMip(AdjustedBinaryWriter w, CPlugTreeVisualMip? mip, string gamePath)
     {
         if (mip is null)
         {
@@ -303,13 +302,13 @@ public class MeshSerializer
         foreach (var (distance, tree) in pickedLevels)
         {
             w.Write(distance);
-            WriteTree(w, tree);
+            WriteTree(w, tree, gamePath);
         }
     }
 
-    private static void WriteShader(AdjustedBinaryWriter w, GbxRefTableFile? shaderFile)
+    private static void WriteShader(AdjustedBinaryWriter w, GbxRefTableFile? shaderFile, string gamePath)
     {
-        w.Write(shaderFile is null ? string.Empty : GbxPath.GetFileNameWithoutExtension(shaderFile.FilePath));
+        w.Write(shaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(shaderFile.GetFullPath(), null)));
         w.Write(false); // additionalMaterialProperties
     }
 

@@ -82,7 +82,7 @@ internal sealed class MaterialService
                 alreadyProcessedShaders.Add(path, shaderMaterial);
             }
             
-            var parentName = GbxPath.GetFileNameWithoutExtension(parentPath);
+            var parentName = GbxPath.ChangeExtension(parentPath, null);
             var material = await db.Materials.FirstOrDefaultAsync(x =>
                 x.GameVersion == gameVersion && x.Name == parentName, cancellationToken);
             
@@ -103,7 +103,7 @@ internal sealed class MaterialService
     private async Task<Material> AddOrUpdateMaterial(string gamePath, GameVersion gameVersion,
         string materialPath, CPlugMaterial node, HashSet<string> alreadyProcessedTexturePaths, CancellationToken cancellationToken)
     {
-        var name = GbxPath.GetFileNameWithoutExtension(materialPath);
+        var name = GbxPath.ChangeExtension(materialPath, null);
             
         var material = await db.Materials.FirstOrDefaultAsync(x =>
             x.GameVersion == gameVersion && x.Name == name, cancellationToken);
@@ -113,14 +113,12 @@ internal sealed class MaterialService
             material = new Material
             {
                 Name = name,
-                GameVersion = gameVersion,
-                Path = materialPath
+                GameVersion = gameVersion
             };
             await db.Materials.AddAsync(material, cancellationToken);
         }
             
         material.SurfaceId = node.SurfaceId;
-        material.Path = materialPath;
             
         if (node.CustomMaterial is not null)
         {

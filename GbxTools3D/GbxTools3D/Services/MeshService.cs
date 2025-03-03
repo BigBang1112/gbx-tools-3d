@@ -47,19 +47,19 @@ internal sealed class MeshService
         return await db.Meshes.CountAsync(cancellationToken);
     }
 
-    public async Task<Mesh> GetOrCreateMeshAsync(string hash, string? path, CPlugSolid solid, CPlugVehicleVisModelShared? vehicle, CancellationToken cancellationToken = default)
+    public async Task<Mesh> GetOrCreateMeshAsync(string gamePath, string hash, string? path, CPlugSolid solid, CPlugVehicleVisModelShared? vehicle, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var mesh = await MeshFirstOrDefaultAsync(db, hash);
 
-        var data = MeshSerializer.Serialize(solid, vehicle: vehicle);
-        var dataLq = MeshSerializer.Serialize(solid, lod: 1, vehicle: vehicle);
+        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle);
+        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle);
         var dataELq = default(byte[]);
 
         if (vehicle?.VisualVehicles.Length > 2)
         {
-            dataELq = MeshSerializer.Serialize(solid, lod: 2, vehicle: vehicle);
+            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle);
         }
 
         if (mesh is null)
@@ -78,7 +78,7 @@ internal sealed class MeshService
         mesh.Data = data;
         mesh.DataLQ = data.Length == dataLq.Length ? null : dataLq;
         mesh.DataVLQ = dataELq is null || dataLq.Length == dataELq.Length ? null : dataELq;
-        mesh.DataSurf = MeshSerializer.Serialize(solid, vehicle: vehicle, collision: true);
+        mesh.DataSurf = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle, collision: true);
         mesh.UpdatedAt = DateTime.UtcNow;
 
         return mesh;

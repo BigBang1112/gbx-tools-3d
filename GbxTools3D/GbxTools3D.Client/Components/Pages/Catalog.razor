@@ -114,7 +114,7 @@
             </div>
         }
 
-        @if (AssetTypeEnum == Enums.AssetType.Block)
+        @if (AssetTypeEnum == Enums.AssetType.Block && SelectedCollection is not null)
         {
             <InputText type="text" @bind-Value="AssetSearchValue" @oninput="OnAssetSearchInput" placeholder="Search..." />
         }
@@ -214,7 +214,7 @@
             "decorations" => Enums.AssetType.Decoration,
             "items" => Enums.AssetType.Item,
             "macroblocks" => Enums.AssetType.Macroblock,
-            _ => Enums.AssetType.None
+            _ => Enums.AssetType.Block
         };
 
         await FetchInfoAsync();

@@ -137,3 +137,7 @@ export function instantiate(tree, instanceInfos) {
 
     tree.instanceMatrix.needsUpdate = true;
 }
+
+export function log(tree) {
+    console.log(tree);
+}

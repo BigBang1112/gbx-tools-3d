@@ -53,7 +53,7 @@ internal sealed class VehicleService
 
             var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
 
-            var mesh = await meshService.GetOrCreateMeshAsync(hash, path, solid,
+            var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid,
                 (modelNode.Vehicle as CSceneVehicleCar)?.VehicleStruct, cancellationToken);
 
             // TODO reference with vehicle
