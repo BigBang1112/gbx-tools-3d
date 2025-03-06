@@ -209,7 +209,7 @@ else
 
         var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
-        
+
         // setup camera
         camera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
         camera.CreateMapControls(renderer, center);
@@ -515,6 +515,7 @@ else
 
     public ValueTask DisposeAsync()
     {
+        cts.Cancel();
         cts.Dispose();
 
         if (RendererInfo.IsInteractive)

@@ -39,3 +39,20 @@
             font-size: 70%;
             color: #666;
         }
+
+.ext {
+    border-radius: 4px;
+    font-size: 90%;
+    padding: 2px 5px;
+    margin: 0 2px;
+}
+
+    .ext.gbx {
+        color: #DDD;
+        background: #257A;
+    }
+
+    .ext.other {
+        color: #DDD;
+        background: #642A;
+    }

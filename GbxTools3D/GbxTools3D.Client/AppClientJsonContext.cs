@@ -7,6 +7,7 @@ namespace GbxTools3D.Client;
 
 [JsonSerializable(typeof(MapContentDto))]
 [JsonSerializable(typeof(ReplayContentDto))]
+[JsonSerializable(typeof(ItemContentDto))]
 [JsonSerializable(typeof(List<BlockInfoDto>))]
 [JsonSerializable(typeof(List<DecorationSizeDto>))]
 [JsonSerializable(typeof(List<CollectionDto>))]

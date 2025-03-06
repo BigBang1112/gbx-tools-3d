@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
+using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 
 namespace GbxTools3D.Services;
@@ -151,49 +152,7 @@ internal sealed class MaterialService
 
                     try
                     {
-                        byte[] data;
-                        
-                        using (var image = DdsUtils.ToImageSharp(imageFullPath))
-                        using (var ms = new MemoryStream())
-                        {
-                            if (image.Width > 512 || image.Height > 512)
-                            {
-                                var newWidth = image.Width / 2;
-                                var newHeight = image.Height / 2;
-                                image.Mutate(x => x.Resize(newWidth, newHeight));
-                            }
-                            await image.SaveAsWebpAsync(ms, new WebpEncoder { Method = WebpEncodingMethod.Fastest },
-                                cancellationToken);
-                            data = ms.ToArray();
-                        }
-
-                        await using var scope = serviceProvider.CreateAsyncScope();
-                        var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        
-                        var texture = await scopedDb.Textures.FirstOrDefaultAsync(x =>
-                            x.GameVersion == gameVersion && x.Path == textureRelativePath, cancellationToken);
-
-                        var hash =
-                            $"GbxTools3D|Texture|{gameVersion}|{textureRelativePath}|PeopleOnTheBusLikeDMCA".Hash();
-
-                        if (texture is null)
-                        {
-                            texture = new Texture
-                            {
-                                Hash = hash,
-                                Data = data,
-                                GameVersion = gameVersion,
-                                Path = textureRelativePath
-                            };
-                            await scopedDb.Textures.AddAsync(texture, cancellationToken);
-                        }
-
-                        texture.Hash = hash;
-                        texture.Data = data;
-                        texture.ImagePath = Path.GetRelativePath(gamePath, imageFullPath);
-                        texture.UpdatedAt = DateTime.UtcNow;
-
-                        await scopedDb.SaveChangesAsync(cancellationToken);
+                        await ProcessTextureAsync(gamePath, gameVersion, bitmap, textureRelativePath, imageFullPath, cancellationToken);
                     }
                     catch (Exception ex)
                     {
@@ -219,5 +178,84 @@ internal sealed class MaterialService
         }
         
         return material;
+    }
+
+    private async Task ProcessTextureAsync(
+        string gamePath,
+        GameVersion gameVersion, 
+        CPlugMaterialCustom.Bitmap bitmap, 
+        string textureRelativePath,
+        string imageFullPath, 
+        CancellationToken cancellationToken)
+    {
+        byte[] data;
+
+        using (var image = DdsUtils.ToImageSharp(imageFullPath))
+        using (var ms = new MemoryStream())
+        {
+            if (image.Width > 512 || image.Height > 512)
+            {
+                var newWidth = image.Width / 2;
+                var newHeight = image.Height / 2;
+                image.Mutate(x => x.Resize(newWidth, newHeight));
+            }
+
+            if (bitmap.Name == "Normal")
+            {
+                if (image is Image<Bgra32> imageRgba)
+                {
+                    imageRgba.ProcessPixelRows(accessor =>
+                    {
+                        for (var y = 0; y < accessor.Height; y++)
+                        {
+                            var row = accessor.GetRowSpan(y);
+                            for (var x = 0; x < row.Length; x++)
+                            {
+                                var pixel = row[x];
+                                pixel.R = pixel.A;
+                                pixel.A = 255;
+                                row[x] = pixel;
+                            }
+                        }
+                    });
+                }
+                else
+                {
+                    logger.LogWarning("Normal map {ImageFullPath} is not RGBA32 - {Type}", imageFullPath, image.GetType());
+                }
+            }
+
+            await image.SaveAsWebpAsync(ms, new WebpEncoder { Method = WebpEncodingMethod.Fastest },
+                cancellationToken);
+            data = ms.ToArray();
+        }
+
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var texture = await scopedDb.Textures.FirstOrDefaultAsync(x =>
+            x.GameVersion == gameVersion && x.Path == textureRelativePath, cancellationToken);
+
+        var hash =
+            $"GbxTools3D|Texture|{gameVersion}|{textureRelativePath}|PeopleOnTheBusLikeDMCA".Hash();
+
+        if (texture is null)
+        {
+            texture = new Texture
+            {
+                Hash = hash,
+                Data = data,
+                GameVersion = gameVersion,
+                Path = textureRelativePath
+            };
+            await scopedDb.Textures.AddAsync(texture, cancellationToken);
+        }
+
+        texture.Hash = hash;
+        texture.Data = data;
+        texture.ImagePath = Path.GetRelativePath(gamePath, imageFullPath);
+        texture.UpdatedAt = DateTime.UtcNow;
+
+        await scopedDb.SaveChangesAsync(cancellationToken);
     }
 }

@@ -5,3 +5,151 @@
     transform: translate(-50%, -50%);
     z-index: 20;
 }
+
+
+.catalog {
+    position: fixed;
+    top: 120px;
+    bottom: 100px;
+    width: 500px;
+    box-sizing: border-box;
+    padding: 20px;
+    background-color: #111;
+    border: 2px solid #222;
+    border-left: 0;
+    border-radius: 0 10px 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    left: 0;
+    transition: left 0.4s ease;
+}
+
+    .catalog.closed {
+        left: -500px;
+    }
+
+    .catalog .games {
+        display: flex;
+        flex-flow: wrap;
+    }
+
+        .catalog .games ::deep a {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            padding: 10px;
+            flex: 1;
+            border-radius: 5px;
+        }
+
+            .catalog .games ::deep a:hover {
+                background-color: #333;
+            }
+
+            .catalog .games ::deep a.active {
+                background-color: #444;
+            }
+
+            .catalog .games ::deep a img {
+                border-radius: 3px;
+            }
+
+    .catalog .collections {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        background-color: #1A1A1A;
+        border: 1px solid #333;
+        border-radius: 5px;
+        padding: 5px;
+    }
+
+        .catalog .collections ::deep a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+        }
+
+            .catalog .collections ::deep a:hover {
+                background-color: #333;
+            }
+
+            .catalog .collections ::deep a.active {
+                background-color: #444;
+            }
+
+    .catalog .asset-types {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+    }
+
+        .catalog .asset-types ::deep a {
+            flex: 1;
+        }
+
+    .catalog .assets {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        background-color: #1A1A1A;
+        border: 1px solid #333;
+        border-radius: 5px;
+        overflow: hidden auto;
+    }
+
+        .catalog .assets ::deep a {
+            display: flex;
+            padding: 10px;
+            padding: 4px 6px;
+            gap: 6px;
+            align-items: center;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            animation: fadeIn 0.3s;
+        }
+
+            .catalog .assets ::deep a:hover {
+                background-color: #333;
+            }
+
+            .catalog .assets ::deep a.active {
+                background-color: #444;
+            }
+
+            .catalog .assets ::deep a img {
+                border-radius: 3px;
+            }
+
+    .catalog .opener {
+        display: flex;
+        position: absolute;
+        left: 100%;
+        padding: 0.8rem;
+        background-color: #111;
+        border: 2px solid #222;
+        border-left: 0;
+        border-radius: 0 10px 10px 0;
+        cursor: pointer;
+    }
+
+        .catalog .opener:hover {
+            background-color: #222;
+        }
+
+@media (max-width: 580px) {
+    .catalog {
+        width: calc(100% - 4rem);
+    }
+
+        .catalog.closed {
+            left: calc(-100% + 4rem);
+        }
+}

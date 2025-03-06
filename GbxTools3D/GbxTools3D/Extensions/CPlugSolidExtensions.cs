@@ -7,7 +7,7 @@ internal static class CPlugSolidExtensions
     public static void PopulateUsedMaterials(this CPlugSolid solid, Dictionary<string, CPlugMaterial?> materials, string relativeTo)
     {
         var materialFiles = ((CPlugTree?)solid.Tree)?
-            .GetAllChildren()
+            .GetAllChildren(includeVisualMipLevels: true)
             .Where(x => x.ShaderFile is not null)
             .Select(x => (x.ShaderFile!, x.Shader as CPlugMaterial)) ?? [];
 

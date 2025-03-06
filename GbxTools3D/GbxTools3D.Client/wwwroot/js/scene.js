@@ -2,7 +2,7 @@
 
 export function create() {
     const scene = new THREE.Scene();
-    add(scene, new THREE.AmbientLight(0x7F7F7F));
+    add(scene, new THREE.AmbientLight(0x888888));
     add(scene, createDirectionalLight());
     scene.updateMatrixWorld();
     return scene;
@@ -54,7 +54,7 @@ export function remove(scene, obj) {
 }
 
 function createDirectionalLight() {
-    const light = new THREE.DirectionalLight(0xffffff, 1);
+    const light = new THREE.DirectionalLight(0xffffff, 2.5);
     light.matrixAutoUpdate = true;
     light.matrixWorldAutoUpdate = true;
     light.shadow.matrixAutoUpdate = true;

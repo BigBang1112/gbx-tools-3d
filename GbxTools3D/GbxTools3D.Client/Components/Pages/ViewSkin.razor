@@ -1,0 +1,54 @@
+﻿@page "/view/skin"
+@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+
+@using GBX.NET
+@using GBX.NET.Engines.Game
+
+@inject HttpClient Http
+@inject GbxService GbxService
+
+<PageTitle>View skin - 3D Gbx Tools</PageTitle>
+
+@if (IsDragAndDrop)
+{
+    <div class="container">
+        <div class="navbar-fake-margin"></div>
+        <h2 class="view">View a skin</h2>
+        <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
+    </div>
+}
+else
+{
+    <View3D GameVersion="GameVersion.TMF" @ref="view3d"></View3D>
+}
+
+@code {
+    private View3D? view3d;
+
+    private string[] extensions = ["zip", "Pack.Gbx"];
+
+    public bool IsDragAndDrop => true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+    }
+
+    private async Task OnUploadAsync(UploadEventArgs e)
+    {
+        
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        GbxService.Deselect(); // can be more flexible
+
+        return ValueTask.CompletedTask;
+    }
+}

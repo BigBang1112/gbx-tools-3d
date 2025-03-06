@@ -49,6 +49,8 @@
         var currentPath = NavManager.Uri.Replace(NavManager.BaseUri, ""); // Get relative path
         return currentPath.StartsWith("view/map") ||
                currentPath.StartsWith("view/replay") ||
+               currentPath.StartsWith("view/item") ||
+               currentPath.StartsWith("view/ghost") ||
                currentPath.StartsWith("view/skin") ||
                currentPath.StartsWith("catalog");
     }

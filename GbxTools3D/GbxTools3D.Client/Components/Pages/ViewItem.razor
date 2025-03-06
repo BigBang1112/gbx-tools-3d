@@ -1,0 +1,117 @@
+﻿@page "/view/item"
+@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+
+@using GBX.NET
+@using GBX.NET.Engines.GameData
+
+@inject HttpClient Http
+@inject GbxService GbxService
+
+<PageTitle>View item - 3D Gbx Tools</PageTitle>
+
+@if (IsDragAndDrop && item is null)
+{
+    <div class="container">
+        <div class="navbar-fake-margin"></div>
+        <h2 class="view">View an item (or a custom block)</h2>
+        <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
+        <div class="view-external">
+            <EditForm Model="@this" class="view-form">
+                <DataAnnotationsValidator />
+                <label for="external-select">External:</label>
+                <InputSelect id="external-select" @bind-Value="selectedExternal">
+                    <option value="ix">IX</option>
+                    <option value="url">URL</option>
+                </InputSelect>
+                @switch (selectedExternal)
+                {
+                    case "ix":
+                        <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
+                        break;
+
+                }
+                <button type="submit">Load</button>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <View3D GameVersion="GameVersion.TMF" @ref="view3d"></View3D>
+}
+
+@code {
+    private View3D? view3d;
+
+    private string[] extensions = ["Item.Gbx", "Block.Gbx"];
+
+    [SupplyParameterFromQuery(Name = "type")]
+    private string? Type { get; set; }
+
+    [SupplyParameterFromQuery(Name = "id")]
+    private string? ItemId { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(Type);
+
+    private CGameItemModel? item;
+
+    private string selectedExternal = "ix";
+    private string selectedMx = "tm2020";
+    private string externalId = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        if (IsDragAndDrop)
+        {
+            return;
+        }
+
+        string endpoint;
+        if (!string.IsNullOrEmpty(Type))
+        {
+            endpoint = $"/api/item/{Type}/{ItemId}";
+        }
+        else
+        {
+            throw new Exception();
+        }
+
+        using var response = await Http.GetAsync(endpoint);
+        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ItemContentDto);
+
+        if (content is null)
+        {
+            return;
+        }
+
+        await using var ms = new MemoryStream(content.Content);
+        item = Gbx.ParseNode<CGameItemModel>(ms);
+    }
+
+    private async Task OnUploadAsync(UploadEventArgs e)
+    {
+        using var ms = new MemoryStream(e.Data);
+        var gbx = await Gbx.ParseAsync(ms);
+
+        if (gbx is Gbx<CGameItemModel> item)
+        {
+            GbxService.Add(item);
+            this.item = item.Node;
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        GbxService.Deselect(); // can be more flexible
+
+        return ValueTask.CompletedTask;
+    }
+}

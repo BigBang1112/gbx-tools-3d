@@ -6,7 +6,23 @@
     {
         @if (uploadFileName is null)
         {
-            <span>Drag & Drop @(Extensions?.Length > 0 ? string.Join(" / ", Extensions.Select(x => "*." + x)) : "any") file here...</span>
+            <span>Drag & Drop 
+                @if (Extensions?.Length > 0)
+                {
+                    @foreach (var ext in Extensions)
+                    {
+                        if (ext != Extensions[0])
+                        {
+                            <span>/</span>
+                        }
+                        <span class="ext @(ext.EndsWith("Gbx") ? "gbx" : "other")">@ext</span>
+                    }
+                }
+                else
+                {
+                    <span>any</span>
+                }
+                file here...</span>
             <span class="note">or click to upload</span>
         }
         else
