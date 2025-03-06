@@ -10,7 +10,7 @@
 
 <PageTitle>View map - 3D Gbx Tools</PageTitle>
 
-@if (IsDragAndDrop && map is null)
+@if (IsDragAndDrop && Map is null)
 {
     <div class="container">
         <div class="navbar-fake-margin"></div>
@@ -53,14 +53,14 @@
                         <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
                         break;
                 }
-                <button type="submit">Load</button>
+                <button type="submit" class="button-generic">Load</button>
             </EditForm>
         </div>
     </div>
 }
 else
 {
-    <View3D GameVersion="GameVersion.TMF" Map="map" @ref="view3d"></View3D>
+    <View3D GameVersion="GameVersion.TMF" Map="Map" @ref="view3d"></View3D>
 }
 
 @code {
@@ -79,7 +79,7 @@ else
 
     public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
 
-    private CGameCtnChallenge? map;
+    public CGameCtnChallenge? Map { get; set; }
 
     private string selectedExternal = "tmx";
     private string selectedTmx = "tmnf";
@@ -97,13 +97,7 @@ else
 
         if (IsDragAndDrop)
         {
-            map = GbxService.SelectedMap?.Node;
-
-            if (map is not null)
-            {
-                await TryLoadMapAsync();
-            }
-
+            Map = GbxService.SelectedMap?.Node;
             return;
         }
 
@@ -130,9 +124,7 @@ else
         }
 
         await using var ms = new MemoryStream(content.Content);
-        map = Gbx.ParseNode<CGameCtnChallenge>(ms);
-
-        await TryLoadMapAsync();
+        Map = Gbx.ParseNode<CGameCtnChallenge>(ms);
     }
 
     private async Task OnUploadAsync(UploadEventArgs e)
@@ -143,19 +135,8 @@ else
         if (gbx is Gbx<CGameCtnChallenge> map)
         {
             GbxService.Add(map);
-            this.map = map.Node;
-            await TryLoadMapAsync();
+            Map = map.Node;
         }
-    }
-
-    private async ValueTask<bool> TryLoadMapAsync()
-    {
-        if (view3d is null)
-        {
-            return false;
-        }
-
-        return await view3d.TryLoadMapAsync();
     }
 
     public ValueTask DisposeAsync()

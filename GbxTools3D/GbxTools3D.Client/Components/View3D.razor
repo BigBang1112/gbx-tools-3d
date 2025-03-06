@@ -33,9 +33,6 @@ else
 
     private Solid? focusedSolid;
 
-    private bool contentLoading;
-    private bool contentLoaded;
-
     [Parameter, EditorRequired]
     public GameVersion GameVersion { get; set; }
 
@@ -47,6 +44,9 @@ else
 
     [Parameter]
     public string? BlockName { get; set; }
+
+    [Parameter]
+    public EventCallback BeforeMapLoad { get; set; }
 
     private Dictionary<string, BlockInfoDto> blockInfos = [];
     private Dictionary<Int3, DecorationSizeDto> decorations = [];
@@ -64,9 +64,9 @@ else
         if (firstRender)
         {
             await LoadSceneAsync(cts.Token);
+            await TryLoadMapAsync(cts.Token);
         }
 
-        await TryLoadMapAsync(cts.Token);
         await TryLoadBlockAsync(cts.Token);
     }
 
@@ -127,7 +127,7 @@ else
         return true;
     }
 
-    public async Task<bool> TryLoadBlockAsync(CancellationToken cancellationToken = default)
+    private async Task<bool> TryLoadBlockAsync(CancellationToken cancellationToken = default)
     {
         if (camera is null || renderer is null || BlockName is null)
         {
@@ -160,7 +160,7 @@ else
 
         if (BlockName is null || !blockInfos.TryGetValue(BlockName, out var blockInfo))
         {
-            return contentLoading = false;
+            return false;
         }
 
         var isGround = blockInfo.AirVariants.Count == 0;
@@ -198,14 +198,14 @@ else
         return true;
     }
 
-    public async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
+    private async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
     {
-        if (Map is null || camera is null || renderer is null || contentLoading || contentLoaded)
+        if (Map is null || camera is null || renderer is null)
         {
             return false;
         }
 
-        contentLoading = true;
+        await BeforeMapLoad.InvokeAsync();
 
         var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
@@ -294,7 +294,26 @@ else
             await ProcessResponses(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, Map, cancellationToken);
         }
 
-        return contentLoaded = true;
+        return true;
+    }
+
+    internal async Task<Solid?> LoadGhostAsync(CGameCtnGhost ghost, CancellationToken cancellationToken = default)
+    {
+        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{ghost.PlayerModel?.Id}|WhyDidYouNotHelpMe?".Hash();
+
+        using var meshResponse = await Http.GetAsync($"/api/mesh/{hash}", cancellationToken);
+
+        if (!meshResponse.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        var vehicle = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        scene?.Add(vehicle);
+
+        return vehicle;
     }
 
     private async Task ProcessResponses(

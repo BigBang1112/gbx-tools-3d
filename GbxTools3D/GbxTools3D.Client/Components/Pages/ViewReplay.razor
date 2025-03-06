@@ -10,7 +10,7 @@
 
 <PageTitle>View replay - 3D Gbx Tools</PageTitle>
 
-@if (IsDragAndDrop && replay?.Challenge is null)
+@if (IsDragAndDrop && Replay is null)
 {
 
     <div class="container">
@@ -54,23 +54,24 @@
                         <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
                         break;
                 }
-                <button type="submit">Load</button>
+                <button type="submit" class="button-generic">Load</button>
             </EditForm>
         </div>
     </div>
 }
 else
 {
-    <View3D GameVersion="GameVersion.TMF" Map="replay?.Challenge" @ref="view3d"></View3D>
-    <div class="player">
-        <div class="progress"></div>
-        <div class="controls">
-            <button>Play</button>
-            <button>Back 10s</button>
-            <button>Forw 10s</button>
-            <span>0:00.000 / 1:00.000</span>
+    <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" @ref="view3d"></View3D>
+    @if (RendererInfo.IsInteractive)
+    {
+        <div class="player">
+            <div class="progress"><div class="progress-value" style="width: 0%"></div></div>
+            <div class="controls">
+                <button class="button-control"><img src="icons/play.svg" width="48" height="48" /></button>
+                <span>0:00.000 / 1:00.000</span>
+            </div>
         </div>
-    </div>
+    }
 }
 
 @code {
@@ -89,7 +90,7 @@ else
 
     public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
 
-    private CGameCtnReplayRecord? replay;
+    public CGameCtnReplayRecord? Replay { get; set; }
 
     private string selectedExternal = "tmx";
     private string selectedTmx = "tmnf";
@@ -98,8 +99,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await base.OnInitializedAsync();
-
         if (!RendererInfo.IsInteractive)
         {
             return;
@@ -107,13 +106,7 @@ else
 
         if (IsDragAndDrop)
         {
-            replay = GbxService.SelectedReplay?.Node;
-
-            if (replay is not null)
-            {
-                await TryLoadMapAsync();
-            }
-
+            Replay = GbxService.SelectedReplay?.Node;
             return;
         }
 
@@ -140,32 +133,50 @@ else
         }
 
         await using var ms = new MemoryStream(content.Content);
-        replay = Gbx.ParseNode<CGameCtnReplayRecord>(ms);
-
-        await TryLoadMapAsync();
+        Replay = Gbx.ParseNode<CGameCtnReplayRecord>(ms);
     }
 
     private async Task OnUploadAsync(UploadEventArgs e)
     {
-        using var ms = new MemoryStream(e.Data);
+        await using var ms = new MemoryStream(e.Data);
         var gbx = await Gbx.ParseAsync(ms);
 
         if (gbx is Gbx<CGameCtnReplayRecord> replay)
         {
             GbxService.Add(replay);
-            this.replay = replay.Node;
-            await TryLoadMapAsync();
+            Replay = replay.Node;
         }
     }
 
-    private async ValueTask<bool> TryLoadMapAsync()
+    private async Task BeforeMapLoadAsync()
     {
-        if (view3d is null)
+        await TryLoadReplayAsync();
+    }
+
+    private async ValueTask<bool> TryLoadReplayAsync()
+    {
+        if (view3d is null || Replay is null)
         {
             return false;
         }
-        
-        return await view3d.TryLoadMapAsync();
+
+        var ghost = Replay.GetGhosts().FirstOrDefault();
+
+        if (ghost is null)
+        {
+            return false;
+        }
+
+        var ghostSolid = await view3d.LoadGhostAsync(ghost);
+
+        if (ghostSolid is null)
+        {
+            return false;
+        }
+
+        ghostSolid.Position = ghost.SampleData?.Samples.FirstOrDefault()?.Position ?? default;
+
+        return true;
     }
 
     public ValueTask DisposeAsync()

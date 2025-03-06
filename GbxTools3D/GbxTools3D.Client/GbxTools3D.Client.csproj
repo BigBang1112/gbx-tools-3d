@@ -12,6 +12,7 @@
     <ItemGroup>
         <PackageReference Include="GBX.NET" Version="2.1.1-nightly.20250302.4b887f5" />
         <PackageReference Include="GBX.NET.LZO" Version="2.1.2" />
+        <PackageReference Include="GBX.NET.ZLib" Version="1.1.1" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.1" />
         <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     </ItemGroup>
