@@ -54,7 +54,7 @@ export function remove(scene, obj) {
 }
 
 function createDirectionalLight() {
-    const light = new THREE.DirectionalLight(0xffffff, 2.5);
+    const light = new THREE.DirectionalLight(0xffffff, 2);
     light.matrixAutoUpdate = true;
     light.matrixWorldAutoUpdate = true;
     light.shadow.matrixAutoUpdate = true;

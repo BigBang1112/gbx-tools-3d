@@ -1,11 +1,15 @@
 ﻿import * as THREE from 'three';
 import { updateCamera } from './camera.js';
+import { updateMixer } from './animation.js';
 
 let renderer, scene, camera, stats;
 
+//THREE.Object3D.DEFAULT_MATRIX_AUTO_UPDATE = false;
+//THREE.Object3D.DEFAULT_MATRIX_WORLD_AUTO_UPDATE = false;
+
+const clock = new THREE.Clock();
+
 export function create() {
-    THREE.Object3D.DEFAULT_MATRIX_AUTO_UPDATE = false;
-    THREE.Object3D.DEFAULT_MATRIX_WORLD_AUTO_UPDATE = false;
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.shadowMap.enabled = true;
@@ -55,6 +59,9 @@ export function dispose() {
 
 function update() {
     stats.begin();
+
+    let delta = clock.getDelta();
+    updateMixer(delta);
     
     if (scene && camera) {
         updateCamera(camera);

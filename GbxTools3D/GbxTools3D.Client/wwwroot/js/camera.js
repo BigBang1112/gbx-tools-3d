@@ -11,8 +11,6 @@ export function create() {
     camera.position.y = 2;
     camera.position.z = 5;
     camera.lookAt(0, 0, 0);
-    camera.matrixAutoUpdate = true;
-    camera.matrixWorldAutoUpdate = true;
     return camera;
 }
 

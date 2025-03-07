@@ -26,6 +26,7 @@ else
     private JSObject? cameraModule;
     private JSObject? solidModule;
     private JSObject? materialModule;
+    private JSObject? animationModule;
 
     private JSObject? renderer;
     private Scene? scene;
@@ -77,6 +78,7 @@ else
         cameraModule = await JSHost.ImportAsync(nameof(Camera), "../js/camera.js", cancellationToken);
         solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
         materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
+        animationModule = await JSHost.ImportAsync(nameof(Animation), "../js/animation.js", cancellationToken);
 
         renderer = Renderer.Create();
         scene = new Scene();
@@ -310,7 +312,7 @@ else
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var vehicle = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        var vehicle = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false, castShadow: false);
         scene?.Add(vehicle);
 
         return vehicle;
@@ -550,6 +552,7 @@ else
         cameraModule?.Dispose();
         solidModule?.Dispose();
         materialModule?.Dispose();
+        animationModule?.Dispose();
 
         return ValueTask.CompletedTask;
     }

@@ -4,6 +4,8 @@
 
 @using GBX.NET
 @using GBX.NET.Engines.Game
+@using GbxTools3D.Client.Modules
+@using System.Runtime.InteropServices.JavaScript
 
 @inject HttpClient Http
 @inject GbxService GbxService
@@ -67,7 +69,7 @@ else
         <div class="player">
             <div class="progress"><div class="progress-value" style="width: 0%"></div></div>
             <div class="controls">
-                <button class="button-control"><img src="icons/play.svg" width="48" height="48" /></button>
+                <button class="button-control" @onclick="Play"><img src="icons/play.svg" width="48" height="48" /></button>
                 <span>0:00.000 / 1:00.000</span>
             </div>
         </div>
@@ -76,6 +78,8 @@ else
 
 @code {
     private View3D? view3d;
+
+    private JSObject? action;
 
     private string[] extensions = ["Replay.Gbx"];
 
@@ -167,6 +171,11 @@ else
             return false;
         }
 
+        if (ghost.SampleData is null)
+        {
+            return false;
+        }
+
         var ghostSolid = await view3d.LoadGhostAsync(ghost);
 
         if (ghostSolid is null)
@@ -174,7 +183,40 @@ else
             return false;
         }
 
-        ghostSolid.Position = ghost.SampleData?.Samples.FirstOrDefault()?.Position ?? default;
+        var firstSample = ghost.SampleData.Samples.FirstOrDefault();
+
+        if (firstSample is null)
+        {
+            return false;
+        }
+
+        ghostSolid.Position = firstSample.Position;
+        ghostSolid.RotationQuaternion = firstSample.Rotation;
+
+        var times = new double[ghost.SampleData.Samples.Count];
+        var positions = new double[ghost.SampleData.Samples.Count * 3];
+        var rotations = new double[ghost.SampleData.Samples.Count * 4];
+
+        for (var i = 0; i < ghost.SampleData.Samples.Count; i++)
+        {
+            var sample = ghost.SampleData.Samples[i];
+            times[i] = sample.Time.TotalSeconds;
+            positions[i * 3] = sample.Position.X;
+            positions[i * 3 + 1] = sample.Position.Y;
+            positions[i * 3 + 2] = sample.Position.Z;
+            rotations[i * 4] = sample.Rotation.X;
+            rotations[i * 4 + 1] = sample.Rotation.Y;
+            rotations[i * 4 + 2] = sample.Rotation.Z;
+            rotations[i * 4 + 3] = sample.Rotation.W;
+        }
+
+        var positionTrack = Animation.CreatePositionTrack(times, positions);
+        var rotationTrack = Animation.CreateQuaternionTrack(times, rotations);
+
+        var clip = Animation.CreateClip("Vehicle", times.Last(), [positionTrack, rotationTrack]);
+
+        Animation.CreateMixer(ghostSolid.Object);
+        action = Animation.CreateAction(clip);
 
         return true;
     }
@@ -184,5 +226,13 @@ else
         GbxService.Deselect(); // can be more flexible
 
         return ValueTask.CompletedTask;
+    }
+
+    private void Play()
+    {
+        if (action is not null)
+        {
+            Animation.PlayAction(action);
+        }
     }
 }

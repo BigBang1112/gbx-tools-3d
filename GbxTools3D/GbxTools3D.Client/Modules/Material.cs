@@ -24,8 +24,12 @@ internal sealed partial class Material
         ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft"] = new(Transparent: true),
         ["Techno/Media/Material/TDiff PX2 Trans"] = new(Transparent: true),
         ["Techno/Media/Material/TDiff PX2 Trans 2Sided"] = new Properties(DoubleSided: true, Transparent: true),
+        ["Techno/Media/Material/TDiffG PX2 CSpec FCOut Trans"] = new(Transparent: true),
+        ["Techno/Media/Material/TDiffG PX2 CSpecL Trans"] = new(Transparent: true),
+        ["Techno/Media/Material/TDiff PX2 Trans NormY PC3only"] = new(DoubleSided: true, Transparent: true),
         //["Techno/Media/Material/PDiff Fresnel PX2"] = new(WorldUV: true),
-        ["Techno/Media/Material/Sky"] = new Properties(Basic: true)
+        ["Techno/Media/Material/Sky"] = new Properties(Basic: true),
+        //["Techno/Media/Material/PDiff PDiff PA PX2"] = new(WorldUV: true),
     };
 
     private static readonly Dictionary<string, JSObject> textures = [];

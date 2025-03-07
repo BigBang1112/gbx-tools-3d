@@ -4,8 +4,10 @@ import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
 
 const material = new THREE.MeshMatcapMaterial({ color: 0xAD9000 });
 
-export function create() {
+export function create(matrixAutoUpdate) {
     var obj = new THREE.Object3D();
+    obj.matrixAutoUpdate = matrixAutoUpdate;
+    obj.matrixWorldAutoUpdate = matrixAutoUpdate;
     return obj;
 }
 
@@ -17,8 +19,12 @@ export function setPosition(tree, x, y, z) {
     tree.position.set(x, y, z);
 }
 
-export function setRotation(tree, xx, xy, xz, yx, yy, yz, zx, zy, zz) {
-    tree.rotation.setFromRotationMatrix(new THREE.Matrix4().set(xx, xy, xz, 0, yx, yy, yz, 0, zx, zy, zz, 0, 0, 0, 0, 1));
+export function setRotationMatrix(tree, xx, xy, xz, yx, yy, yz, zx, zy, zz) {
+    tree.setRotationFromMatrix(new THREE.Matrix4().set(xx, xy, xz, 0, yx, yy, yz, 0, zx, zy, zz, 0, 0, 0, 0, 1));
+}
+
+export function setRotationQuaternion(tree, x, y, z, w) {
+    tree.setRotationFromQuaternion(new THREE.Quaternion(x, y, z, w));
 }
 
 export function updateMatrix(tree) {
@@ -95,6 +101,8 @@ export function createInstancedMesh(geometry, materials, expectedMeshCount, rece
     //mesh.computeBVH({ margin: 0 });
     mesh.receiveShadow = receiveShadow;
     mesh.castShadow = castShadow;
+    mesh.matrixAutoUpdate = false;
+    mesh.matrixWorldAutoUpdate = false;
     return mesh;
 }
 
@@ -102,8 +110,6 @@ export function createMesh(geometry, materials, receiveShadow, castShadow) {
     const mesh = new THREE.Mesh(geometry, materials);
     mesh.receiveShadow = receiveShadow;
     mesh.castShadow = castShadow;
-    mesh.matrixAutoUpdate = true;
-    mesh.matrixWorldAutoUpdate = true;
     mesh.material.needsUpdate = true;
     return mesh;
 }

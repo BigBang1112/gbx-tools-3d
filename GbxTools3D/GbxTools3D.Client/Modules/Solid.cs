@@ -30,11 +30,21 @@ internal sealed partial class Solid(JSObject obj)
         }
     }
 
-    public Mat3 Rotation
+    public Mat3 RotationMatrix
     {
         set
         {
-            SetRotation(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            SetRotationMatrix(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            UpdateMatrix(Object);
+            UpdateMatrixWorld(Object);
+        }
+    }
+
+    public Quat RotationQuaternion
+    {
+        set
+        {
+            SetRotationQuaternion(Object, value.X, value.Y, value.Z, value.W);
             UpdateMatrix(Object);
             UpdateMatrixWorld(Object);
         }
@@ -44,7 +54,7 @@ internal sealed partial class Solid(JSObject obj)
     {
         set
         {
-            SetRotation(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
+            SetRotationMatrix(Object, value.XX, value.XY, value.XZ, value.YX, value.YY, value.YZ, value.ZX, value.ZY, value.ZZ);
             SetPosition(Object, value.TX, value.TY, value.TZ);
             UpdateMatrix(Object);
             UpdateMatrixWorld(Object);
@@ -52,7 +62,7 @@ internal sealed partial class Solid(JSObject obj)
     }
 
     [JSImport("create", nameof(Solid))]
-    private static partial JSObject Create();
+    private static partial JSObject Create(bool matrixAutoUpdate);
 
     [JSImport("add", nameof(Solid))]
     private static partial void Add(JSObject tree, JSObject child);
@@ -60,8 +70,11 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("setPosition", nameof(Solid))]
     private static partial void SetPosition(JSObject tree, double x, double y, double z);
 
-    [JSImport("setRotation", nameof(Solid))]
-    private static partial void SetRotation(JSObject tree, double xx, double xy, double xz, double yx, double yy, double yz, double zx, double zy, double zz);
+    [JSImport("setRotationMatrix", nameof(Solid))]
+    private static partial void SetRotationMatrix(JSObject tree, double xx, double xy, double xz, double yx, double yy, double yz, double zx, double zy, double zz);
+
+    [JSImport("setRotationQuaternion", nameof(Solid))]
+    private static partial void SetRotationQuaternion(JSObject tree, double x, double y, double z, double w);
 
     [JSImport("updateMatrix", nameof(Solid))]
     private static partial void UpdateMatrix(JSObject tree);
@@ -151,7 +164,7 @@ internal sealed partial class Solid(JSObject obj)
             switch (geometries.Count)
             {
                 case 0:
-                    tree = Create();
+                    tree = Create(matrixAutoUpdate: false);
                     break;
                 case 1:
                     tree = expectedMeshCount.HasValue
@@ -171,7 +184,6 @@ internal sealed partial class Solid(JSObject obj)
         else
         {
             tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
-            UpdateMatrixWorld(tree);
             Log(tree); // temporary
         }
 
@@ -269,14 +281,14 @@ internal sealed partial class Solid(JSObject obj)
         bool castShadow,
         Dictionary<string, MaterialDto>? availableMaterials = null)
     {
-        var tree = Create();
+        var tree = Create(matrixAutoUpdate: true);
 
         var childrenCount = r.Read7BitEncodedInt();
 
         if (r.ReadBoolean())
         {
             var mat3 = ReadMatrix3(r);
-            SetRotation(tree, mat3.XX, mat3.XY, mat3.XZ, mat3.YX, mat3.YY, mat3.YZ, mat3.ZX, mat3.ZY, mat3.ZZ);
+            SetRotationMatrix(tree, mat3.XX, mat3.XY, mat3.XZ, mat3.YX, mat3.YY, mat3.YZ, mat3.ZX, mat3.ZY, mat3.ZZ);
         }
 
         if (r.ReadBoolean())
@@ -285,14 +297,17 @@ internal sealed partial class Solid(JSObject obj)
             SetPosition(tree, pos.X, pos.Y, pos.Z);
         }
 
-        UpdateMatrix(tree);
-
         var geometry = ReadVisualAsGeometry(r, rot: Mat3.Identity, pos: Vector3.Zero);
 
         if (geometry is not null)
         {
             var materialName = r.ReadString();
             var additionalMaterialProperties = r.ReadBoolean();
+
+            if (additionalMaterialProperties)
+            {
+                castShadow = r.ReadBoolean();
+            }
             
             var visual = expectedMeshCount.HasValue
                 ? CreateInstancedMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, availableMaterials), expectedMeshCount.Value, receiveShadow, castShadow)
@@ -317,7 +332,7 @@ internal sealed partial class Solid(JSObject obj)
 
                 var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
 
-                AddLod(lod, lodTree, distance);
+                AddLod(lod, lodTree, distance + 64);
             }
 
             Add(tree, lod);
