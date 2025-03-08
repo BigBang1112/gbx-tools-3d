@@ -13,7 +13,6 @@ public sealed class CollectionDto
 
     public bool HasBlocks { get; set; }
     public bool HasDecorations { get; set; }
-    public bool HasVehicles { get; set; }
     public bool HasItems { get; set; }
     public bool HasMacroblocks { get; set; }
 }

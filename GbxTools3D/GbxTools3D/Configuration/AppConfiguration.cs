@@ -31,6 +31,7 @@ internal static class AppConfiguration
         services.AddScoped<ICollectionClientService, CollectionClientService>();
         services.AddScoped<IBlockClientService, BlockClientService>();
         services.AddScoped<IDecorationClientService, DecorationClientService>();
+        services.AddScoped<IVehicleClientService, VehicleClientService>();
         services.AddScoped<MaterialService>();
         services.AddScoped<MeshService>();
 

@@ -18,5 +18,6 @@ builder.Services.AddSingleton<GbxService>();
 builder.Services.AddScoped<ICollectionClientService, CollectionClientService>();
 builder.Services.AddScoped<IBlockClientService, BlockClientService>();
 builder.Services.AddScoped<IDecorationClientService, DecorationClientService>();
+builder.Services.AddScoped<IVehicleClientService, VehicleClientService>();
 
 await builder.Build().RunAsync();

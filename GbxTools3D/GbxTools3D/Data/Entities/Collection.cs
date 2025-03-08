@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using GBX.NET;
-using GbxTools3D.Client.Dtos;
 
 namespace GbxTools3D.Data.Entities;
 

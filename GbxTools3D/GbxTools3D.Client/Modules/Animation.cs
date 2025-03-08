@@ -23,4 +23,10 @@ internal static partial class Animation
 
     [JSImport("playAction", nameof(Animation))]
     public static partial JSObject PlayAction(JSObject action);
+
+    [JSImport("pauseAction", nameof(Animation))]
+    public static partial JSObject PauseAction(JSObject action);
+
+    [JSImport("resumeAction", nameof(Animation))]
+    public static partial JSObject ResumeAction(JSObject action);
 }

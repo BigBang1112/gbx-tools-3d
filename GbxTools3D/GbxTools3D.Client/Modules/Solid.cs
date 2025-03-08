@@ -237,7 +237,12 @@ internal sealed partial class Solid(JSObject obj)
 
             var materialName = r.ReadString();
             var additionalMaterialProperties = r.ReadBoolean();
-            
+
+            if (additionalMaterialProperties)
+            {
+                r.ReadBoolean(); // castShadow, cannot work here rip
+            }
+
             materials.Add(Material.GetOrCreateMaterial(materialName, availableMaterials));
         }
 

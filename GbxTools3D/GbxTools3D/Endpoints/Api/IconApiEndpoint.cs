@@ -11,9 +11,10 @@ public static class IconApiEndpoint
     public static void Map(RouteGroupBuilder group)
     {
         // cache output questionable due to larger memory usage
-        group.MapGet("/{gameVersion}/{collectionName}/environment", GetEnvironmentIconByCollectionName);
-        group.MapGet("/{gameVersion}/{collectionName}/small", GetSmallIconByCollectionName);
-        group.MapGet("/{gameVersion}/{collectionName}/block/{blockName}", GetIconByBlockName);
+        group.MapGet("/{gameVersion}/collection/{collectionName}/environment", GetEnvironmentIconByCollectionName);
+        group.MapGet("/{gameVersion}/collection/{collectionName}/small", GetSmallIconByCollectionName);
+        group.MapGet("/{gameVersion}/collection/{collectionName}/block/{blockName}", GetIconByBlockName);
+        group.MapGet("/{gameVersion}/vehicle/{vehicleName}", GetVehicleIconByVehicleName);
     }
 
     private static readonly Func<AppDbContext, GameVersion, string, Task<CacheableData?>> IconByCollectionNameAsync = EF.CompileAsyncQuery((
@@ -41,6 +42,15 @@ public static class IconApiEndpoint
         string blockName)
             => db.BlockInfos
                 .Where(x => x.Collection.GameVersion == gameVersion && x.Collection.Name == collectionName && x.Name == blockName && x.Icon!.Data != null)
+                .Select(x => new CacheableData { Data = x.Icon!.Data!, UpdatedAt = x.Icon!.UpdatedAt })
+                .FirstOrDefault());
+
+    private static readonly Func<AppDbContext, GameVersion, string, Task<CacheableData?>> IconByVehicleNameAsync = EF.CompileAsyncQuery((
+        AppDbContext db,
+        GameVersion gameVersion,
+        string vehicleName)
+            => db.Vehicles
+                .Where(x => x.GameVersion == gameVersion && x.Name == vehicleName && x.Icon!.Data != null)
                 .Select(x => new CacheableData { Data = x.Icon!.Data!, UpdatedAt = x.Icon!.UpdatedAt })
                 .FirstOrDefault());
 
@@ -98,5 +108,24 @@ public static class IconApiEndpoint
         context.Response.Headers.CacheControl = "max-age=3600";
 
         return TypedResults.File(icon.Data, "image/webp", $"{blockName}.webp", lastModified: icon.UpdatedAt);
+    }
+
+    private static async Task<Results<FileContentHttpResult, NotFound>> GetVehicleIconByVehicleName(
+        AppDbContext db,
+        GameVersion gameVersion,
+        string vehicleName,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        var icon = await IconByVehicleNameAsync(db, gameVersion, vehicleName);
+
+        if (icon is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+
+        return TypedResults.File(icon.Data, "image/webp", $"{vehicleName}.webp", lastModified: icon.UpdatedAt);
     }
 }

@@ -26,6 +26,14 @@ export function playAction(action) {
     action.play();
 }
 
+export function pauseAction(action) {
+    action.paused = true;
+}
+
+export function resumeAction(action) {
+    action.paused = false;
+}
+
 export function updateMixer(delta) {
     if (mixer) {
         mixer.update(delta);

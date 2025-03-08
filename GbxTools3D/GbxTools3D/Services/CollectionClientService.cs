@@ -43,7 +43,6 @@ public class CollectionClientService : ICollectionClientService
                     SortIndex = x.SortIndex,
                     HasBlocks = x.BlockInfos.Count != 0,
                     HasDecorations = x.DecorationSizes.Count != 0,
-                    HasVehicles = false,
                     HasItems = false,
                     HasMacroblocks = false
                 })

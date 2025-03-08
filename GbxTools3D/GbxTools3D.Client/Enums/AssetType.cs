@@ -4,7 +4,6 @@ public enum AssetType
 {
     None,
     Block,
-    Vehicle,
     Decoration,
     Item,
     Macroblock

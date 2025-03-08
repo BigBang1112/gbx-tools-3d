@@ -25,5 +25,6 @@ public static class ApiEndpoint
         DataImportApiEndpoint.Map(group.MapGroup("/dataimport"));
         CollectionApiEndpoint.Map(group.MapGroup("/collections"));
         IconApiEndpoint.Map(group.MapGroup("/icon"));
+        VehicleApiEndpoint.Map(group.MapGroup("/vehicles"));
     }
 }

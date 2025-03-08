@@ -85,7 +85,7 @@ public class MeshSerializer
 
         if (hasVisual)
         {
-            WriteShader(w, tree.ShaderFile, gamePath);
+            WriteMaterial(w, tree.Shader as CPlugMaterial, tree.ShaderFile, gamePath);
         }
 
         if (vehicle is not null && isRoot && lod is null)
@@ -306,10 +306,21 @@ public class MeshSerializer
         }
     }
 
-    private static void WriteShader(AdjustedBinaryWriter w, GbxRefTableFile? shaderFile, string gamePath)
+    private static void WriteMaterial(AdjustedBinaryWriter w, CPlugMaterial? material, GbxRefTableFile? materialFile, string gamePath)
     {
-        w.Write(shaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(shaderFile.GetFullPath(), null)));
-        w.Write(false); // additionalMaterialProperties
+        w.Write(materialFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(materialFile.GetFullPath(), null)));
+
+        var shaderName = material?.ShaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(material.ShaderFile.GetFullPath(), null));
+
+        if (shaderName == Path.Combine("Techno", "Media", "Material", "TDiff PX2 Trans NormY PC3only"))
+        {
+            w.Write(true); // additionalMaterialProperties
+            w.Write(false); // cast shadows
+        }
+        else
+        {
+            w.Write(false); // additionalMaterialProperties
+        }
     }
 
     private void WriteSurface(AdjustedBinaryWriter w, CPlugSurface? surface)

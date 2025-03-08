@@ -30,7 +30,7 @@ else
 
     private JSObject? renderer;
     private Scene? scene;
-    private Camera? camera;
+    private Camera? mapCamera;
 
     private Solid? focusedSolid;
 
@@ -47,11 +47,15 @@ else
     public string? BlockName { get; set; }
 
     [Parameter]
+    public string? VehicleName { get; set; }
+
+    [Parameter]
     public EventCallback BeforeMapLoad { get; set; }
 
     private Dictionary<string, BlockInfoDto> blockInfos = [];
     private Dictionary<Int3, DecorationSizeDto> decorations = [];
     private Dictionary<string, MaterialDto> materials = [];
+    private Dictionary<string, VehicleDto> vehicles = [];
 
     private CancellationTokenSource cts = new();
 
@@ -69,6 +73,7 @@ else
         }
 
         await TryLoadBlockAsync(cts.Token);
+        await TryLoadVehicleAsync(cts.Token);
     }
 
     private async Task LoadSceneAsync(CancellationToken cancellationToken)
@@ -82,24 +87,39 @@ else
 
         renderer = Renderer.Create();
         scene = new Scene();
-        camera = new Camera();
+        mapCamera = new Camera();
 
-        Renderer.Camera = camera;
+        Renderer.Camera = mapCamera;
         Renderer.Scene = scene;
     }
 
-    private async Task<bool> TryFetchDataAsync(bool loadBlockInfos = false, bool loadDecorations = false, bool loadMaterials = false, CancellationToken cancellationToken = default)
+    private async Task<bool> TryFetchDataAsync(
+        bool loadBlockInfos = false,
+        bool loadDecorations = false,
+        bool loadMaterials = false,
+        bool loadVehicles = false,
+        CancellationToken cancellationToken = default)
     {
-        var collection = CollectionName ?? Map?.Collection ?? throw new InvalidOperationException("No collection was found");
+        var collection = CollectionName ?? Map?.Collection;
 
         var tasks = new List<Task<HttpResponseMessage>>();
-        var blockInfosTask = loadBlockInfos && blockInfos.Count == 0 ? Http.GetAsync($"/api/blocks/{GameVersion}/{collection}", cts.Token) : null;
-        var decorationTask = loadDecorations && decorations.Count == 0 ? Http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
+
+        var blockInfosTask = default(Task<HttpResponseMessage>);
+        var decorationTask = default(Task<HttpResponseMessage>);
+
+        if (collection is not null)
+        {
+            blockInfosTask = loadBlockInfos && blockInfos.Count == 0 ? Http.GetAsync($"/api/blocks/{GameVersion}/{collection}", cts.Token) : null;
+            decorationTask = loadDecorations && decorations.Count == 0 ? Http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
+        }
+
         var materialTask = loadMaterials && materials.Count == 0 ? Http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
+        var vehicleTask = loadVehicles && vehicles.Count == 0 ? Http.GetAsync($"/api/vehicles/{GameVersion}", cts.Token) : null;
 
         if (blockInfosTask is not null) tasks.Add(blockInfosTask);
         if (decorationTask is not null) tasks.Add(decorationTask);
         if (materialTask is not null) tasks.Add(materialTask);
+        if (vehicleTask is not null) tasks.Add(vehicleTask);
 
         if (tasks.Count == 0)
         {
@@ -124,6 +144,11 @@ else
             {
                 materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cts.Token) ?? [];
             }
+            else if (task == vehicleTask)
+            {
+                vehicles = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListVehicleDto, cts.Token))?
+                    .ToDictionary(x => x.Name) ?? [];
+            }
         }
 
         return true;
@@ -131,7 +156,7 @@ else
 
     private async Task<bool> TryLoadBlockAsync(CancellationToken cancellationToken = default)
     {
-        if (camera is null || renderer is null || BlockName is null)
+        if (mapCamera is null || renderer is null || BlockName is null)
         {
             return false;
         }
@@ -147,8 +172,8 @@ else
         var center = new Vec3(16, 4, 16);
         var position = center * (4, 6, 1);
 
-        camera.Position = position;
-        camera.CreateMapControls(renderer, center);
+        mapCamera.Position = position;
+        mapCamera.CreateMapControls(renderer, center);
         //
 
         try
@@ -160,7 +185,7 @@ else
             return false;
         }
 
-        if (BlockName is null || !blockInfos.TryGetValue(BlockName, out var blockInfo))
+        if (!blockInfos.TryGetValue(BlockName, out var blockInfo))
         {
             return false;
         }
@@ -179,8 +204,8 @@ else
         center = new Vec3(realSize.X / 2f, realSize.Y / 2f, realSize.Z / 2f);
         position = center * (4, 6, 1);
 
-        camera.Position = position;
-        camera.CreateMapControls(renderer, center);
+        mapCamera.Position = position;
+        mapCamera.CreateMapControls(renderer, center);
         //
 
         var hash = $"GbxTools3D|Solid|{GameVersion}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
@@ -200,10 +225,59 @@ else
         return true;
     }
 
+    private async Task<bool> TryLoadVehicleAsync(CancellationToken cancellationToken = default)
+    {
+        if (mapCamera is null || renderer is null || VehicleName is null)
+        {
+            return false;
+        }
+
+        if (focusedSolid is not null)
+        {
+            scene?.Remove(focusedSolid);
+            //focusedSolid.Dispose();
+            focusedSolid = null;
+        }
+
+        mapCamera.Position = new Vec3(0, 5, 10);
+        mapCamera.CreateMapControls(renderer, default);
+
+        try
+        {
+            await TryFetchDataAsync(loadMaterials: true, loadVehicles: true, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            return false;
+        }
+
+        if (!vehicles.TryGetValue(VehicleName, out var blockInfo))
+        {
+            return false;
+        }
+
+        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{VehicleName}|WhyDidYouNotHelpMe?".Hash();
+
+        using var meshResponse = await Http.GetAsync($"/api/mesh/{hash}", cancellationToken);
+
+        if (!meshResponse.IsSuccessStatusCode)
+        {
+            return false;
+        }
+
+        await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        scene?.Add(focusedSolid);
+
+        return true;
+    }
+
     private async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
     {
-        if (Map is null || camera is null || renderer is null)
+        if (Map is null || mapCamera is null || renderer is null)
         {
+            // map can be sometimes null on first render
             return false;
         }
 
@@ -213,10 +287,10 @@ else
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
 
         // setup camera
-        camera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
-        camera.CreateMapControls(renderer, center);
+        mapCamera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
+        mapCamera.CreateMapControls(renderer, center);
 
-        await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken);
+        await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken: cancellationToken);
 
         var baseHeight = 5;
 
@@ -301,7 +375,16 @@ else
 
     internal async Task<Solid?> LoadGhostAsync(CGameCtnGhost ghost, CancellationToken cancellationToken = default)
     {
-        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{ghost.PlayerModel?.Id}|WhyDidYouNotHelpMe?".Hash();
+        await TryFetchDataAsync(loadMaterials: true, loadVehicles: true, cancellationToken: cancellationToken);
+
+        var vehicleName = ghost.PlayerModel?.Id;
+
+        if (vehicleName is null || !vehicles.TryGetValue(vehicleName, out var vehicleInfo))
+        {
+            return null;
+        }
+
+        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
 
         using var meshResponse = await Http.GetAsync($"/api/mesh/{hash}", cancellationToken);
 
@@ -314,6 +397,10 @@ else
 
         var vehicle = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false, castShadow: false);
         scene?.Add(vehicle);
+
+        var camera = new Camera(vehicleInfo.CameraFov);
+        Camera.Follow(vehicle.Object, vehicleInfo.CameraFar, vehicleInfo.CameraUp, vehicleInfo.CameraLookAtFactor);
+        Renderer.Camera = camera;
 
         return vehicle;
     }
@@ -545,7 +632,7 @@ else
         }
         
         scene = null;
-        camera = null;
+        mapCamera = null;
 
         rendererModule?.Dispose();
         sceneModule?.Dispose();

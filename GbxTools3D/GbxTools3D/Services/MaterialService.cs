@@ -57,7 +57,7 @@ internal sealed class MaterialService
                 continue;
             }
 
-            await AddOrUpdateMaterial(gamePath, gameVersion, path, node, alreadyProcessedTexturePaths, cancellationToken);
+            await AddOrUpdateMaterialAsync(gamePath, gameVersion, path, node, alreadyProcessedTexturePaths, cancellationToken);
         }
         
         logger.LogInformation("Saving materials...");
@@ -79,7 +79,7 @@ internal sealed class MaterialService
             
             if (!alreadyProcessedShaders.TryGetValue(path, out var shaderMaterial))
             {
-                shaderMaterial = await AddOrUpdateMaterial(gamePath, gameVersion, path, shaderMaterialNode, alreadyProcessedTexturePaths, cancellationToken);
+                shaderMaterial = await AddOrUpdateMaterialAsync(gamePath, gameVersion, path, shaderMaterialNode, alreadyProcessedTexturePaths, cancellationToken);
                 alreadyProcessedShaders.Add(path, shaderMaterial);
             }
             
@@ -101,7 +101,7 @@ internal sealed class MaterialService
         await outputCache.EvictByTagAsync("texture", cancellationToken); // probably not needed, but just to be sure
     }
 
-    private async Task<Material> AddOrUpdateMaterial(string gamePath, GameVersion gameVersion,
+    private async Task<Material> AddOrUpdateMaterialAsync(string gamePath, GameVersion gameVersion,
         string materialPath, CPlugMaterial node, HashSet<string> alreadyProcessedTexturePaths, CancellationToken cancellationToken)
     {
         var name = GbxPath.ChangeExtension(materialPath, null);

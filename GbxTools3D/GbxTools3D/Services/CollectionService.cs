@@ -440,6 +440,10 @@ internal sealed class CollectionService
                     blockInfo.Icon.Data = iconMs.ToArray();
                     blockInfo.Icon.UpdatedAt = DateTime.UtcNow;
                 }
+                else
+                {
+                    blockInfo.Icon = null;
+                }
             }
 
             logger.LogInformation("Saving collection changes ({Collection})...", collection.Name);

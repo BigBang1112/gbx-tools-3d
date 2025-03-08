@@ -64,7 +64,7 @@ function update() {
     updateMixer(delta);
     
     if (scene && camera) {
-        updateCamera(camera);
+        updateCamera(camera, delta);
         renderer.render(scene, camera);
     }
 

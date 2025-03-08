@@ -40,6 +40,7 @@ html, body {
 }
 
 footer.fixed {
+    display: none;
     position: fixed;
     bottom: 0;
     left: 0;
@@ -204,7 +205,7 @@ a, .btn-link {
 
 .player {
     position: fixed;
-    bottom: 100px;
+    bottom: 50px;
     left: 0;
     right: 0;
     background-color: #111D;
