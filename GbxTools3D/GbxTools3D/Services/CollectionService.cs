@@ -164,7 +164,7 @@ internal sealed class CollectionService
             var addedMeshHashes = new HashSet<string>();
 
             foreach (var decorationFilePath in Directory.EnumerateFiles(
-                Path.Combine(datasetPath, gameFolder, collectionNode.FolderDecoration!), "*.Gbx"))
+                Path.Combine(datasetPath, gameFolder, collectionNode.FolderDecoration!.NormalizePath()), "*.Gbx"))
             {
                 var decorationNode =
                     (CGameCtnDecoration?)await Gbx.ParseNodeAsync(decorationFilePath,
@@ -355,7 +355,7 @@ internal sealed class CollectionService
             }, x => x.Node ?? throw new Exception("Zone node is null")) ?? [];
 
             foreach (var blockInfoFilePath in Directory.EnumerateFiles(
-                         Path.Combine(datasetPath, gameFolder, collectionNode.FolderBlockInfo!), "*.Gbx",
+                         Path.Combine(datasetPath, gameFolder, collectionNode.FolderBlockInfo!.NormalizePath()), "*.Gbx",
                          SearchOption.AllDirectories))
             {
                 var blockInfoNode =

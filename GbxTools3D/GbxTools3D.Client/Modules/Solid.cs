@@ -61,8 +61,22 @@ internal sealed partial class Solid(JSObject obj)
         }
     }
 
+    public JSObject? GetObjectByName(string name)
+    {
+        return GetObjectByName(Object, name);
+    }
+
     [JSImport("create", nameof(Solid))]
     private static partial JSObject Create(bool matrixAutoUpdate);
+
+    [JSImport("setName", nameof(Solid))]
+    private static partial JSObject SetName(JSObject tree, string name);
+
+    [JSImport("getObjectByName", nameof(Solid))]
+    private static partial JSObject? GetObjectByName(JSObject tree, string name);
+
+    [JSImport("reorderEuler", nameof(Solid))]
+    public static partial void ReorderEuler(JSObject tree);
 
     [JSImport("add", nameof(Solid))]
     private static partial void Add(JSObject tree, JSObject child);
@@ -346,6 +360,8 @@ internal sealed partial class Solid(JSObject obj)
         var surface = ReadSurface(r);
 
         var name = r.ReadString();
+
+        SetName(tree, name);
 
         for (var i = 0; i < childrenCount; i++)
         {

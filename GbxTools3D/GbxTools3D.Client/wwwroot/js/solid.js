@@ -11,6 +11,18 @@ export function create(matrixAutoUpdate) {
     return obj;
 }
 
+export function setName(tree, name) {
+    tree.name = name;
+}
+
+export function getObjectByName(tree, name) {
+    return tree.getObjectByName(name);
+}
+
+export function reorderEuler(tree) {
+    tree.rotation.reorder('YXZ');
+}
+
 export function add(parent, child) {
     parent.add(child);
 }

@@ -34,6 +34,8 @@ else
 
     private Solid? focusedSolid;
 
+    private bool mapLoadAttempted;
+
     [Parameter, EditorRequired]
     public GameVersion GameVersion { get; set; }
 
@@ -69,9 +71,9 @@ else
         if (firstRender)
         {
             await LoadSceneAsync(cts.Token);
-            await TryLoadMapAsync(cts.Token);
         }
 
+        await TryLoadMapAsync(cts.Token);
         await TryLoadBlockAsync(cts.Token);
         await TryLoadVehicleAsync(cts.Token);
     }
@@ -275,11 +277,12 @@ else
 
     private async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
     {
-        if (Map is null || mapCamera is null || renderer is null)
+        if (Map is null || mapCamera is null || renderer is null || mapLoadAttempted)
         {
-            // map can be sometimes null on first render
             return false;
         }
+
+        mapLoadAttempted = true; // because map load doesnt have good cleanup process, this hack will prevent multiple map loads
 
         await BeforeMapLoad.InvokeAsync();
 

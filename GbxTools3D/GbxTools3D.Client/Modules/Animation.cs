@@ -12,6 +12,15 @@ internal static partial class Animation
     [JSImport("createQuaternionTrack", nameof(Animation))]
     public static partial JSObject CreateQuaternionTrack(double[] times, double[] values);
 
+    [JSImport("createRotationXTrack", nameof(Animation))]
+    public static partial JSObject CreateRotationXTrack(double[] times, double[] values);
+
+    [JSImport("createRotationYTrack", nameof(Animation))]
+    public static partial JSObject CreateRotationYTrack(double[] times, double[] values);
+
+    [JSImport("createRelativePositionYTrack", nameof(Animation))]
+    public static partial JSObject CreateRelativePositionYTrack(double[] times, double[] values, JSObject referenceObj);
+
     [JSImport("createClip", nameof(Animation))]
     public static partial JSObject CreateClip(string name, double duration, JSObject[] tracks);
 
@@ -19,7 +28,7 @@ internal static partial class Animation
     public static partial void CreateMixer(JSObject object3D);
 
     [JSImport("createAction", nameof(Animation))]
-    public static partial JSObject CreateAction(JSObject clip);
+    public static partial JSObject CreateAction(JSObject clip, JSObject? object3D = null);
 
     [JSImport("playAction", nameof(Animation))]
     public static partial JSObject PlayAction(JSObject action);

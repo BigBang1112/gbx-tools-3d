@@ -1,6 +1,5 @@
 ﻿using GbxTools3D.Data;
 using GbxTools3D.Data.Entities;
-using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Services;
@@ -8,25 +7,22 @@ namespace GbxTools3D.Services;
 public sealed class PopulateDbService : BackgroundService
 {
     private readonly IConfiguration config;
-    private readonly IServiceProvider serviceProvider;
-    private readonly IOutputCacheStore outputCache;
+    private readonly IServiceScopeFactory scopeFactory;
     private readonly ILogger<PopulateDbService> logger;
 
     public PopulateDbService(
         IConfiguration config, 
-        IServiceProvider serviceProvider, 
-        IOutputCacheStore outputCache, 
+        IServiceScopeFactory scopeFactory, 
         ILogger<PopulateDbService> logger)
     {
         this.config = config;
-        this.serviceProvider = serviceProvider;
-        this.outputCache = outputCache;
+        this.scopeFactory = scopeFactory;
         this.logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken) => await Task.Run(async () =>
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using var scope = scopeFactory.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         if (await db.DataImports.AnyAsync(stoppingToken))

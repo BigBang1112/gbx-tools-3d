@@ -1,0 +1,25 @@
+services:
+  gbxtools3d:
+    image: ${DOCKER_REGISTRY-}gbxtools3d
+    build:
+      context: .
+      dockerfile: GbxTools3D/GbxTools3D/Dockerfile
+    environment:
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: Server=mariadb;Port=3306;Database=3d_gbx_tools;User=root;
+    volumes:
+    - D:/GbxTools/Dataset:/app/Dataset:ro
+  
+  mariadb:
+    image: mariadb
+    restart: unless-stopped
+    environment:
+      TZ: CET
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+
+  phpmyadmin:
+    image: beeyev/phpmyadmin-lightweight
+    restart: unless-stopped
+    ports:
+      - 9010:80
+    environment:
+      PMA_USER: root
