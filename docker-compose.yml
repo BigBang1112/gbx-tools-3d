@@ -9,6 +9,9 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp
     volumes:
     - D:/GbxTools/Dataset:/app/Dataset:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
   
   mariadb:
     image: mariadb
@@ -16,6 +19,12 @@ services:
     environment:
       TZ: CET
       MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   phpmyadmin:
     image: beeyev/phpmyadmin-lightweight
@@ -25,6 +34,9 @@ services:
     environment:
       PMA_HOST: mariadb
       PMA_USER: root
+    depends_on:
+      mariadb:
+        condition: service_healthy
 
   seq:
     image: datalust/seq:latest
