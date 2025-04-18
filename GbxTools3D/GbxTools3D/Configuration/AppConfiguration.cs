@@ -69,9 +69,7 @@ internal static class AppConfiguration
         });
 
         services.AddOutputCache();
-        #pragma warning disable EXTEXP0018
         services.AddHybridCache();
-        #pragma warning restore EXTEXP0018
 
         services.AddRateLimiter(options =>
         {
@@ -116,12 +114,13 @@ internal static class AppConfiguration
         });
     }
 
-    public static void AddTelemetryServices(this IServiceCollection services, IHostEnvironment environment)
+    public static void AddTelemetryServices(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
     {
         Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(config)
             .Enrich.FromLogContext()
             .WriteTo.Console(theme: AnsiConsoleTheme.Sixteen, applyThemeToRedirectedOutput: true)
-            .WriteTo.OpenTelemetry()
+            .WriteTo.OpenTelemetry(config["OTEL_EXPORTER_OTLP_ENDPOINT"] + "/v1/logs", Serilog.Sinks.OpenTelemetry.OtlpProtocol.HttpProtobuf)
             .CreateLogger();
 
         services.AddSerilog();
@@ -134,7 +133,10 @@ internal static class AppConfiguration
                     .AddHttpClientInstrumentation()
                     .AddRuntimeInstrumentation()
                     .AddProcessInstrumentation()
-                    .AddOtlpExporter();
+                    .AddOtlpExporter(options =>
+                    {
+                        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    });
 
                 options.AddMeter("System.Net.Http");
             })
@@ -149,7 +151,10 @@ internal static class AppConfiguration
                     .AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
                     .AddEntityFrameworkCoreInstrumentation()
-                    .AddOtlpExporter();
+                    .AddOtlpExporter(options =>
+                    {
+                        options.Protocol = OpenTelemetry.Exporter.OtlpExportProtocol.HttpProtobuf;
+                    });
             });
         services.AddMetrics();
     }

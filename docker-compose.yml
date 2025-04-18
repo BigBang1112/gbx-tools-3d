@@ -6,6 +6,7 @@ services:
       dockerfile: GbxTools3D/GbxTools3D/Dockerfile
     environment:
       CONNECTIONSTRINGS__DEFAULTCONNECTION: Server=mariadb;Port=3306;Database=3d_gbx_tools;User=root;
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp
     volumes:
     - D:/GbxTools/Dataset:/app/Dataset:ro
   
@@ -22,4 +23,13 @@ services:
     ports:
       - 9010:80
     environment:
+      PMA_HOST: mariadb
       PMA_USER: root
+
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    ports:
+      - 8081:80
+    environment:
+      ACCEPT_EULA: Y
