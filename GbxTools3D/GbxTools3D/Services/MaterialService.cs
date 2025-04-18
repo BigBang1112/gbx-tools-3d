@@ -85,13 +85,8 @@ internal sealed class MaterialService
             
             var parentName = GbxPath.ChangeExtension(parentPath, null);
             var material = await db.Materials.FirstOrDefaultAsync(x =>
-                x.GameVersion == gameVersion && x.Name == parentName, cancellationToken);
-            
-            if (material is null)
-            {
-                throw new Exception("Parent material not found");
-            }
-            
+                x.GameVersion == gameVersion && x.Name == parentName, cancellationToken) ?? throw new Exception("Parent material not found");
+
             material.Shader = shaderMaterial;
         }
         
