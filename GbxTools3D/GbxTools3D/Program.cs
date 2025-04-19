@@ -6,6 +6,7 @@ builder.Services.AddDomainServices();
 builder.Services.AddDataServices(builder.Configuration);
 builder.Services.AddTelemetryServices(builder.Configuration, builder.Environment);
 builder.Services.AddWebServices();
+builder.Services.AddCacheServices();
 
 var app = builder.Build();
 
@@ -24,6 +25,7 @@ else
 
 app.UseSecurityMiddleware();
 app.UseAuthMiddleware();
+app.UseCacheMiddleware();
 app.UseEndpointMiddleware();
 
 app.Run();

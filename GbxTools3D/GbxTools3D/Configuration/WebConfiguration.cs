@@ -32,9 +32,6 @@ public static class WebConfiguration
             options.Providers.Add<GzipCompressionProvider>();
         });
 
-        services.AddOutputCache();
-        services.AddHybridCache();
-
         services.AddRateLimiter(options =>
         {
             options.RejectionStatusCode = 429;
@@ -117,8 +114,6 @@ public static class WebConfiguration
         {
             ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
         }).RequireAuthorization();
-
-        app.UseOutputCache();
 
         app.UseCookiePolicy(new CookiePolicyOptions
         {
