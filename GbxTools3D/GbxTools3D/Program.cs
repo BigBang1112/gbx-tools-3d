@@ -23,9 +23,6 @@ else
     app.UseHsts();
 }
 
-app.UseSecurityMiddleware();
-app.UseAuthMiddleware();
-app.UseCacheMiddleware();
-app.UseEndpointMiddleware();
+app.UseMiddleware();
 
 app.Run();

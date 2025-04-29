@@ -7,9 +7,4 @@ public static class CacheConfiguration
         services.AddOutputCache();
         services.AddHybridCache();
     }
-
-    public static void UseCacheMiddleware(this WebApplication app)
-    {
-        app.UseOutputCache();
-    }
 }
