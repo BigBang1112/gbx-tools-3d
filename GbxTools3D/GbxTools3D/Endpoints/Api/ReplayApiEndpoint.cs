@@ -20,6 +20,7 @@ public static class ReplayApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
         group.MapGet("/mx/{site}/{replayId}/{mapId}", GetReplayFromMxWithMapInfo)
             .RequireRateLimiting("fixed-external-downloads");
+        // tmuf/userid/mapuid
     }
 
     private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromTmx(

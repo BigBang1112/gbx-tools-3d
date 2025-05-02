@@ -80,6 +80,10 @@ export function follow(target, far, up, lookAtFactor) {
     targetLookAtFactor = lookAtFactor;
 }
 
+export function unfollow() {
+    followTarget = null;
+}
+
 export function updateCamera(camera) {
     if (controls) {
         controls.update();

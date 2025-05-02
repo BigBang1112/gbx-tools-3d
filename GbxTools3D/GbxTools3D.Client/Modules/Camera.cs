@@ -19,6 +19,9 @@ internal sealed partial class Camera(double fov = 80)
     [JSImport("follow", nameof(Camera))]
     public static partial void Follow(JSObject target, double far, double up, double lookAtFactor);
 
+    [JSImport("unfollow", nameof(Camera))]
+    public static partial void Unfollow();
+
     public Vec3 Position
     {
         set => SetPosition(Object, value.X, value.Y, value.Z);

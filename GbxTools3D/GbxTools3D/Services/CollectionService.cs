@@ -424,7 +424,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromMobilAsync(blockInfoNode.ConstructionModeHelperMobil,
                         gamePath,
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|Auris or Aurimas? WirtuaL",
+                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|Auris or Aurimas? WirtuaL. Adrien wtf is this timing",
                         cancellationToken);
                 }
 
