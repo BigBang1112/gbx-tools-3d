@@ -10,6 +10,7 @@
 
 @inject HttpClient Http
 @inject GbxService GbxService
+@inject IJSRuntime JS
 
 <PageTitle>View replay - 3D Gbx Tools</PageTitle>
 
@@ -64,26 +65,5 @@
 else
 {
     <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" @ref="view3d"></View3D>
-    @if (RendererInfo.IsInteractive)
-    {
-        <div class="player">
-            <div class="progress"><div class="progress-value" style="width: 0%"></div></div>
-            <div class="controls">
-                <button class="button-control" @onclick="Play">
-                    @if (isPlaying && !isPaused)
-                    {
-                        <img src="icons/pause.svg" width="48" height="48" />
-                    }
-                    else
-                    {
-                        <img src="icons/play.svg" width="48" height="48" />
-                    }
-                </button>
-                <button class="button-control">
-                    <img src="icons/skip_previous.svg" width="48" height="48" />
-                </button>
-                <span>0:00.000 / 1:00.000</span>
-            </div>
-        </div>
-    }
+    <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" @ref="playback"></Playback>
 }

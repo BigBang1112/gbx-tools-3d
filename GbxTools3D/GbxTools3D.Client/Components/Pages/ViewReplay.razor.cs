@@ -7,13 +7,18 @@ using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using Microsoft.JSInterop;
+using GbxTools3D.Client.Models;
+using GbxTools3D.Client.Enums;
+using System.Xml;
 
 namespace GbxTools3D.Client.Components.Pages;
 
 [SupportedOSPlatform("browser")]
-public partial class ViewReplay
+public partial class ViewReplay : ComponentBase
 {
     private View3D? view3d;
+    private Playback? playback;
 
     private JSObject? action;
     private JSObject? actionFLWheelRotation;
@@ -29,10 +34,7 @@ public partial class ViewReplay
     private JSObject? actionRLDampen;
     private JSObject? actionRRDampen;
 
-    private bool isPlaying;
-    private bool isPaused;
-
-    private string[] extensions = ["Replay.Gbx"];
+    private readonly string[] extensions = ["Replay.Gbx"];
 
     [SupplyParameterFromQuery(Name = "tmx")]
     private string? TmxSite { get; set; }
@@ -105,6 +107,9 @@ public partial class ViewReplay
 
     private async Task BeforeMapLoadAsync()
     {
+        var animationModule = await JS.InvokeAsync<IJSObjectReference>("import", $"./js/animation.js");
+        await animationModule.InvokeVoidAsync("registerDotNet", DotNetObjectReference.Create(this));
+
         await TryLoadReplayAsync();
     }
 
@@ -134,35 +139,39 @@ public partial class ViewReplay
             return false;
         }
 
-        var firstSample = ghost.SampleData.Samples.FirstOrDefault();
+        var samples = ghost.SampleData.Samples;
+
+        var firstSample = samples.FirstOrDefault();
 
         if (firstSample is null)
         {
             return false;
         }
 
+        var lastSample = samples.Last();
+
         ghostSolid.Position = firstSample.Position;
         ghostSolid.RotationQuaternion = firstSample.Rotation;
 
-        var times = new double[ghost.SampleData.Samples.Count];
-        var positions = new double[ghost.SampleData.Samples.Count * 3];
-        var rotations = new double[ghost.SampleData.Samples.Count * 4];
-        var fLWheelRotation = new double[ghost.SampleData.Samples.Count];
-        var fRWheelRotation = new double[ghost.SampleData.Samples.Count];
-        var rLWheelRotation = new double[ghost.SampleData.Samples.Count];
-        var rRWheelRotation = new double[ghost.SampleData.Samples.Count];
-        var fLWheelSteer = new double[ghost.SampleData.Samples.Count];
-        var fRWheelSteer = new double[ghost.SampleData.Samples.Count];
-        var fLGuardSteer = new double[ghost.SampleData.Samples.Count];
-        var fRGuardSteer = new double[ghost.SampleData.Samples.Count];
-        var fLDampen = new double[ghost.SampleData.Samples.Count];
-        var fRDampen = new double[ghost.SampleData.Samples.Count];
-        var rLDampen = new double[ghost.SampleData.Samples.Count];
-        var rRDampen = new double[ghost.SampleData.Samples.Count];
+        var times = new double[samples.Count];
+        var positions = new double[samples.Count * 3];
+        var rotations = new double[samples.Count * 4];
+        var fLWheelRotation = new double[samples.Count];
+        var fRWheelRotation = new double[samples.Count];
+        var rLWheelRotation = new double[samples.Count];
+        var rRWheelRotation = new double[samples.Count];
+        var fLWheelSteer = new double[samples.Count];
+        var fRWheelSteer = new double[samples.Count];
+        var fLGuardSteer = new double[samples.Count];
+        var fRGuardSteer = new double[samples.Count];
+        var fLDampen = new double[samples.Count];
+        var fRDampen = new double[samples.Count];
+        var rLDampen = new double[samples.Count];
+        var rRDampen = new double[samples.Count];
 
-        for (var i = 0; i < ghost.SampleData.Samples.Count; i++)
+        for (var i = 0; i < samples.Count; i++)
         {
-            var sample = (CSceneVehicleCar.Sample)ghost.SampleData.Samples[i];
+            var sample = (CSceneVehicleCar.Sample)samples[i];
             times[i] = sample.Time.TotalSeconds;
             positions[i * 3] = sample.Position.X;
             positions[i * 3 + 1] = sample.Position.Y;
@@ -252,7 +261,25 @@ public partial class ViewReplay
             actionFRGuardSteer = Animation.CreateAction(clipFRGuardSteer, fRGuard);
         }
 
+        var checkpoints = ghost.Checkpoints ?? [];
+        var numLaps = GetNumberOfLaps(ghost.Validate_RaceSettings);
+        var checkpointsPerLap = checkpoints.Length / numLaps;
+
+        playback?.SetDuration(lastSample.Time);
+        playback?.SetMarkers(checkpoints.Where(x => x.Time.HasValue).Select((c, i) => new PlaybackMarker
+        {
+            Time = c.Time.GetValueOrDefault(),
+            Type = c == checkpoints.Last() ? PlaybackMarkerType.Finish : (((i + 1) % checkpointsPerLap == 0) ? PlaybackMarkerType.Multilap : PlaybackMarkerType.Checkpoint),
+        }).ToList() ?? []);
+
         return true;
+    }
+
+    [JSInvokable]
+    public void UpdateTimeline(double timeIncludingRepeats)
+    {
+        var time = action?.GetPropertyAsDouble("time") ?? 0;
+        playback?.SetTime(TimeSpan.FromSeconds(time));
     }
 
     public ValueTask DisposeAsync()
@@ -262,7 +289,7 @@ public partial class ViewReplay
         return ValueTask.CompletedTask;
     }
 
-    private void Play()
+    private void Play(bool firstPlay)
     {
         if (action is null
             || actionFLWheelRotation is null
@@ -279,9 +306,8 @@ public partial class ViewReplay
             return;
         }
 
-        if (!isPlaying)
+        if (firstPlay)
         {
-            isPlaying = true;
             Animation.PlayAction(action);
             Animation.PlayAction(actionFLWheelRotation);
             Animation.PlayAction(actionFLWheelSteer);
@@ -295,12 +321,11 @@ public partial class ViewReplay
             Animation.PlayAction(actionFRDampen);
             Animation.PlayAction(actionRLDampen);
             Animation.PlayAction(actionRRDampen);
-            return;
         }
 
-        isPaused = !isPaused;
+        Animation.PlayMixer();
 
-        if (isPaused)
+        /*if (timelinePlayer.IsPaused)
         {
             Animation.PauseAction(action);
             Animation.PauseAction(actionFLWheelRotation);
@@ -331,6 +356,47 @@ public partial class ViewReplay
             Animation.ResumeAction(actionFRDampen);
             Animation.ResumeAction(actionRLDampen);
             Animation.ResumeAction(actionRRDampen);
+        }*/
+    }
+
+    private void Pause()
+    {
+        Animation.PauseMixer();
+    }
+
+    private void Rewind()
+    {
+        Animation.SetMixerTime(0);
+    }
+
+    private int GetNumberOfLaps(string? raceSettingsXml)
+    {
+        if (raceSettingsXml is null || raceSettingsXml == "1P-Time")
+        {
+            return GetNbLapsFromMap();
         }
+
+        // TODO: use MiniXmlReader
+        var readerSettings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
+
+        using var strReader = new StringReader(raceSettingsXml);
+        using var reader = XmlReader.Create(strReader, readerSettings);
+
+        try
+        {
+            reader.ReadToDescendant("laps");
+
+            return reader.ReadElementContentAsInt();
+        }
+        catch
+        {
+            return GetNbLapsFromMap();
+        }
+    }
+
+    private int GetNbLapsFromMap()
+    {
+        var map = Replay?.Challenge;
+        return map?.IsLapRace == true ? map.NbLaps  : 1;
     }
 }

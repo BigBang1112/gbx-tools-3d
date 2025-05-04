@@ -22,8 +22,8 @@ export function create() {
 
     window.addEventListener('resize', onWindowResize, false);
 
-    stats = new Stats();
-    document.body.appendChild(stats.dom);
+    //stats = new Stats();
+    //document.body.appendChild(stats.dom);
 
     return renderer;
 }
@@ -58,7 +58,9 @@ export function dispose() {
 }
 
 function update() {
-    stats.begin();
+    if (stats) {
+        stats.begin();
+    }
 
     let delta = clock.getDelta();
     updateMixer(delta);
@@ -68,7 +70,9 @@ function update() {
         renderer.render(scene, camera);
     }
 
-    stats.end();
+    if (stats) {
+        stats.end();
+    }
 }
 
 function onWindowResize() {

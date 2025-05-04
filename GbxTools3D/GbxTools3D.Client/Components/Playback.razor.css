@@ -1,0 +1,110 @@
+﻿.player {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: #111D;
+    width: 90%;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-radius: 5px 5px 0 0;
+    backdrop-filter: blur(10px);
+}
+
+.progress {
+    height: 20px;
+    border-radius: 4px;
+    margin: 10px;
+    background-color: #333D;
+    opacity: 0.9;
+    border: 1px solid #555D;
+    cursor: pointer;
+    transition: opacity 0.1s ease, background-color 0.1s ease;
+    position: relative;
+}
+
+    .progress:hover {
+        opacity: 1;
+        background-color: #444D;
+    }
+
+.progress-value {
+    border-radius: 3px;
+    height: 100%;
+    background: #EEEE;
+}
+
+.controls {
+    display: flex;
+    margin: 10px;
+    align-items: center;
+    gap: 10px;
+    font-size: 150%;
+    font-weight: bold;
+}
+
+    .controls span {
+        margin: 0 10px;
+    }
+
+.button-control {
+    display: flex;
+    padding: 10px;
+    padding: 4px 6px;
+    gap: 6px;
+    align-items: center;
+    border-radius: 10px;
+    text-decoration: none;
+    color: white;
+    animation: fadeIn 0.3s;
+    cursor: pointer;
+}
+
+    .button-control:hover {
+        background-color: #444;
+    }
+
+    .button-control.active {
+        background-color: #555;
+    }
+
+.chevron {  
+   position: absolute;  
+   min-width: 24px;  
+   height: 32px;  
+   background-color: #666;  
+   clip-path: polygon(100% 75%, 50% 100%, 0 75%, 0 0, 100% 0);  
+   transform: translateX(-50%);  
+   bottom: 100%;  
+   opacity: 0.8;  
+   transition: opacity 0.1s ease;
+}
+
+    .chevron:hover {
+        opacity: 1;
+    }
+
+    .chevron.checkpoint {
+        background-color: #08F;
+    }
+
+    .chevron.finish {
+        background-color: #D10;
+    }
+
+    .chevron.multilap {
+        background-color: #CA0;
+    }
+
+.time-preview-mark {
+    position: absolute;
+    bottom: 100%;
+    border-left: 1px solid #555D;
+    font-size: 75%;
+}
+
+.time-preview {
+    background-color: #333D;
+    margin-bottom: 5px;
+    padding: 2px 4px;
+}

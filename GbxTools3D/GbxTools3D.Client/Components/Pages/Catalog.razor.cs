@@ -7,7 +7,7 @@ using Microsoft.JSInterop;
 
 namespace GbxTools3D.Client.Components.Pages;
 
-public partial class Catalog
+public partial class Catalog : ComponentBase
 {
     private View3D? view3d;
 

@@ -6,6 +6,7 @@ using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
@@ -13,7 +14,7 @@ using System.Runtime.Versioning;
 namespace GbxTools3D.Client.Components;
 
 [SupportedOSPlatform("browser")]
-public partial class View3D
+public partial class View3D : ComponentBase
 {
     private readonly HttpClient http;
 

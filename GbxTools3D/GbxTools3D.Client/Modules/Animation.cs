@@ -38,4 +38,13 @@ internal static partial class Animation
 
     [JSImport("resumeAction", nameof(Animation))]
     public static partial JSObject ResumeAction(JSObject action);
+
+    [JSImport("playMixer", nameof(Animation))]
+    public static partial void PlayMixer();
+
+    [JSImport("pauseMixer", nameof(Animation))]
+    public static partial void PauseMixer();
+
+    [JSImport("setMixerTime", nameof(Animation))]
+    public static partial void SetMixerTime(double time);
 }

@@ -1,6 +1,6 @@
 ﻿import * as THREE from 'three';
 
-let mixer;
+let mixer, dotNetObjRef;
 
 export function createPositionTrack(times, values) {
     return new THREE.VectorKeyframeTrack('.position', times, values);
@@ -32,6 +32,7 @@ export function createClip(name, duration, tracks) {
 
 export function createMixer(object) {
     mixer = new THREE.AnimationMixer(object);
+    mixer.timeScale = 0;
 }
 
 export function createAction(clip, obj) {
@@ -50,8 +51,34 @@ export function resumeAction(action) {
     action.paused = false;
 }
 
+export function playMixer() {
+    if (mixer) {
+        mixer.timeScale = 1;
+    }
+}
+
+export function pauseMixer() {
+    if (mixer) {
+        mixer.timeScale = 0;
+    }
+}
+
+export function setMixerTime(time) {
+    if (mixer) {
+        let prevTimeScale = mixer.timeScale;
+        mixer.timeScale = 1;
+        mixer.setTime(time);
+        mixer.timeScale = prevTimeScale;
+    }
+}
+
 export function updateMixer(delta) {
     if (mixer) {
         mixer.update(delta);
+        dotNetObjRef.invokeMethodAsync("UpdateTimeline", mixer.time);
     }
+}
+
+export function registerDotNet(reference) {
+    dotNetObjRef = reference;
 }
