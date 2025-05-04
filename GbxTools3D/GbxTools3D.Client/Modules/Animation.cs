@@ -47,4 +47,7 @@ internal static partial class Animation
 
     [JSImport("setMixerTime", nameof(Animation))]
     public static partial void SetMixerTime(double time);
+
+    [JSImport("setMixerTimeScale", nameof(Animation))]
+    public static partial void SetMixerTimeScale(double timeScale, bool isPaused);
 }

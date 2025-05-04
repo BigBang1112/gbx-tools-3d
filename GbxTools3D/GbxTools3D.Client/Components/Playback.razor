@@ -44,5 +44,6 @@
            <img src="icons/skip_previous.svg" width="48" height="48" />
        </button>
        <span class="mono"><b>@CurrentTime.ToTmString()</b> <small>/ @Duration.ToTmString()</small></span>
+       <input type="range" min="1" max="15" value="8" class="slider" @oninput="SpeedChange" @onchange="SpeedChange" />
    </div>
 </div>

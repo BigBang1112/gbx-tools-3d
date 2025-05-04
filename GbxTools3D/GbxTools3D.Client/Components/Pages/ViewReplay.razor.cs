@@ -369,6 +369,11 @@ public partial class ViewReplay : ComponentBase
         Animation.SetMixerTime(0);
     }
 
+    private void SetSpeed(float speed)
+    {
+        Animation.SetMixerTimeScale(speed, playback?.IsPaused ?? true);
+    }
+
     private int GetNumberOfLaps(string? raceSettingsXml)
     {
         if (raceSettingsXml is null || raceSettingsXml == "1P-Time")

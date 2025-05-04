@@ -1,6 +1,7 @@
 ﻿import * as THREE from 'three';
 
 let mixer, dotNetObjRef;
+let mixerTimeScale = 1;
 
 export function createPositionTrack(times, values) {
     return new THREE.VectorKeyframeTrack('.position', times, values);
@@ -53,7 +54,7 @@ export function resumeAction(action) {
 
 export function playMixer() {
     if (mixer) {
-        mixer.timeScale = 1;
+        mixer.timeScale = mixerTimeScale;
     }
 }
 
@@ -69,6 +70,14 @@ export function setMixerTime(time) {
         mixer.timeScale = 1;
         mixer.setTime(time);
         mixer.timeScale = prevTimeScale;
+    }
+}
+
+export function setMixerTimeScale(timeScale, isPaused) {
+    mixerTimeScale = timeScale;
+
+    if (mixer && !isPaused) {
+        mixer.timeScale = timeScale;
     }
 }
 

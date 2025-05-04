@@ -24,12 +24,16 @@ public partial class Playback : ComponentBase
     [Parameter, EditorRequired]
     public EventCallback OnRewind { get; set; }
 
+    [Parameter, EditorRequired]
+    public EventCallback<float> OnSpeedChange { get; set; }
+
     [Parameter]
     public List<PlaybackMarker> Markers { get; set; } = [];
 
     public bool IsPlaying { get; private set; }
     public bool IsPaused { get; private set; }
     public bool IsSeekPaused { get; private set; }
+    public float Speed { get; set; } = 1;
 
     public TimeSpan CurrentTime { get; private set; }
     public TimeSpan Duration { get; set; }
@@ -154,6 +158,12 @@ public partial class Playback : ComponentBase
             await module.InvokeVoidAsync("stopSeeking");
         }
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SpeedChange(ChangeEventArgs e)
+    {
+        Speed = Convert.ToInt32(e.Value) / 8f;
+        await OnSpeedChange.InvokeAsync(Speed);
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()
