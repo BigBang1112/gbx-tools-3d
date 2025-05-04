@@ -11,6 +11,7 @@ using Microsoft.JSInterop;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Enums;
 using System.Xml;
+using GbxTools3D.Client.Components.Modules;
 
 namespace GbxTools3D.Client.Components.Pages;
 

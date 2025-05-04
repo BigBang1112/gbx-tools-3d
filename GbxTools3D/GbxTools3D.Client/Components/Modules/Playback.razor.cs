@@ -5,7 +5,7 @@ using Microsoft.JSInterop;
 using System.Runtime.Versioning;
 using TmEssentials;
 
-namespace GbxTools3D.Client.Components;
+namespace GbxTools3D.Client.Components.Modules;
 
 [SupportedOSPlatform("browser")]
 public partial class Playback : ComponentBase
@@ -51,7 +51,7 @@ public partial class Playback : ComponentBase
     {
         if (firstRender)
         {
-            module = await JS.InvokeAsync<IJSObjectReference>("import", $"./Components/Playback.razor.js");
+            module = await JS.InvokeAsync<IJSObjectReference>("import", $"./Components/Modules/Playback.razor.js");
             await module.InvokeVoidAsync("addHandlers", progress, objRef);
         }
     }
