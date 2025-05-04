@@ -182,6 +182,7 @@ public partial class Playback : ComponentBase
         {
             try
             {
+                await module.InvokeVoidAsync("removeHandlers");
                 await module.DisposeAsync();
             }
             catch (JSDisconnectedException)

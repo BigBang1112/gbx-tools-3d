@@ -132,6 +132,7 @@ public partial class ViewReplay : ComponentBase
 
         if (samples.Count == 0)
         {
+            // case for input only replays
             return false;
         }
 

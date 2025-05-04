@@ -1,4 +1,6 @@
 ﻿let seeking;
+let onWindowMousemove;
+let onWindowMouseup;
 
 export function addHandlers(element, dotNetHelper) {
     element.addEventListener("mousedown", async (event) => {
@@ -12,19 +14,33 @@ export function addHandlers(element, dotNetHelper) {
         await dotNetHelper.invokeMethodAsync("ShowPreviewTime", getPercent(event.clientX, element));
     });
 
-    window.addEventListener("mousemove", async (event) => {
+    onWindowMousemove = async (event) => {
         if (seeking) {
             await seek(dotNetHelper, element, event.clientX);
         }
-    });
+    };
 
-    window.addEventListener("mouseup", async (event) => {
+    onWindowMouseup = async (event) => {
         if (seeking) {
             await seek(dotNetHelper, element, event.clientX);
             seeking = false;
             await dotNetHelper.invokeMethodAsync("EndSeekAsync");
         }
-    });
+    };
+
+    window.addEventListener("mousemove", onWindowMousemove);
+    window.addEventListener("mouseup", onWindowMouseup);
+}
+
+export function removeHandlers() {
+    if (onWindowMousemove) {
+        window.removeEventListener("mousemove", onWindowMousemove);
+        onWindowMousemove = null;
+    }
+    if (onWindowMouseup) {
+        window.removeEventListener("mouseup", onWindowMouseup);
+        onWindowMouseup = null;
+    }
 }
 
 function getPercent(clientX, element) {
