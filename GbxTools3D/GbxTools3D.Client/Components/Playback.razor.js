@@ -3,6 +3,7 @@
 export function addHandlers(element, dotNetHelper) {
     element.addEventListener("mousedown", async (event) => {
         event.preventDefault();
+        if (event.button !== 0) return; // Only left mouse button
         seeking = true;
         await seek(dotNetHelper, element, event.clientX);
     });

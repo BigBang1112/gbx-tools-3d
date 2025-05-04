@@ -1,0 +1,170 @@
+﻿@using Microsoft.AspNetCore.Components
+@using System.Text
+@using System.Net
+
+@if (!string.IsNullOrEmpty(Text))
+{
+    @((MarkupString)FormatText(Text))
+}
+
+@code {
+    [Parameter]
+    public string? Text { get; set; }
+
+    private string FormatText(string input)
+    {
+        if (string.IsNullOrEmpty(input))
+            return string.Empty;
+
+        var segments = new List<Segment>();
+        var styleStack = new Stack<Style>();
+        var currentStyle = new Style();
+        var textBuffer = new StringBuilder();
+
+        void FlushBuffer()
+        {
+            if (textBuffer.Length > 0)
+            {
+                segments.Add(new Segment { Text = textBuffer.ToString(), Style = currentStyle.Clone() });
+                textBuffer.Clear();
+            }
+        }
+
+        for (int i = 0; i < input.Length; i++)
+        {
+            if (input[i] == '$' && i + 1 < input.Length)
+            {
+                char code = input[i + 1];
+
+                // Literal $$
+                if (code == '$')
+                {
+                    textBuffer.Append('$');
+                    i++;
+                    continue;
+                }
+
+                // Color code: 3 hex digits
+                if (i + 3 < input.Length && IsHex(input[i + 1]) && IsHex(input[i + 2]) && IsHex(input[i + 3]))
+                {
+                    FlushBuffer();
+                    string hex3 = input.Substring(i + 1, 3);
+                    currentStyle.Color = $"#{hex3[0]}{hex3[1]}{hex3[2]}";
+                    i += 3;
+                    continue;
+                }
+
+                // Links ($l/$h or $l[text]/$h[text]) will be deformatted
+                if (code == 'l' || code == 'h')
+                {
+                    // if next is not [, continue
+                    if (i + 2 >= input.Length || input[i + 2] != '[')
+                    {
+                        FlushBuffer();
+                        i++;
+                        continue;
+                    }
+
+                    // if next is [, find the closing ]
+                    int closingBracket = input.IndexOf(']', i + 2);
+                    if (closingBracket == -1)
+                    {
+                        FlushBuffer();
+                        i++;
+                        continue;
+                    }
+
+                    i = closingBracket;
+                    continue;
+                }
+
+                // Other control codes
+                FlushBuffer();
+                switch (code)
+                {
+                    case 'o': currentStyle.Bold = true; break;
+                    case 'i': currentStyle.Italic = true; break;
+                    case 't': currentStyle.Uppercase = true; break;
+                    case 's': currentStyle.DropShadow = true; break;
+                    case 'w': currentStyle.Wide = true; break;
+                    case 'n': currentStyle.Narrow = true; break;
+                    case 'g': currentStyle.Color = null; break;
+                    case 'z':
+                        currentStyle.Bold = currentStyle.Italic = currentStyle.Uppercase =
+                        currentStyle.DropShadow = currentStyle.Wide = currentStyle.Narrow = false;
+                        break;
+                    case '<':
+                        styleStack.Push(currentStyle.Clone());
+                        break;
+                    case '>':
+                        if (styleStack.Count > 0)
+                            currentStyle = styleStack.Pop();
+                        break;
+                    default:
+                        // Unknown or unhandled control: do not display
+                        break;
+                }
+                i++;
+            }
+            else
+            {
+                char c = input[i];
+                if (currentStyle.Uppercase)
+                    c = char.ToUpperInvariant(c);
+                textBuffer.Append(c);
+            }
+        }
+
+        FlushBuffer();
+
+        // Build HTML with inline styles
+        var sb = new StringBuilder();
+        foreach (var seg in segments)
+        {
+            string style = seg.Style.ToCss();
+            string encoded = WebUtility.HtmlEncode(seg.Text);
+            if (string.IsNullOrEmpty(style))
+                sb.Append(encoded);
+            else
+                sb.Append($"<span style=\"{style}\">{encoded}</span>");
+        }
+
+        return sb.ToString();
+    }
+
+    private bool IsHex(char c) => (c >= '0' && c <= '9') ||
+                                   (c >= 'a' && c <= 'f') ||
+                                   (c >= 'A' && c <= 'F');
+
+    private class Segment
+    {
+        public string Text { get; set; } = string.Empty;
+        public Style Style { get; set; } = new Style();
+    }
+
+    private class Style
+    {
+        public bool Bold { get; set; }
+        public bool Italic { get; set; }
+        public bool Uppercase { get; set; }
+        public bool DropShadow { get; set; }
+        public bool Wide { get; set; }
+        public bool Narrow { get; set; }
+        public string? Color { get; set; }
+
+        public Style Clone() => (Style)MemberwiseClone();
+
+        public string ToCss()
+        {
+            var parts = new List<string>();
+            if (Color is not null) parts.Add($"color:{Color}");
+            if (Bold) parts.Add("font-weight:bold");
+            if (Italic) parts.Add("font-style:italic");
+            if (Uppercase) parts.Add("text-transform:uppercase");
+            if (DropShadow) parts.Add("text-shadow:1px 1px 2px black");
+            if (Wide) parts.Add("letter-spacing:0.1em");
+            if (Narrow) parts.Add("letter-spacing:-0.05em");
+            return string.Join(";", parts);
+        }
+    }
+}

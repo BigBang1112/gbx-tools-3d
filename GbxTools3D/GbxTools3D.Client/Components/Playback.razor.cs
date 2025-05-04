@@ -30,6 +30,9 @@ public partial class Playback : ComponentBase
     [Parameter]
     public List<PlaybackMarker> Markers { get; set; } = [];
 
+    [Parameter]
+    public string? Description { get; set; }
+
     public bool IsPlaying { get; private set; }
     public bool IsPaused { get; private set; }
     public bool IsSeekPaused { get; private set; }

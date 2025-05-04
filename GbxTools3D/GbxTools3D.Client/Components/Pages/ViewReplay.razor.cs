@@ -20,19 +20,10 @@ public partial class ViewReplay : ComponentBase
     private View3D? view3d;
     private Playback? playback;
 
-    private JSObject? action;
-    private JSObject? actionFLWheelRotation;
-    private JSObject? actionFLWheelSteer;
-    private JSObject? actionFRWheelRotation;
-    private JSObject? actionFRWheelSteer;
-    private JSObject? actionRLWheelRotation;
-    private JSObject? actionRRWheelRotation;
-    private JSObject? actionFLGuardSteer;
-    private JSObject? actionFRGuardSteer;
-    private JSObject? actionFLDampen;
-    private JSObject? actionFRDampen;
-    private JSObject? actionRLDampen;
-    private JSObject? actionRRDampen;
+    private readonly Dictionary<string, JSObject> actions = [];
+
+    private readonly string[] wheelNames = { "FLWheel", "FRWheel", "RLWheel", "RRWheel" };
+    private readonly string[] guardNames = { "FLGuard", "FRGuard", "RLHub", "RRHub" };
 
     private readonly string[] extensions = ["Replay.Gbx"];
 
@@ -48,6 +39,7 @@ public partial class ViewReplay : ComponentBase
     public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
 
     public CGameCtnReplayRecord? Replay { get; set; }
+    public CGameCtnGhost? CurrentGhost { get; set; }
 
     private string selectedExternal = "tmx";
     private string selectedTmx = "tmnf";
@@ -122,12 +114,9 @@ public partial class ViewReplay : ComponentBase
 
         var ghost = Replay.GetGhosts().FirstOrDefault();
 
-        if (ghost is null)
-        {
-            return false;
-        }
+        CurrentGhost = ghost;
 
-        if (ghost.SampleData is null)
+        if (ghost?.SampleData is null)
         {
             return false;
         }
@@ -141,136 +130,134 @@ public partial class ViewReplay : ComponentBase
 
         var samples = ghost.SampleData.Samples;
 
-        var firstSample = samples.FirstOrDefault();
-
-        if (firstSample is null)
+        if (samples.Count == 0)
         {
             return false;
         }
 
-        var lastSample = samples.Last();
-
+        var firstSample = samples[0];
         ghostSolid.Position = firstSample.Position;
         ghostSolid.RotationQuaternion = firstSample.Rotation;
 
-        var times = new double[samples.Count];
-        var positions = new double[samples.Count * 3];
-        var rotations = new double[samples.Count * 4];
-        var fLWheelRotation = new double[samples.Count];
-        var fRWheelRotation = new double[samples.Count];
-        var rLWheelRotation = new double[samples.Count];
-        var rRWheelRotation = new double[samples.Count];
-        var fLWheelSteer = new double[samples.Count];
-        var fRWheelSteer = new double[samples.Count];
-        var fLGuardSteer = new double[samples.Count];
-        var fRGuardSteer = new double[samples.Count];
-        var fLDampen = new double[samples.Count];
-        var fRDampen = new double[samples.Count];
-        var rLDampen = new double[samples.Count];
-        var rRDampen = new double[samples.Count];
+        var count = samples.Count;
+        var times = new double[count];
+        var positions = new double[count * 3];
+        var rotations = new double[count * 4];
 
-        for (var i = 0; i < samples.Count; i++)
+        // Dictionaries for per-part data
+        var partData = new Dictionary<string, double[]>();
+        // Initialize arrays for wheels and guards
+        foreach (var wheel in wheelNames)
         {
-            var sample = (CSceneVehicleCar.Sample)samples[i];
-            times[i] = sample.Time.TotalSeconds;
-            positions[i * 3] = sample.Position.X;
-            positions[i * 3 + 1] = sample.Position.Y;
-            positions[i * 3 + 2] = sample.Position.Z;
-            rotations[i * 4] = sample.Rotation.X;
-            rotations[i * 4 + 1] = sample.Rotation.Y;
-            rotations[i * 4 + 2] = sample.Rotation.Z;
-            rotations[i * 4 + 3] = sample.Rotation.W;
-            fLWheelRotation[i] = sample.FLWheelRotation;
-            fLWheelSteer[i] = sample.SteerFront;
-            fRWheelRotation[i] = sample.FRWheelRotation;
-            fRWheelSteer[i] = sample.SteerFront;
-            rLWheelRotation[i] = sample.RLWheelRotation;
-            rRWheelRotation[i] = sample.RRWheelRotation;
-            fLGuardSteer[i] = sample.SteerFront;
-            fRGuardSteer[i] = sample.SteerFront;
-            fLDampen[i] = sample.FLDampenLen;
-            fRDampen[i] = sample.FRDampenLen;
-            rLDampen[i] = sample.RLDampenLen;
-            rRDampen[i] = sample.RRDampenLen;
+            partData[$"{wheel}_rot"] = new double[count];
+            partData[$"{wheel}_steer"] = new double[count];
+            partData[$"{wheel}_dampen"] = new double[count];
         }
+        foreach (var guard in guardNames)
+        {
+            partData[$"{guard}_steer"] = new double[count];
+            partData[$"{guard}_dampen"] = new double[count];
+        }
+
+        for (int i = 0; i < count; i++)
+        {
+            var s = (CSceneVehicleCar.Sample)samples[i];
+            times[i] = s.Time.TotalSeconds;
+            positions[i * 3] = s.Position.X;
+            positions[i * 3 + 1] = s.Position.Y;
+            positions[i * 3 + 2] = s.Position.Z;
+            rotations[i * 4] = s.Rotation.X;
+            rotations[i * 4 + 1] = s.Rotation.Y;
+            rotations[i * 4 + 2] = s.Rotation.Z;
+            rotations[i * 4 + 3] = s.Rotation.W;
+
+            partData["FLWheel_rot"][i] = s.FLWheelRotation;
+            partData["FRWheel_rot"][i] = s.FRWheelRotation;
+            partData["RLWheel_rot"][i] = s.RLWheelRotation;
+            partData["RRWheel_rot"][i] = s.RRWheelRotation;
+
+            partData["FLWheel_steer"][i] = s.SteerFront;
+            partData["FRWheel_steer"][i] = s.SteerFront;
+
+            partData["FLWheel_dampen"][i] = s.FLDampenLen;
+            partData["FRWheel_dampen"][i] = s.FRDampenLen;
+            partData["RLWheel_dampen"][i] = s.RLDampenLen;
+            partData["RRWheel_dampen"][i] = s.RRDampenLen;
+
+            partData["FLGuard_steer"][i] = s.SteerFront;
+            partData["FRGuard_steer"][i] = s.SteerFront;
+            partData["FLGuard_dampen"][i] = s.FLDampenLen;
+            partData["FRGuard_dampen"][i] = s.FRDampenLen;
+            partData["RLHub_dampen"][i] = s.RLDampenLen;
+            partData["RRHub_dampen"][i] = s.RRDampenLen;
+        }
+
+        var duration = samples.Last().Time.TotalSeconds;
 
         var positionTrack = Animation.CreatePositionTrack(times, positions);
         var rotationTrack = Animation.CreateQuaternionTrack(times, rotations);
-        var fLWheelRotationTrack = Animation.CreateRotationXTrack(times, fLWheelRotation);
-        var fLWheelSteerTrack = Animation.CreateRotationYTrack(times, fLWheelSteer);
-        var fRWheelRotationTrack = Animation.CreateRotationXTrack(times, fRWheelRotation);
-        var fRWheelSteerTrack = Animation.CreateRotationYTrack(times, fRWheelSteer);
-        var rLWheelRotationTrack = Animation.CreateRotationXTrack(times, rLWheelRotation);
-        var rRWheelRotationTrack = Animation.CreateRotationXTrack(times, rRWheelRotation);
-        var fLGuardSteerTrack = Animation.CreateRotationYTrack(times, fLGuardSteer);
-        var fRGuardSteerTrack = Animation.CreateRotationYTrack(times, fRGuardSteer);
 
-        var fLWheel = ghostSolid.GetObjectByName("1FLWheel");
-        var fRWheel = ghostSolid.GetObjectByName("1FRWheel");
-        var rLWheel = ghostSolid.GetObjectByName("1RLWheel");
-        var rRWheel = ghostSolid.GetObjectByName("1RRWheel");
-        var fLGuard = ghostSolid.GetObjectByName("1FLGuard");
-        var fRGuard = ghostSolid.GetObjectByName("1FRGuard");
-
-        var fLDampenTrack = Animation.CreateRelativePositionYTrack(times, fLDampen, fLWheel);
-        var fRDampenTrack = Animation.CreateRelativePositionYTrack(times, fRDampen, fRWheel);
-        var rLDampenTrack = Animation.CreateRelativePositionYTrack(times, rLDampen, rLWheel);
-        var rRDampenTrack = Animation.CreateRelativePositionYTrack(times, rRDampen, rRWheel);
-
-        var clipVehicle = Animation.CreateClip("Vehicle", times.Last(), [positionTrack, rotationTrack]);
-        var clipFLWheelRotation = Animation.CreateClip("FLWheelRotation", times.Last(), [fLWheelRotationTrack]);
-        var clipFLWheelSteer = Animation.CreateClip("FLWheelSteer", times.Last(), [fLWheelSteerTrack]);
-        var clipFRWheelRotation = Animation.CreateClip("FRWheelRotation", times.Last(), [fRWheelRotationTrack]);
-        var clipFRWheelSteer = Animation.CreateClip("FRWheelSteer", times.Last(), [fRWheelSteerTrack]);
-        var clipRLWheelRotation = Animation.CreateClip("RLWheelRotation", times.Last(), [rLWheelRotationTrack]);
-        var clipRRWheelRotation = Animation.CreateClip("RRWheelRotation", times.Last(), [rRWheelRotationTrack]);
-        var clipFLDampen = Animation.CreateClip("FLDampen", times.Last(), [fLDampenTrack]);
-        var clipFRDampen = Animation.CreateClip("FRDampen", times.Last(), [fRDampenTrack]);
-        var clipRLDampen = Animation.CreateClip("RLDampen", times.Last(), [rLDampenTrack]);
-        var clipRRDampen = Animation.CreateClip("RRDampen", times.Last(), [rRDampenTrack]);
-
+        // Setup mixer and playback
         Animation.CreateMixer(ghostSolid.Object);
-        action = Animation.CreateAction(clipVehicle);
-        actionFLWheelRotation = Animation.CreateAction(clipFLWheelRotation, fLWheel);
-        actionFLWheelSteer = Animation.CreateAction(clipFLWheelSteer, fLWheel);
-        actionFRWheelRotation = Animation.CreateAction(clipFRWheelRotation, fRWheel);
-        actionFRWheelSteer = Animation.CreateAction(clipFRWheelSteer, fRWheel);
-        actionRLWheelRotation = Animation.CreateAction(clipRLWheelRotation, rLWheel);
-        actionRRWheelRotation = Animation.CreateAction(clipRRWheelRotation, rRWheel);
-        actionFLDampen = Animation.CreateAction(clipFLDampen, fLWheel);
-        actionFRDampen = Animation.CreateAction(clipFRDampen, fRWheel);
-        actionRLDampen = Animation.CreateAction(clipRLDampen, rLWheel);
-        actionRRDampen = Animation.CreateAction(clipRRDampen, rRWheel);
+        playback?.SetDuration(TimeSpan.FromSeconds(duration));
 
-        Solid.ReorderEuler(fLWheel);
-        Solid.ReorderEuler(fRWheel);
-        Solid.ReorderEuler(rLWheel);
-        Solid.ReorderEuler(rRWheel);
+        actions["Vehicle"] = Animation.CreateAction(Animation.CreateClip("Vehicle", duration, [positionTrack, rotationTrack]));
 
-        if (fLGuard is not null)
+        foreach (var wheel in wheelNames)
         {
-            Solid.ReorderEuler(fLGuard);
-            var clipFLGuardSteer = Animation.CreateClip("FLGuardSteer", times.Last(), [fLGuardSteerTrack]);
-            actionFLGuardSteer = Animation.CreateAction(clipFLGuardSteer, fLGuard);
+            var node = ghostSolid.GetObjectByName("1" + wheel);
+            if (node is null) continue;
+
+            Solid.ReorderEuler(node);
+
+            // Rotation
+            var rotTrack = Animation.CreateRotationXTrack(times, partData[$"{wheel}_rot"]);
+            actions[$"{wheel}Rotation"] = Animation.CreateAction(
+                Animation.CreateClip($"{wheel}Rotation", duration, [rotTrack]), node);
+
+            // Steer
+            var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"]);
+            actions[$"{wheel}Steer"] = Animation.CreateAction(
+                Animation.CreateClip($"{wheel}Steer", duration, [steerTrack]), node);
+
+            // Dampen (as relative position)
+            var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
+            actions[$"{wheel}Dampen"] = Animation.CreateAction(
+                Animation.CreateClip($"{wheel}Dampen", duration, [dampenTrack]), node);
         }
 
-        if (fRGuard is not null)
+        foreach (var guard in guardNames)
         {
-            Solid.ReorderEuler(fRGuard);
-            var clipFRGuardSteer = Animation.CreateClip("FRGuardSteer", times.Last(), [fRGuardSteerTrack]);
-            actionFRGuardSteer = Animation.CreateAction(clipFRGuardSteer, fRGuard);
+            var node = ghostSolid.GetObjectByName("1" + guard);
+            if (node is null) continue;
+
+            Solid.ReorderEuler(node);
+
+            var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{guard}_steer"]);
+            actions[$"{guard}Steer"] = Animation.CreateAction(
+                Animation.CreateClip($"{guard}Steer", duration, [steerTrack]), node);
+
+            var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{guard}_dampen"], node);
+            actions[$"{guard}Dampen"] = Animation.CreateAction(
+                Animation.CreateClip($"{guard}Dampen", duration, [dampenTrack]), node);
         }
 
         var checkpoints = ghost.Checkpoints ?? [];
         var numLaps = GetNumberOfLaps(ghost.Validate_RaceSettings);
-        var checkpointsPerLap = checkpoints.Length / numLaps;
+        var perLap = checkpoints.Length / numLaps;
 
-        playback?.SetDuration(lastSample.Time);
-        playback?.SetMarkers(checkpoints.Where(x => x.Time.HasValue).Select((c, i) => new PlaybackMarker
-        {
-            Time = c.Time.GetValueOrDefault(),
-            Type = c == checkpoints.Last() ? PlaybackMarkerType.Finish : (((i + 1) % checkpointsPerLap == 0) ? PlaybackMarkerType.Multilap : PlaybackMarkerType.Checkpoint),
-        }).ToList() ?? []);
+        playback?.SetMarkers(checkpoints.Where(c => c.Time.HasValue).Select((c, i) =>
+            new PlaybackMarker
+            {
+                Time = c.Time!.Value,
+                Type = c == checkpoints.Last()
+                    ? PlaybackMarkerType.Finish
+                    : (((i + 1) % perLap == 0)
+                        ? PlaybackMarkerType.Multilap
+                        : PlaybackMarkerType.Checkpoint)
+            }).ToList());
+
+        StateHasChanged();
 
         return true;
     }
@@ -278,7 +265,7 @@ public partial class ViewReplay : ComponentBase
     [JSInvokable]
     public void UpdateTimeline(double timeIncludingRepeats)
     {
-        var time = action?.GetPropertyAsDouble("time") ?? 0;
+        var time = actions.GetValueOrDefault("Vehicle")?.GetPropertyAsDouble("time") ?? 0;
         playback?.SetTime(TimeSpan.FromSeconds(time));
     }
 
@@ -291,72 +278,15 @@ public partial class ViewReplay : ComponentBase
 
     private void Play(bool firstPlay)
     {
-        if (action is null
-            || actionFLWheelRotation is null
-            || actionFLWheelSteer is null
-            || actionFRWheelRotation is null
-            || actionFRWheelSteer is null
-            || actionRLWheelRotation is null
-            || actionRRWheelRotation is null
-            || actionFLDampen is null
-            || actionFRDampen is null
-            || actionRLDampen is null
-            || actionRRDampen is null)
-        {
-            return;
-        }
-
         if (firstPlay)
         {
-            Animation.PlayAction(action);
-            Animation.PlayAction(actionFLWheelRotation);
-            Animation.PlayAction(actionFLWheelSteer);
-            Animation.PlayAction(actionFRWheelRotation);
-            Animation.PlayAction(actionFRWheelSteer);
-            Animation.PlayAction(actionRLWheelRotation);
-            Animation.PlayAction(actionRRWheelRotation);
-            if (actionFLGuardSteer is not null) Animation.PlayAction(actionFLGuardSteer);
-            if (actionFRGuardSteer is not null) Animation.PlayAction(actionFRGuardSteer);
-            Animation.PlayAction(actionFLDampen);
-            Animation.PlayAction(actionFRDampen);
-            Animation.PlayAction(actionRLDampen);
-            Animation.PlayAction(actionRRDampen);
+            foreach (var action in actions.Values)
+            {
+                Animation.PlayAction(action);
+            }
         }
 
         Animation.PlayMixer();
-
-        /*if (timelinePlayer.IsPaused)
-        {
-            Animation.PauseAction(action);
-            Animation.PauseAction(actionFLWheelRotation);
-            Animation.PauseAction(actionFLWheelSteer);
-            Animation.PauseAction(actionFRWheelRotation);
-            Animation.PauseAction(actionFRWheelSteer);
-            Animation.PauseAction(actionRLWheelRotation);
-            Animation.PauseAction(actionRRWheelRotation);
-            if (actionFLGuardSteer is not null) Animation.PauseAction(actionFLGuardSteer);
-            if (actionFRGuardSteer is not null) Animation.PauseAction(actionFRGuardSteer);
-            Animation.PauseAction(actionFLDampen);
-            Animation.PauseAction(actionFRDampen);
-            Animation.PauseAction(actionRLDampen);
-            Animation.PauseAction(actionRRDampen);
-        }
-        else
-        {
-            Animation.ResumeAction(action);
-            Animation.ResumeAction(actionFLWheelRotation);
-            Animation.ResumeAction(actionFLWheelSteer);
-            Animation.ResumeAction(actionFRWheelRotation);
-            Animation.ResumeAction(actionFRWheelSteer);
-            Animation.ResumeAction(actionRLWheelRotation);
-            Animation.ResumeAction(actionRRWheelRotation);
-            if (actionFLGuardSteer is not null) Animation.ResumeAction(actionFLGuardSteer);
-            if (actionFRGuardSteer is not null) Animation.ResumeAction(actionFRGuardSteer);
-            Animation.ResumeAction(actionFLDampen);
-            Animation.ResumeAction(actionFRDampen);
-            Animation.ResumeAction(actionRLDampen);
-            Animation.ResumeAction(actionRRDampen);
-        }*/
     }
 
     private void Pause()

@@ -65,5 +65,8 @@
 else
 {
     <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" @ref="view3d"></View3D>
-    <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" @ref="playback"></Playback>
+    @if (RendererInfo.IsInteractive)
+    {
+        <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@CurrentGhost?.GhostNickname" @ref="playback"></Playback>
+    }
 }

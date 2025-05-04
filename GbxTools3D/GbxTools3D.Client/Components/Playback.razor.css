@@ -152,3 +152,11 @@
         background: #04AA6D;
         cursor: pointer;
     }
+
+.right {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 0 20px;
+}
