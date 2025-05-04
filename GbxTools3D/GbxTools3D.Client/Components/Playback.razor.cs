@@ -34,6 +34,7 @@ public partial class Playback : ComponentBase
     public bool IsPaused { get; private set; }
     public bool IsSeekPaused { get; private set; }
     public float Speed { get; set; } = 1;
+    public PlaybackMarker? SelectedMarker { get; private set; }
 
     public TimeSpan CurrentTime { get; private set; }
     public TimeSpan Duration { get; set; }
@@ -138,6 +139,12 @@ public partial class Playback : ComponentBase
     [JSInvokable]
     public void ShowPreviewTime(double percentage)
     {
+        if (SelectedMarker is not null)
+        {
+            PreviewTime = null;
+            return;
+        }
+
         PreviewTime = TimeSpan.FromSeconds(Duration.TotalSeconds * percentage);
         StateHasChanged();
     }

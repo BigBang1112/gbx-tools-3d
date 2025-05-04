@@ -14,16 +14,21 @@
         {
             @foreach (var marker in Markers)
             {
-                <div class="chevron @marker.Type.ToString().ToLowerInvariant()"
-                style="left: @(((double)marker.Time.Ticks / Duration.Ticks * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"
-                @onmousedown="() => OnMarkerMouseDown(marker)" @onmouseup="EndSeekAsync">
-                    @switch (marker.Type)
+                <div class="marker" style="left: @(((double)marker.Time.Ticks / Duration.Ticks * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"
+                     @onmousedown="() => OnMarkerMouseDown(marker)" @onmouseup="EndSeekAsync" @onmouseenter="() => SelectedMarker = marker" @onmouseleave="() => SelectedMarker = null">
+                    @if (SelectedMarker == marker)
                     {
-                        case PlaybackMarkerType.Finish:
-                        case PlaybackMarkerType.Multilap:
-                            <img src="icons/sports_score.svg" width="24" height="24" />
-                            break;
+                        <span class="time mono">@marker.Time.ToTmString()</span>
                     }
+                    <div class="chevron @marker.Type.ToString().ToLowerInvariant()">
+                        @switch (marker.Type)
+                        {
+                            case PlaybackMarkerType.Finish:
+                            case PlaybackMarkerType.Multilap:
+                                <img src="icons/sports_score.svg" width="24" height="24" />
+                                break;
+                        }
+                    </div>
                 </div>
             }
         }

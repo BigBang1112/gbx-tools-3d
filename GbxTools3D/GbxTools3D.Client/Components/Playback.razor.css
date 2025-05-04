@@ -68,14 +68,24 @@
         background-color: #555;
     }
 
+.marker {
+    position: absolute;
+    transform: translateX(-50%);
+    bottom: 100%;
+}
+
+    .marker .time {
+        position: absolute;
+        bottom: 100%;
+        transform: translateX(calc(-50% + 12px));
+        padding: 5px;
+    }
+
 .chevron {  
-   position: absolute;  
    min-width: 24px;  
    height: 32px;  
    background-color: #666;  
-   clip-path: polygon(100% 75%, 50% 100%, 0 75%, 0 0, 100% 0);  
-   transform: translateX(-50%);  
-   bottom: 100%;  
+   clip-path: polygon(100% 75%, 50% 100%, 0 75%, 0 0, 100% 0); 
    opacity: 0.8;  
    transition: opacity 0.1s ease;
 }
