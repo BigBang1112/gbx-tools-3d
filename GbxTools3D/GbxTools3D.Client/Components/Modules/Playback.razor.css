@@ -9,6 +9,8 @@
     margin: 0 auto;
     border-radius: 5px 5px 0 0;
     backdrop-filter: blur(10px);
+    border: 2px solid #222;
+    border-bottom: 0;
 }
 
 .progress {

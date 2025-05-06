@@ -273,6 +273,11 @@ public partial class ViewReplay : ComponentBase
 
     public ValueTask DisposeAsync()
     {
+        if (RendererInfo.IsInteractive)
+        {
+            Animation.SetMixerTimeScale(1, isPaused: false);
+        }
+
         GbxService.Deselect(); // can be more flexible
 
         return ValueTask.CompletedTask;
