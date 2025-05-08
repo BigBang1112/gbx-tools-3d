@@ -34,24 +34,24 @@
 
 @if (!NoCatalog)
 {
-    <div class="catalog @(showCatalog ? "" : "closed")">
+    <div class="panel left catalog @(showCatalog ? "" : "closed")">
         <div class="opener" @onclick="() => showCatalog = !showCatalog">
             @if (showCatalog)
             {
-                <img src="icons/keyboard_arrow_left.svg" width="32" height="32" />
+                <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
             }
             else
             {
-                <img src="icons/keyboard_arrow_right.svg" width="32" height="32" />
+                <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
             }
         </div>
         <div class="games">
-            <NavLink href="/catalog/TMSX"><img src="icons/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
-            <NavLink href="/catalog/TMNESWC"><img src="icons/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
-            <NavLink href="/catalog/TMF"><img src="icons/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
-            <NavLink href="/catalog/TMT"><img src="icons/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
-            <NavLink href="/catalog/MP4"><img src="icons/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
-            <NavLink href="/catalog/TM2020"><img src="icons/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMSX"><img src="icons/game/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMNESWC"><img src="icons/game/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMF"><img src="icons/game/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TMT"><img src="icons/game/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/MP4"><img src="icons/game/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
+            <NavLink href="/catalog/TM2020"><img src="icons/game/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
         </div>
 
         @if (GameVersionEnum != GBX.NET.GameVersion.Unspecified)

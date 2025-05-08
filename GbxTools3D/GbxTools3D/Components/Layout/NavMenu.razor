@@ -14,48 +14,48 @@
         <nav class="@(showBurger ? "show" : "")">
             <div class="nav-item" title="Home">
                 <NavLink class="nav-link wide" href="" Match="NavLinkMatch.All">
-                    <img src="icons/home.svg" alt="Home" class="icon" width="32" height="32" />
+                    <img src="icons/ui/home.svg" alt="Home" class="icon" width="32" height="32" />
                     <span>Home</span>
                 </NavLink>
             </div>
 
             <div class="nav-item" title="View">
                 <NavLink class="nav-link wide" href="view">
-                    <img src="icons/pageview.svg" alt="View" class="icon" width="32" height="32" />
+                    <img src="icons/ui/pageview.svg" alt="View" class="icon" width="32" height="32" />
                     <span>View</span>
                 </NavLink>
             </div>
 
             <div class="nav-item" title="Catalog">
                 <NavLink class="nav-link wide" href="catalog">
-                    <img src="icons/menu_book.svg" alt="Catalog" class="icon" width="32" height="32" />
+                    <img src="icons/ui/menu_book.svg" alt="Catalog" class="icon" width="32" height="32" />
                     <span>Catalog</span>
                 </NavLink>
             </div>
 
             <div class="nav-item" title="Widgets">
                 <NavLink class="nav-link wide" href="widgets">
-                    <img src="icons/widgets.svg" alt="Widgets" class="icon" width="32" height="32" />
+                    <img src="icons/ui/widgets.svg" alt="Widgets" class="icon" width="32" height="32" />
                     <span>Widgets</span>
                 </NavLink>
             </div>
 
             <div class="nav-item" title="About">
                 <NavLink class="nav-link wide" href="about">
-                    <img src="icons/info.svg" alt="About" class="icon" width="32" height="32" />
+                    <img src="icons/ui/info.svg" alt="About" class="icon" width="32" height="32" />
                     <span>About</span>
                 </NavLink>
             </div>
 
             <div class="nav-item" title="Join the Discord server">
                 <a class="nav-link discord" href="https://discord.gg/9wAAJvKYyE">
-                    <img src="icons/discord.svg" alt="Discord" width="32" height="32" />
+                    <img src="icons/ui/discord.svg" alt="Discord" width="32" height="32" />
                 </a>
             </div>
 
             <div class="nav-item" title="Login">
                 <NavLink class="nav-link" href="login">
-                    <img src="icons/login.svg" alt="Login" width="32" height="32" />
+                    <img src="icons/ui/login.svg" alt="Login" width="32" height="32" />
                 </NavLink>
             </div>
         </nav>
@@ -64,7 +64,7 @@
             <button class="burger nav-link @(showBurger ? "active" : "")" @onclick="() => showBurger = !showBurger">
                 @if (RendererInfo.IsInteractive)
                 {
-                    <img src="icons/menu.svg" alt="Menu" width="32" height="32" />
+                    <img src="icons/ui/menu.svg" alt="Menu" width="32" height="32" />
                 }
                 else
                 {

@@ -1,0 +1,10 @@
+﻿.input-list {
+    padding: 10px;
+    top: 120px;
+    width: 300px;
+    height: 200px;
+}
+
+    .input-list.closed {
+        left: -300px;
+    }

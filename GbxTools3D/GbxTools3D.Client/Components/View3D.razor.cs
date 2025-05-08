@@ -493,7 +493,7 @@ public partial class View3D : ComponentBase
                 _ => throw new ArgumentException("Invalid block direction")
             };
 
-            var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height, 0)) * blockSize, block.Direction);
+            var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height - Map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
 
             instanceInfos.Add(instanceInfo);
         }
@@ -568,7 +568,7 @@ public partial class View3D : ComponentBase
             yield break;
         }
 
-        var groundHeight = baseHeight + 1 + Map.DecoBaseHeightOffset;
+        var groundHeight = baseHeight + 1;
         var occupied = new HashSet<(int X, int Z)>();
 
         foreach (var block in Map.GetBlocks())

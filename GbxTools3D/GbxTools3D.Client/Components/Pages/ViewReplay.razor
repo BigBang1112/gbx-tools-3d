@@ -69,5 +69,10 @@ else
     @if (RendererInfo.IsInteractive)
     {
         <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@CurrentGhost?.GhostNickname" @ref="playback"></Playback>
+        <InputList></InputList>
+        <CheckpointList></CheckpointList>
+        <RenderInfo></RenderInfo>
+        <MapInfo Map="Replay?.Challenge"></MapInfo>
+        <GhostInfo></GhostInfo>
     }
 }

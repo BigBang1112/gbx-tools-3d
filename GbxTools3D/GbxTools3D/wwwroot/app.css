@@ -167,6 +167,57 @@ h2.view {
     margin: 10px 0 35px 0;
 }
 
+.panel {
+    position: fixed;
+    box-sizing: border-box;
+    background-color: #111D;
+    backdrop-filter: blur(10px);
+    border: 2px solid #222D;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+    .panel .opener {
+        display: flex;
+        position: absolute;
+        background-color: #111D;
+        border: 2px solid #222D;
+        cursor: pointer;
+    }
+
+        .panel .opener:hover {
+            background-color: #222D;
+        }
+
+    .panel.left {
+        border-left: 0;
+        border-radius: 0 10px 10px 0;
+        left: 0;
+        transition: left 0.4s ease;
+    }
+
+        .panel.left .opener {
+            left: 100%;
+            border-left: 0;
+            border-radius: 0 10px 10px 0;
+            margin-left: 2px;
+        }
+
+    .panel.right {
+        border-right: 0;
+        border-radius: 10px 0 0 10px;
+        right: 0;
+        transition: right 0.4s ease;
+    }
+
+        .panel.right .opener {
+            right: 100%;
+            border-right: 0;
+            border-radius: 10px 0 0 10px;
+            margin-right: 2px;
+        }
+
 a, .btn-link {
     color: #006bb7;
 }
