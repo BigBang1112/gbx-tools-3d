@@ -1,11 +1,14 @@
 ﻿using GBX.NET.Engines.Game;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
+using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Modules;
 
 public partial class CheckpointList : ComponentBase
 {
+    private record CheckpointInfo(int Index, CGameCtnGhost.Checkpoint Checkpoint, int Lap, bool IsFinish, bool HasBonusChanged);
+
     private bool show = true;
 
     [Parameter, EditorRequired]
@@ -14,7 +17,12 @@ public partial class CheckpointList : ComponentBase
     [Parameter, EditorRequired]
     public int NumLaps { get; set; }
 
+    [Parameter, EditorRequired]
+    public EventCallback<CGameCtnGhost.Checkpoint> OnCheckpointClick { get; set; }
+
     public int CheckpointsPerLap => Ghost?.Checkpoints?.Length / NumLaps ?? 0;
+
+    public TimeInt32? CurrentCheckpoint { get; private set; }
 
     private CheckpointInfo[] Checkpoints => GetCheckpoints().ToArray();
 
@@ -41,5 +49,9 @@ public partial class CheckpointList : ComponentBase
         }
     }
 
-    private record CheckpointInfo(int Index, CGameCtnGhost.Checkpoint Checkpoint, int Lap, bool IsFinish, bool HasBonusChanged);
+    public void SetCurrentCheckpoint(TimeInt32? time)
+    {
+        CurrentCheckpoint = time;
+        StateHasChanged();
+    }
 }

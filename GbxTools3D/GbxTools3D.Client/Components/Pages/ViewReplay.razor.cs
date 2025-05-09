@@ -12,6 +12,7 @@ using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Enums;
 using GbxTools3D.Client.Components.Modules;
 using GbxTools3D.Client.Extensions;
+using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -21,11 +22,13 @@ public partial class ViewReplay : ComponentBase
     private View3D? view3d;
     private Playback? playback;
     private RenderInfo? renderInfo;
+    private Checkpoint? checkpoint;
+    private CheckpointList? checkpointList;
 
     private readonly Dictionary<string, JSObject> actions = [];
 
-    private readonly string[] wheelNames = { "FLWheel", "FRWheel", "RLWheel", "RRWheel" };
-    private readonly string[] guardNames = { "FLGuard", "FRGuard", "RLHub", "RRHub" };
+    private readonly string[] wheelNames = ["FLWheel", "FRWheel", "RLWheel", "RRWheel"];
+    private readonly string[] guardNames = ["FLGuard", "FRGuard", "RLHub", "RRHub"];
 
     private readonly string[] extensions = ["Replay.Gbx"];
 
@@ -267,17 +270,71 @@ public partial class ViewReplay : ComponentBase
         return true;
     }
 
+    private double prevTime;
+    private TimeInt32? prevCheckpointPassedTime;
+
     [JSInvokable]
     public void UpdateTimeline(double timeIncludingRepeats)
     {
         var time = actions.GetValueOrDefault("Vehicle")?.GetPropertyAsDouble("time") ?? 0;
         playback?.SetTime(TimeSpan.FromSeconds(time));
+
+        var checkpointPassedTime = default(TimeInt32?);
+
+        // on maps with many checkpoints could be a performance hit
+        foreach (var cp in CurrentGhost?.Checkpoints ?? [])
+        {
+            if (cp.Time is null)
+            {
+                continue;
+            }
+
+            var cpTime = cp.Time.Value.TotalSeconds;
+
+            if (time >= cpTime - 0.001 && time < cpTime + 3)
+            {
+                checkpointPassedTime = cp.Time;
+
+                if (checkpointPassedTime != prevCheckpointPassedTime)
+                {
+                    checkpoint?.Set(cp.Time);
+                    checkpointList?.SetCurrentCheckpoint(cp.Time);
+                    prevCheckpointPassedTime = checkpointPassedTime;
+                }
+            }
+
+            // after passed checkpoint, dont check for the next checkpoints after 3 seconds
+            if (checkpointPassedTime.HasValue && time > cpTime + 3)
+            {
+                break;
+            }
+        }
+
+        if (checkpointPassedTime is null && prevCheckpointPassedTime is not null)
+        {
+            checkpoint?.Set(null);
+            checkpointList?.SetCurrentCheckpoint(null);
+            prevCheckpointPassedTime = null;
+        }
+
+        prevTime = time;
     }
 
     private void OnRenderDetails(RenderDetails details)
     {
         RenderDetails = details;
         renderInfo?.Update();
+    }
+
+    private void OnCheckpointListItemClick(CGameCtnGhost.Checkpoint checkpoint)
+    {
+        if (checkpoint.Time is null)
+        {
+            return;
+        }
+
+        playback?.SetTime(checkpoint.Time.Value);
+        Animation.SetMixerTime(checkpoint.Time.Value.TotalSeconds);
     }
 
     public ValueTask DisposeAsync()

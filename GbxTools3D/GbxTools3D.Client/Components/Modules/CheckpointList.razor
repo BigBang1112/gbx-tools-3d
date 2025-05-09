@@ -18,7 +18,7 @@
                 var isLap = (checkpointInfo.Index + 1) % CheckpointsPerLap == 0;
             }
 
-            <div class="item checkpoint@(checkpointInfo.IsFinish ? " finish" : "") @(isLap && !checkpointInfo.IsFinish ? "lap" : "")">
+            <div @onclick="() => OnCheckpointClick.InvokeAsync(checkpointInfo.Checkpoint)" class="item checkpoint@(checkpointInfo.IsFinish ? " finish" : "") @(isLap && !checkpointInfo.IsFinish ? "lap" : "") @(CurrentCheckpoint == checkpointInfo.Checkpoint.Time ? "active" : "")">
                 <div class="type">
                     @if (checkpointInfo.IsFinish || isLap)
                     {

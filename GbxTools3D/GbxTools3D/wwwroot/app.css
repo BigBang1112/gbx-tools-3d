@@ -243,6 +243,10 @@ h2.view {
             background-color: #333;
         }
 
+        .panel .list .item.active {
+            background-color: #444;
+        }
+
 a, .btn-link {
     color: #006bb7;
 }

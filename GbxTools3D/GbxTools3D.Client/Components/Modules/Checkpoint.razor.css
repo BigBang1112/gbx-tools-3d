@@ -1,0 +1,18 @@
+﻿.module {
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    text-shadow: 2px 2px 2px black;
+    font-weight: bold;
+}
+
+.time {
+    font-size: 140%;
+    padding: 10px;
+}
+
+.lap, .diff {
+    height: 20px;
+}

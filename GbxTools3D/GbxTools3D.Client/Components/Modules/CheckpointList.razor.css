@@ -22,12 +22,20 @@
         background-color: #B803;
     }
 
+    .list .checkpoint.lap.active {
+        background-color: #DA23;
+    }
+
 .list .checkpoint.finish {
     background-color: #6103;
 }
 
     .list .checkpoint.finish:hover {
         background-color: #D103;
+    }
+
+    .list .checkpoint.finish.active {
+        background-color: #F323;
     }
 
 .type {

@@ -21,6 +21,10 @@
                 {
                     <span>@inputReal.Value</span>
                 }
+                else if (input is GBX.NET.Inputs.IInputState inputState)
+                {
+                    <span>@inputState.Pressed</span>
+                }
             </div>
         </Virtualize>
     </div>
