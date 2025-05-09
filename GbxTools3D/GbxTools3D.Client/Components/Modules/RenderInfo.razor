@@ -9,4 +9,22 @@
             <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
         }
     </div>
+    <div class="title">
+        Render
+    </div>
+    @if (RenderDetails is not null)
+    {
+        <div style="display: grid; grid-template-columns: 1fr 1fr;gap: 3px">
+            <div>FPS:</div>
+            <div class="mono">@RenderDetails.FPS</div>
+            <div>Calls:</div>
+            <div class="mono">@RenderDetails.Calls</div>
+            <div>Triangles:</div>
+            <div class="mono">@RenderDetails.Triangles</div>
+            <div>Geometries:</div>
+            <div class="mono">@RenderDetails.Geometries</div>
+            <div>Textures:</div>
+            <div class="mono">@RenderDetails.Textures</div>
+        </div>
+    }
 </div>

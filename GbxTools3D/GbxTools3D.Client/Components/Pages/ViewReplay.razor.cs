@@ -10,8 +10,8 @@ using System.Runtime.Versioning;
 using Microsoft.JSInterop;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Enums;
-using System.Xml;
 using GbxTools3D.Client.Components.Modules;
+using GbxTools3D.Client.Extensions;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -20,6 +20,7 @@ public partial class ViewReplay : ComponentBase
 {
     private View3D? view3d;
     private Playback? playback;
+    private RenderInfo? renderInfo;
 
     private readonly Dictionary<string, JSObject> actions = [];
 
@@ -41,6 +42,8 @@ public partial class ViewReplay : ComponentBase
 
     public CGameCtnReplayRecord? Replay { get; set; }
     public CGameCtnGhost? CurrentGhost { get; set; }
+
+    public RenderDetails? RenderDetails { get; set; }
 
     private string selectedExternal = "tmx";
     private string selectedTmx = "tmnf";
@@ -245,7 +248,7 @@ public partial class ViewReplay : ComponentBase
         }
 
         var checkpoints = ghost.Checkpoints ?? [];
-        var numLaps = GetNumberOfLaps(ghost.Validate_RaceSettings);
+        var numLaps = ghost.GetNumberOfLaps(Replay?.Challenge) ?? 1;
         var perLap = checkpoints.Length / numLaps;
 
         playback?.SetMarkers(checkpoints.Where(c => c.Time.HasValue).Select((c, i) =>
@@ -269,6 +272,12 @@ public partial class ViewReplay : ComponentBase
     {
         var time = actions.GetValueOrDefault("Vehicle")?.GetPropertyAsDouble("time") ?? 0;
         playback?.SetTime(TimeSpan.FromSeconds(time));
+    }
+
+    private void OnRenderDetails(RenderDetails details)
+    {
+        RenderDetails = details;
+        renderInfo?.Update();
     }
 
     public ValueTask DisposeAsync()
@@ -309,36 +318,5 @@ public partial class ViewReplay : ComponentBase
     private void SetSpeed(float speed)
     {
         Animation.SetMixerTimeScale(speed, playback?.IsPaused ?? true);
-    }
-
-    private int GetNumberOfLaps(string? raceSettingsXml)
-    {
-        if (raceSettingsXml is null || raceSettingsXml == "1P-Time")
-        {
-            return GetNbLapsFromMap();
-        }
-
-        // TODO: use MiniXmlReader
-        var readerSettings = new XmlReaderSettings { ConformanceLevel = ConformanceLevel.Fragment };
-
-        using var strReader = new StringReader(raceSettingsXml);
-        using var reader = XmlReader.Create(strReader, readerSettings);
-
-        try
-        {
-            reader.ReadToDescendant("laps");
-
-            return reader.ReadElementContentAsInt();
-        }
-        catch
-        {
-            return GetNbLapsFromMap();
-        }
-    }
-
-    private int GetNbLapsFromMap()
-    {
-        var map = Replay?.Challenge;
-        return map?.IsLapRace == true ? map.NbLaps  : 1;
     }
 }

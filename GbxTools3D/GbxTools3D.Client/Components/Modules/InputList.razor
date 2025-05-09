@@ -9,4 +9,25 @@
             <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
         }
     </div>
+    <div class="title">
+        Inputs
+    </div>
+    <div class="list mono">
+        <Virtualize Items="Inputs" Context="input" ItemSize="28">
+            <div class="item input">
+                <span>@input.Time</span>
+                <span>@input.GetType().Name</span>
+                @if (input is GBX.NET.Inputs.IInputReal inputReal)
+                {
+                    <span>@inputReal.Value</span>
+                }
+            </div>
+        </Virtualize>
+    </div>
+    <div class="properties">
+        <label>
+            <input type="checkbox" @bind="onlyRespawns" />
+            Only respawns
+        </label>
+    </div>
 </div>

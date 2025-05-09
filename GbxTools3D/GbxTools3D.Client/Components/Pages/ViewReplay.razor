@@ -6,8 +6,6 @@
 @using GBX.NET
 @using GBX.NET.Engines.Game
 @using GBX.NET.Engines.Scene
-@using GbxTools3D.Client.Components.Modules
-@using GbxTools3D.Client.Modules
 
 @inject HttpClient Http
 @inject GbxService GbxService
@@ -65,13 +63,13 @@
 }
 else
 {
-    <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" @ref="view3d"></View3D>
+    <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
     @if (RendererInfo.IsInteractive)
     {
         <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@CurrentGhost?.GhostNickname" @ref="playback"></Playback>
-        <InputList></InputList>
-        <CheckpointList></CheckpointList>
-        <RenderInfo></RenderInfo>
+        <InputList Ghost="CurrentGhost" Replay="Replay"></InputList>
+        <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Replay?.Challenge) ?? 1"></CheckpointList>
+        <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
         <MapInfo Map="Replay?.Challenge"></MapInfo>
         <GhostInfo></GhostInfo>
     }

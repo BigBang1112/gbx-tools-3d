@@ -95,7 +95,6 @@
 
         .catalog .assets ::deep a {
             display: flex;
-            padding: 10px;
             padding: 4px 6px;
             gap: 6px;
             align-items: center;

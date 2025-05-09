@@ -8,3 +8,8 @@
     .ghost-info.closed {
         right: -300px;
     }
+
+.title {
+    text-align: center;
+    padding: 2px;
+}

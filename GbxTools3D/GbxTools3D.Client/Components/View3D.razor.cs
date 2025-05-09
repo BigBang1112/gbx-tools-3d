@@ -10,6 +10,7 @@ using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using static GBX.NET.Engines.Plug.CPlugSurface.Mesh;
 
 namespace GbxTools3D.Client.Components;
 
@@ -51,16 +52,30 @@ public partial class View3D : ComponentBase
     [Parameter]
     public EventCallback BeforeMapLoad { get; set; }
 
+    [Parameter]
+    public EventCallback<RenderDetails?> OnRenderDetails { get; set; }
+
+    public int RenderDetailsRefreshInterval { get; set; } = 500;
+
     private Dictionary<string, BlockInfoDto> blockInfos = [];
     private Dictionary<Int3, DecorationSizeDto> decorations = [];
     private Dictionary<string, MaterialDto> materials = [];
     private Dictionary<string, VehicleDto> vehicles = [];
 
     private readonly CancellationTokenSource cts = new();
+    private Timer? timer;
 
     public View3D(HttpClient http)
     {
         this.http = http;
+    }
+
+    protected override void OnInitialized()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            timer = new Timer(TimerCallback, null, 0, RenderDetailsRefreshInterval);
+        }
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -631,6 +646,49 @@ public partial class View3D : ComponentBase
         Direction.West => new Int3(unit.Z, unit.Y, -unit.X),
         _ => unit,
     };
+
+    private int? framesBefore;
+
+    protected async void TimerCallback(object? state)
+    {
+        var info = renderer?.GetPropertyAsJSObject("info");
+
+        if (info is null)
+        {
+            await OnRenderDetails.InvokeAsync(null);
+            return;
+        }
+
+        var fps = default(float?);
+        var calls = default(int?);
+        var triangles = default(int?);
+        var geometries = default(int?);
+        var textures = default(int?);
+
+        var infoRender = info.GetPropertyAsJSObject("render");
+
+        if (infoRender is not null)
+        {
+            var framesNow = infoRender.GetPropertyAsInt32("frame");
+
+            fps = (framesNow - framesBefore.GetValueOrDefault(framesNow)) * 1000 / (float)RenderDetailsRefreshInterval;
+
+            framesBefore = framesNow;
+
+            calls = infoRender.GetPropertyAsInt32("calls");
+            triangles = infoRender.GetPropertyAsInt32("triangles");
+        }
+
+        var infoMemory = info.GetPropertyAsJSObject("memory");
+
+        if (infoMemory is not null)
+        {
+            geometries = infoMemory.GetPropertyAsInt32("geometries");
+            textures = infoMemory.GetPropertyAsInt32("textures");
+        }
+
+        await OnRenderDetails.InvokeAsync(new RenderDetails(fps, calls, triangles, geometries, textures));
+    }
 
     public ValueTask DisposeAsync()
     {

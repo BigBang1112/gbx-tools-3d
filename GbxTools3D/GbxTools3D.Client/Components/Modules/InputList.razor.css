@@ -2,9 +2,22 @@
     padding: 10px;
     top: 120px;
     width: 300px;
-    height: 200px;
+    height: 232px;
 }
 
     .input-list.closed {
         left: -300px;
     }
+
+.title {
+    text-align: center;
+    padding: 2px;
+}
+
+.input {
+    font-size: 70%;
+}
+
+.properties {
+    text-align: center;
+}

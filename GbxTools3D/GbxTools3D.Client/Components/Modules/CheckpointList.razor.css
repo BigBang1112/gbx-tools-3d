@@ -1,10 +1,64 @@
 ﻿.checkpoint-list {
     padding: 10px;
-    top: 340px;
+    top: 372px;
     width: 300px;
-    height: 200px;
+    height: 243px;
 }
 
     .checkpoint-list.closed {
         left: -300px;
     }
+
+.title {
+    text-align: center;
+    padding: 2px;
+}
+
+.list .checkpoint.lap {
+    background-color: #6403;
+}
+
+    .list .checkpoint.lap:hover {
+        background-color: #B803;
+    }
+
+.list .checkpoint.finish {
+    background-color: #6103;
+}
+
+    .list .checkpoint.finish:hover {
+        background-color: #D103;
+    }
+
+.type {
+    display: flex;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+}
+
+.time {
+    padding: 4px 0;
+    flex: 1;
+    font-weight: bold;
+}
+
+.bonus {
+    font-size: 70%;
+}
+
+    .bonus.unchanged {
+        color: #666;
+    }
+
+.laps {
+    display: flex;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.no-laps {
+    color: #666;
+}

@@ -60,89 +60,10 @@
 }
 else
 {
-    <View3D GameVersion="GameVersion.TMF" Map="Map" @ref="view3d"></View3D>
-}
-
-@code {
-    private View3D? view3d;
-
-    private string[] extensions = ["Challenge.Gbx", "Map.Gbx"];
-
-    [SupplyParameterFromQuery(Name = "tmx")]
-    private string? TmxSite { get; set; }
-
-    [SupplyParameterFromQuery(Name = "mx")]
-    private string? MxSite { get; set; }
-
-    [SupplyParameterFromQuery(Name = "id")]
-    private string? MapId { get; set; }
-
-    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
-
-    public CGameCtnChallenge? Map { get; set; }
-
-    private string selectedExternal = "tmx";
-    private string selectedTmx = "tmnf";
-    private string selectedMx = "tm2020";
-    private string externalId = string.Empty;
-
-    protected override async Task OnInitializedAsync()
+    <View3D GameVersion="GameVersion.TMF" Map="Map" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
+    @if (RendererInfo.IsInteractive)
     {
-        await base.OnInitializedAsync();
-
-        if (!RendererInfo.IsInteractive)
-        {
-            return;
-        }
-
-        if (IsDragAndDrop)
-        {
-            Map = GbxService.SelectedMap?.Node;
-            return;
-        }
-
-        string endpoint;
-        if (!string.IsNullOrEmpty(TmxSite))
-        {
-            endpoint = $"/api/map/tmx/{TmxSite}/{MapId}";
-        }
-        else if (!string.IsNullOrEmpty(MxSite))
-        {
-            endpoint = $"/api/map/mx/{MxSite}/{MapId}";
-        }
-        else
-        {
-            throw new Exception();
-        }
-
-        using var response = await Http.GetAsync(endpoint);
-        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
-
-        if (content is null)
-        {
-            return;
-        }
-
-        await using var ms = new MemoryStream(content.Content);
-        Map = Gbx.ParseNode<CGameCtnChallenge>(ms);
-    }
-
-    private async Task OnUploadAsync(UploadEventArgs e)
-    {
-        using var ms = new MemoryStream(e.Data);
-        var gbx = await Gbx.ParseAsync(ms);
-
-        if (gbx is Gbx<CGameCtnChallenge> map)
-        {
-            GbxService.Add(map);
-            Map = map.Node;
-        }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        GbxService.Deselect(); // can be more flexible
-
-        return ValueTask.CompletedTask;
+        <MapInfo Map="Map"></MapInfo>
+        <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
     }
 }
