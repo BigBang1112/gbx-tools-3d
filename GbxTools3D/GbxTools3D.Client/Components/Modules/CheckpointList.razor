@@ -28,7 +28,7 @@
                 <div class="time">
                     @checkpointInfo.Checkpoint.Time
                 </div>
-                <div class="counter">
+                <div class="checkpoint-num">
                     (@(checkpointInfo.Index + 1))
                 </div>
                 <div class="bonus @(checkpointInfo.HasBonusChanged ? "" : "unchanged")" title="@(checkpointInfo.Checkpoint.Speed.HasValue ? "Speed at the checkpoint" : "Stunt points at the checkpoint")">
@@ -46,15 +46,35 @@
             </div>
         </Virtualize>
     </div>
-    <div class="laps">
-        @if (NumLaps > 1)
+
+    @{
+        var cpCount = (Ghost?.Checkpoints?.Length ?? 1) - 1; // Real checkpoint count
+    }
+
+    <div class="counters">
+        <div class="counter">
+            @if (cpCount > 0)
+            {
+                <span class="mono">@(CurrentCheckpointIndex + 1)</span> <span class="mono">/</span> <span class="mono" title="Actual checkpoint count (not counting the finish)">@cpCount</span>
+            }
+            else
+            {
+                <span class="no-laps">No checkpoints</span>
+            }
+        </div>
+        @if (cpCount > 0)
         {
-            <img src="icons/ui/laps.svg" width="32" height="32" />
-            <span class="mono">1 / @NumLaps</span>
-        }
-        else
-        {
-            <span class="no-laps">No laps</span>
+            <div class="counter">
+                @if (NumLaps > 1)
+                {
+                    <img src="icons/ui/laps.svg" width="32" height="32" />
+                    <span class="mono">@(CurrentLapIndex + 1) / @NumLaps</span>
+                }
+                else
+                {
+                    <span class="no-laps">No laps</span>
+                }
+            </div>
         }
     </div>
 </div>

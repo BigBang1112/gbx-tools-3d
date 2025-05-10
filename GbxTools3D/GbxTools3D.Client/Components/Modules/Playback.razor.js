@@ -51,7 +51,7 @@ function getPercent(clientX, element) {
 
 async function seek(dotNetHelper, element, clientX) {
     const percent = getPercent(clientX, element);
-    await dotNetHelper.invokeMethodAsync("Seek", percent);
+    await dotNetHelper.invokeMethodAsync("Seek", percent, true);
 }
 
 export function isSeeking() {

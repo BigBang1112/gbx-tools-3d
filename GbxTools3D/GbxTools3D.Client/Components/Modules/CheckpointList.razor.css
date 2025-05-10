@@ -59,20 +59,26 @@
         color: #666;
     }
 
-.laps {
+.counter {
     display: flex;
     font-weight: bold;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    flex: 1;
 }
 
 .no-laps {
     color: #666;
 }
 
-.counter {
+.checkpoint-num {
     flex: 1;
     font-size: 70%;
     color: #666;
+}
+
+.counters {
+    display: flex;
+    height: 32px;
 }

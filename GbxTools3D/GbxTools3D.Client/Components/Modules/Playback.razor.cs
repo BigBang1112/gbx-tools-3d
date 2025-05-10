@@ -110,7 +110,24 @@ public partial class Playback : ComponentBase
     }
 
     [JSInvokable]
-    public async Task Seek(double percentage)
+    public async Task Seek(double percentage, bool seekPause)
+    {
+        await StartSeekAsync(seekPause);
+
+        var newTime = Duration.TotalSeconds * percentage;
+        SetTime(TimeSpan.FromSeconds(newTime));
+        Animation.SetMixerTime(newTime);
+    }
+
+    public async Task Seek(TimeSpan newTime, bool seekPause)
+    {
+        await StartSeekAsync(seekPause);
+
+        SetTime(newTime);
+        Animation.SetMixerTime(newTime.TotalSeconds);
+    }
+
+    private async ValueTask StartSeekAsync(bool seekPause)
     {
         if (!IsPlaying)
         {
@@ -118,15 +135,11 @@ public partial class Playback : ComponentBase
             await PauseAsync();
         }
 
-        if (!IsPaused)
+        if (seekPause && !IsPaused)
         {
             IsSeekPaused = true;
             await PauseAsync();
         }
-
-        var newTime = Duration.TotalSeconds * percentage;
-        SetTime(TimeSpan.FromSeconds(newTime));
-        Animation.SetMixerTime(newTime);
     }
 
     [JSInvokable]

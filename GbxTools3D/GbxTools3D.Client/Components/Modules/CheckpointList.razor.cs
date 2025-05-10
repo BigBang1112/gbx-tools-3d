@@ -1,6 +1,5 @@
 ﻿using GBX.NET.Engines.Game;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
 using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Modules;
@@ -23,6 +22,9 @@ public partial class CheckpointList : ComponentBase
     public int CheckpointsPerLap => Ghost?.Checkpoints?.Length / NumLaps ?? 0;
 
     public TimeInt32? CurrentCheckpoint { get; private set; }
+
+    public int CurrentCheckpointIndex => -1;
+    public int CurrentLapIndex => -1;
 
     private CheckpointInfo[] Checkpoints => GetCheckpoints().ToArray();
 

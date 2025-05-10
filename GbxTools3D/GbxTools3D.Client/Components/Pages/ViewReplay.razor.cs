@@ -333,8 +333,7 @@ public partial class ViewReplay : ComponentBase
             return;
         }
 
-        playback?.SetTime(checkpoint.Time.Value);
-        Animation.SetMixerTime(checkpoint.Time.Value.TotalSeconds);
+        playback?.Seek(checkpoint.Time.Value, seekPause: false);
     }
 
     public ValueTask DisposeAsync()
