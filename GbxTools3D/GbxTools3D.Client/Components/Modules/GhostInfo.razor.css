@@ -3,6 +3,7 @@
     top: 260px;
     width: 300px;
     height: 500px;
+    gap: 8px;
 }
 
     .ghost-info.closed {
@@ -12,4 +13,37 @@
 .title {
     text-align: center;
     padding: 2px;
+}
+
+.sub-title {
+    text-align: center;
+    font-size: 85%;
+    font-weight: bold;
+    margin-top: auto;
+}
+
+.table {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    align-items: center;
+    gap: 3px 5px;
+    margin: 5px;
+    font-size: 80%;
+    white-space: nowrap;
+    padding-bottom: 10px;
+}
+
+.uid {
+    font-size: 60%;
+    color: #666;
+    text-align: center;
+    margin-top: 5px;
+}
+
+.basic {
+    overflow: auto;
+}
+
+.validation {
+    overflow: auto;
 }

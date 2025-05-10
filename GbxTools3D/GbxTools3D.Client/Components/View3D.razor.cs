@@ -10,7 +10,6 @@ using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
-using static GBX.NET.Engines.Plug.CPlugSurface.Mesh;
 
 namespace GbxTools3D.Client.Components;
 
@@ -659,7 +658,7 @@ public partial class View3D : ComponentBase
             return;
         }
 
-        var fps = default(float?);
+        var fps = default(double?);
         var calls = default(int?);
         var triangles = default(int?);
         var geometries = default(int?);
@@ -667,11 +666,11 @@ public partial class View3D : ComponentBase
 
         var infoRender = info.GetPropertyAsJSObject("render");
 
-        if (infoRender is not null)
+        if (infoRender is not null) 
         {
             var framesNow = infoRender.GetPropertyAsInt32("frame");
 
-            fps = (framesNow - framesBefore.GetValueOrDefault(framesNow)) * 1000 / (float)RenderDetailsRefreshInterval;
+            fps = (framesNow - framesBefore.GetValueOrDefault(framesNow)) * 1000 / (double)RenderDetailsRefreshInterval;
 
             framesBefore = framesNow;
 
@@ -690,13 +689,17 @@ public partial class View3D : ComponentBase
         await OnRenderDetails.InvokeAsync(new RenderDetails(fps, calls, triangles, geometries, textures));
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         cts.Cancel();
         cts.Dispose();
 
         if (RendererInfo.IsInteractive)
         {
+            if (timer is not null)
+            {
+                await timer.DisposeAsync();
+            }
             Unfollow();
             Renderer.Dispose();
         }
@@ -710,7 +713,5 @@ public partial class View3D : ComponentBase
         solidModule?.Dispose();
         materialModule?.Dispose();
         animationModule?.Dispose();
-
-        return ValueTask.CompletedTask;
     }
 }

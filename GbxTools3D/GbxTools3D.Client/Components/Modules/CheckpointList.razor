@@ -28,6 +28,9 @@
                 <div class="time">
                     @checkpointInfo.Checkpoint.Time
                 </div>
+                <div class="counter">
+                    (@(checkpointInfo.Index + 1))
+                </div>
                 <div class="bonus @(checkpointInfo.HasBonusChanged ? "" : "unchanged")" title="@(checkpointInfo.Checkpoint.Speed.HasValue ? "Speed at the checkpoint" : "Stunt points at the checkpoint")">
                     @if (checkpointInfo.Checkpoint.Speed.HasValue)
                     {

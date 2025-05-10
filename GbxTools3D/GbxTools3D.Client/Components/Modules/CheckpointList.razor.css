@@ -70,3 +70,9 @@
 .no-laps {
     color: #666;
 }
+
+.counter {
+    flex: 1;
+    font-size: 70%;
+    color: #666;
+}

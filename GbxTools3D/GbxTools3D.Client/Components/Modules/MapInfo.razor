@@ -13,25 +13,22 @@
     </div>
     <div class="contents">
         <div class="details">
-            <div>
-                <FormattedText Text="@Map?.MapName"></FormattedText>
-            </div>
-            <div class="author">
-                by <FormattedText Text="@(Map?.AuthorNickname ?? Map?.AuthorLogin)"></FormattedText>
-            </div>
-            <div class="mapuid">
-                @if (Map is not null)
-                {
+            @if (Map is not null)
+            {
+                <div>
+                    <FormattedText Text="@Map.MapName"></FormattedText>
+                </div>
+                <div class="author">
+                    by <FormattedText Text="@(Map.AuthorNickname ?? Map.AuthorLogin)"></FormattedText>
+                </div>
+                <div class="mapuid">
                     <small>@Map.MapUid</small>
                     <img src="icons/ui/content_copy.svg" title="Copy MapUid" width="16" height="16" @onclick="CopyMapUidToClipboard" />
-                }
-            </div>
-            <div class="mode">
-                @if (Map is not null)
-                {
+                </div>
+                <div class="mode">
                     <span>@(Map.Mode == GBX.NET.Engines.Game.CGameCtnChallenge.PlayMode.Script ? Map.MapType : Map.Mode.ToString())</span>
-                }
-            </div>
+                </div>
+            }
         </div>
         <div class="icons">
             @if (Map is not null)
