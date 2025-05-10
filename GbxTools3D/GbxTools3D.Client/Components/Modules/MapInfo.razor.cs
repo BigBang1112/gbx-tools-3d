@@ -15,7 +15,25 @@ public partial class MapInfo : ComponentBase
     [Parameter, EditorRequired]
     public CGameCtnChallenge? Map { get; set; }
 
-    public string? Mood => Map?.Decoration.Id is null ? null : MoodRegex().Match(Map.Decoration.Id).Value;
+    public string? Mood
+    {
+        get
+        {
+            if (Map?.Decoration is null)
+            {
+                return null;
+            }
+
+            var match = MoodRegex().Match(Map.Decoration.Id);
+
+            if (match.Success)
+            {
+                return match.Value;
+            }
+
+            return "Day";
+        }
+    }
 
     private async Task CopyMapUidToClipboard()
     {

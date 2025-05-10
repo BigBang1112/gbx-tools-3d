@@ -24,7 +24,7 @@ public partial class CheckpointList : ComponentBase
     public TimeInt32? CurrentCheckpoint { get; private set; }
 
     public int CurrentCheckpointIndex => -1;
-    public int CurrentLapIndex => -1;
+    public int CurrentLapIndex => 0;
 
     private CheckpointInfo[] Checkpoints => GetCheckpoints().ToArray();
 

@@ -135,9 +135,12 @@ public partial class ViewReplay : ComponentBase
             return false;
         }
 
-        var samples = ghost.SampleData.Samples;
+        var isOldSampleChunk = ghost.Chunks.Get<CGameGhost.Chunk0303F003>() is not null;
+        var samples = isOldSampleChunk
+            ? ghost.SampleData.Samples.Skip(1).ToArray().AsSpan() // weird old tm stuff
+            : ghost.SampleData.Samples.ToArray().AsSpan();
 
-        if (samples.Count == 0)
+        if (samples.Length == 0)
         {
             // case for input only replays
             return false;
@@ -147,7 +150,7 @@ public partial class ViewReplay : ComponentBase
         ghostSolid.Position = firstSample.Position;
         ghostSolid.RotationQuaternion = firstSample.Rotation;
 
-        var count = samples.Count;
+        var count = samples.Length;
         var times = new double[count];
         var positions = new double[count * 3];
         var rotations = new double[count * 4];
@@ -170,7 +173,7 @@ public partial class ViewReplay : ComponentBase
         for (int i = 0; i < count; i++)
         {
             var s = (CSceneVehicleCar.Sample)samples[i];
-            times[i] = s.Time.TotalSeconds;
+            times[i] = s.Time.TotalSeconds - (isOldSampleChunk ? 0.1 : 0);
             positions[i * 3] = s.Position.X;
             positions[i * 3 + 1] = s.Position.Y;
             positions[i * 3 + 2] = s.Position.Z;
@@ -200,7 +203,13 @@ public partial class ViewReplay : ComponentBase
             partData["RRHub_dampen"][i] = s.RRDampenLen;
         }
 
-        var duration = samples.Last().Time.TotalSeconds;
+        var duration = samples[^1].Time.TotalSeconds - (isOldSampleChunk ? 0.1 : 0);
+
+        // extra duration in case the last checkpoint is later than the last sample
+        if (ghost.Checkpoints?.LastOrDefault()?.Time?.TotalSeconds > duration)
+        {
+            duration += ghost.SampleData.SamplePeriod.TotalSeconds;
+        }
 
         var positionTrack = Animation.CreatePositionTrack(times, positions);
         var rotationTrack = Animation.CreateQuaternionTrack(times, rotations);
