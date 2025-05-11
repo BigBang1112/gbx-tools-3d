@@ -56,6 +56,5 @@ public static class TelemetryConfiguration
                     .AddEntityFrameworkCoreInstrumentation()
                     .AddOtlpExporter();
             });
-        services.AddMetrics();
     }
 }

@@ -14,6 +14,7 @@ public static class IconApiEndpoint
         group.MapGet("/{gameVersion}/collection/{collectionName}/environment", GetEnvironmentIconByCollectionName);
         group.MapGet("/{gameVersion}/collection/{collectionName}/small", GetSmallIconByCollectionName);
         group.MapGet("/{gameVersion}/collection/{collectionName}/block/{blockName}", GetIconByBlockName);
+        //group.MapGet("/{gameVersion}/collection/{collectionName}/decoration/{decorationName}", GetIconByDecorationName);
         group.MapGet("/{gameVersion}/vehicle/{vehicleName}", GetVehicleIconByVehicleName);
     }
 
@@ -108,6 +109,24 @@ public static class IconApiEndpoint
         context.Response.Headers.CacheControl = "max-age=3600";
 
         return TypedResults.File(icon.Data, "image/webp", $"{blockName}.webp", lastModified: icon.UpdatedAt);
+    }
+
+    private static async Task<Results<FileContentHttpResult, NotFound>> GetIconByDecorationName(
+        AppDbContext db,
+        GameVersion gameVersion,
+        string collectionName,
+        string decorationName,
+        HttpContext context,
+        CancellationToken cancellationToken)
+    {
+        /*var icon = await IconByBlockNameAsync(db, gameVersion, collectionName, decorationName);
+        if (icon is null)
+        {
+            return TypedResults.NotFound();
+        }
+        context.Response.Headers.CacheControl = "max-age=3600";
+        return TypedResults.File(icon.Data, "image/webp", $"{decorationName}.webp", lastModified: icon.UpdatedAt);*/
+        return TypedResults.NotFound();
     }
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetVehicleIconByVehicleName(

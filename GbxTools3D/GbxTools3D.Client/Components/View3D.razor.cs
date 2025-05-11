@@ -54,6 +54,8 @@ public partial class View3D : ComponentBase
     [Parameter]
     public EventCallback<RenderDetails?> OnRenderDetails { get; set; }
 
+    public BlockInfoDto? CurrentBlockInfo { get; private set; }
+
     public int RenderDetailsRefreshInterval { get; set; } = 500;
 
     private Dictionary<string, BlockInfoDto> blockInfos = [];
@@ -239,6 +241,8 @@ public partial class View3D : ComponentBase
 
         focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
         scene?.Add(focusedSolid);
+
+        CurrentBlockInfo = blockInfo;
 
         return true;
     }

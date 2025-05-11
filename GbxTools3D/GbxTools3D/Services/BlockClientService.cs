@@ -28,6 +28,8 @@ public sealed class BlockClientService : IBlockClientService
             var blockInfos = await db.BlockInfos
                 .Include(x => x.Collection)
                 .Include(x => x.Variants)
+                    .ThenInclude(x => x.ObjectLinks)
+                        .ThenInclude(x => x.Sound)
                 .Where(x => x.Collection.GameVersion == gameVersion && x.Collection.Name == collectionName)
                 .AsNoTracking()
                 .ToListAsync(token);
@@ -72,6 +74,7 @@ public sealed class BlockClientService : IBlockClientService
         ObjectLinks = variant.ObjectLinks.Count == 0 ? null : variant.ObjectLinks.Select(x => new ObjectLinkDto
         {
             Location = new Iso4(x.XX, x.XY, x.XZ, x.YX, x.YY, x.YZ, x.ZX, x.ZY, x.ZZ, x.TX, x.TY, x.TZ),
+            SoundPath = x.Sound?.Path
         }).ToList()
     };
 }

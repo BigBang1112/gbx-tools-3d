@@ -19,6 +19,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public required DbSet<Icon> Icons { get; set; }
     public required DbSet<DataImport> DataImports { get; set; }
     public required DbSet<Vehicle> Vehicles { get; set; }
+    public required DbSet<Sound> Sounds { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -5,4 +5,5 @@ namespace GbxTools3D.Client.Dtos;
 public sealed class ObjectLinkDto
 {
     public required Iso4 Location { get; set; }
+    public string? SoundPath { get; set; }
 }

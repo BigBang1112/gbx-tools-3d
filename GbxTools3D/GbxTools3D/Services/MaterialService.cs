@@ -15,7 +15,7 @@ namespace GbxTools3D.Services;
 internal sealed class MaterialService
 {
     private readonly AppDbContext db;
-    private readonly IServiceProvider serviceProvider;
+    private readonly IServiceScopeFactory serviceScopeFactory;
     private readonly IOutputCacheStore outputCache;
     private readonly ILogger<MaterialService> logger;
     
@@ -23,12 +23,12 @@ internal sealed class MaterialService
 
     public MaterialService(
         AppDbContext db,
-        IServiceProvider serviceProvider, 
+        IServiceScopeFactory serviceScopeFactory, 
         IOutputCacheStore outputCache, 
         ILogger<MaterialService> logger)
     {
         this.db = db;
-        this.serviceProvider = serviceProvider;
+        this.serviceScopeFactory = serviceScopeFactory;
         this.outputCache = outputCache;
         this.logger = logger;
     }
@@ -225,7 +225,7 @@ internal sealed class MaterialService
             data = ms.ToArray();
         }
 
-        await using var scope = serviceProvider.CreateAsyncScope();
+        await using var scope = serviceScopeFactory.CreateAsyncScope();
         var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var texture = await scopedDb.Textures.FirstOrDefaultAsync(x =>

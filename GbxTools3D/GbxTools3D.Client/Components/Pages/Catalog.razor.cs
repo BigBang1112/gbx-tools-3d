@@ -4,9 +4,12 @@ using GbxTools3D.Client.Enums;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using System.Runtime.Versioning;
+using GbxTools3D.Client.Extensions;
 
 namespace GbxTools3D.Client.Components.Pages;
 
+[SupportedOSPlatform("browser")]
 public partial class Catalog : ComponentBase
 {
     private View3D? view3d;
@@ -169,6 +172,21 @@ public partial class Catalog : ComponentBase
             Enums.AssetType.Macroblock => "macroblocks",
             _ => null
         };
+    }
+
+    internal static string? TestGetSoundHash(BlockInfoDto blockInfo)
+    {
+        var firstSoundPath = blockInfo.AirVariants
+            .Concat(blockInfo.GroundVariants)
+            .FirstOrDefault(x => x.ObjectLinks?.Any(x => x.SoundPath is not null) ?? false)
+            ?.ObjectLinks?.FirstOrDefault(x => x.SoundPath is not null)?.SoundPath;
+
+        if (firstSoundPath is null)
+        {
+            return null;
+        }
+
+        return $"GbxTools3D|Sound|TMF|{firstSoundPath}|ItsChallengeNotAltered".Hash();
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()

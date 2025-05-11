@@ -4,6 +4,7 @@ using GbxTools3D.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GbxTools3D.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250511190426_AddSoundPosition")]
+    partial class AddSoundPosition
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -395,42 +398,6 @@ namespace GbxTools3D.Migrations
                     b.Property<int?>("SoundId")
                         .HasColumnType("int");
 
-                    b.Property<float>("SoundTX")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundTY")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundTZ")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundXX")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundXY")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundXZ")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundYX")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundYY")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundYZ")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundZX")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundZY")
-                        .HasColumnType("float");
-
-                    b.Property<float>("SoundZZ")
-                        .HasColumnType("float");
-
                     b.Property<float>("TX")
                         .HasColumnType("float");
 
@@ -511,11 +478,47 @@ namespace GbxTools3D.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<float>("TX")
+                        .HasColumnType("float");
+
+                    b.Property<float>("TY")
+                        .HasColumnType("float");
+
+                    b.Property<float>("TZ")
+                        .HasColumnType("float");
+
                     b.Property<int>("Type")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<float>("XX")
+                        .HasColumnType("float");
+
+                    b.Property<float>("XY")
+                        .HasColumnType("float");
+
+                    b.Property<float>("XZ")
+                        .HasColumnType("float");
+
+                    b.Property<float>("YX")
+                        .HasColumnType("float");
+
+                    b.Property<float>("YY")
+                        .HasColumnType("float");
+
+                    b.Property<float>("YZ")
+                        .HasColumnType("float");
+
+                    b.Property<float>("ZX")
+                        .HasColumnType("float");
+
+                    b.Property<float>("ZY")
+                        .HasColumnType("float");
+
+                    b.Property<float>("ZZ")
+                        .HasColumnType("float");
 
                     b.HasKey("Id");
 

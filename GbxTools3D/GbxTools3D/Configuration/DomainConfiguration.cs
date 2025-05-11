@@ -16,6 +16,7 @@ public static class DomainConfiguration
         services.AddScoped<IVehicleClientService, VehicleClientService>();
         services.AddScoped<MaterialService>();
         services.AddScoped<MeshService>();
+        services.AddScoped<SoundService>();
 
         // client-sided services
         services.AddSingleton<GbxService>();

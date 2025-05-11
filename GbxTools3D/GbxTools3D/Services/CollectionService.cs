@@ -14,6 +14,8 @@ using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp;
 using GBX.NET.Imaging.ImageSharp;
+using static GBX.NET.Engines.Function.CFuncKeysSkel;
+using static GBX.NET.Engines.TrackMania.CCtnMediaBlockEventTrackMania;
 
 namespace GbxTools3D.Services;
 
@@ -22,6 +24,7 @@ internal sealed class CollectionService
     private readonly AppDbContext db;
     private readonly MeshService meshService;
     private readonly MaterialService materialService;
+    private readonly SoundService soundService;
     private readonly IOutputCacheStore outputCache;
     private readonly ILogger<CollectionService> logger;
     
@@ -36,13 +39,15 @@ internal sealed class CollectionService
     public CollectionService(
         AppDbContext db, 
         MeshService meshService, 
-        MaterialService materialService, 
+        MaterialService materialService,
+        SoundService soundService,
         IOutputCacheStore outputCache, 
         ILogger<CollectionService> logger)
     {
         this.db = db;
         this.meshService = meshService;
         this.materialService = materialService;
+        this.soundService = soundService;
         this.outputCache = outputCache;
         this.logger = logger;
     }
@@ -162,6 +167,7 @@ internal sealed class CollectionService
 
             var usedMaterials = new Dictionary<string, CPlugMaterial?>();
             var addedMeshHashes = new HashSet<string>();
+            var usedSounds = new Dictionary<string, Sound>();
 
             foreach (var decorationFilePath in Directory.EnumerateFiles(
                 Path.Combine(datasetPath, gameFolder, collectionNode.FolderDecoration!.NormalizePath()), "*.Gbx"))
@@ -320,6 +326,18 @@ internal sealed class CollectionService
                         
                         var fullFileWithoutExtension = GbxPath.ChangeExtension(extNode.File.GetFullPath(), null);
                         musics[key] = Path.GetRelativePath(gamePath, fullFileWithoutExtension);
+
+                        if (extNode.Node is null)
+                        {
+                            continue;
+                        }
+
+                        await soundService.CreateOrUpdateSoundAsync(
+                            gamePath,
+                            extNode.Node,
+                            musics[key],
+                            usedSounds,
+                            cancellationToken);
                     }
                     
                     foreach (var (key, extNode) in decorationNode.DecoAudio.Sounds ?? [])
@@ -331,6 +349,18 @@ internal sealed class CollectionService
 
                         var fullFileWithoutExtension = GbxPath.ChangeExtension(extNode.File.GetFullPath(), null);
                         sounds[key] = Path.GetRelativePath(gamePath, fullFileWithoutExtension);
+
+                        if (extNode.Node is null)
+                        {
+                            continue;
+                        }
+
+                        await soundService.CreateOrUpdateSoundAsync(
+                            gamePath,
+                            extNode.Node,
+                            sounds[key],
+                            usedSounds,
+                            cancellationToken);
                     }
                     
                     decoration.Musics = musics;
@@ -344,7 +374,7 @@ internal sealed class CollectionService
             }
             
             logger.LogInformation("Checking block changes...");
-            
+
             var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone.Node switch
             {
                 CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ??
@@ -398,9 +428,9 @@ internal sealed class CollectionService
                 }
 
                 await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameFolder, blockName,
-                    isGround: false, blockInfo, usedMaterials, cancellationToken);
+                    isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
                 await ProcessBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameFolder, blockName,
-                    isGround: true, blockInfo, usedMaterials, cancellationToken);
+                    isGround: true, blockInfo, usedMaterials, usedSounds, cancellationToken);
 
                 // Helpers cause a ton of mesh duplicates, but they shouldn't be impactful much
                 
@@ -466,6 +496,7 @@ internal sealed class CollectionService
         bool isGround,
         BlockInfo blockInfo,
         Dictionary<string, CPlugMaterial?> usedMaterials,
+        Dictionary<string, Sound> usedSounds,
         CancellationToken cancellationToken)
     {
         if (mobils is null)
@@ -578,10 +609,54 @@ internal sealed class CollectionService
                     objectLink.TY = link.RelativeLocation.TY;
                     objectLink.TZ = link.RelativeLocation.TZ;
 
+                    var soundLink = link.Mobil.ObjectLink?.FirstOrDefault(x => x.Object is CSceneSoundSource { SoundSource: not null });
+
+                    if (soundLink is not null)
+                    {
+                        objectLink.Sound = await ProcessSoundLinkAsync(gamePath, soundLink, usedSounds, cancellationToken);
+
+                        var loc = soundLink.RelativeLocation;
+                        objectLink.SoundXX = loc.XX;
+                        objectLink.SoundXY = loc.XY;
+                        objectLink.SoundXZ = loc.XZ;
+                        objectLink.SoundYX = loc.YX;
+                        objectLink.SoundYY = loc.YY;
+                        objectLink.SoundYZ = loc.YZ;
+                        objectLink.SoundZX = loc.ZX;
+                        objectLink.SoundZY = loc.ZY;
+                        objectLink.SoundZZ = loc.ZZ;
+                        objectLink.SoundTX = loc.TX;
+                        objectLink.SoundTY = loc.TY;
+                        objectLink.SoundTZ = loc.TZ;
+                    }
+
                     k++;
                 }
             }
         }
+    }
+
+    private async Task<Sound?> ProcessSoundLinkAsync(
+        string gamePath,
+        CSceneObjectLink soundLink,
+        Dictionary<string, Sound> usedSounds,
+        CancellationToken cancellationToken)
+    {
+        var soundSource = ((CSceneSoundSource)soundLink.Object!).SoundSource!;
+
+        var sound = await soundService.CreateOrUpdateSoundAsync(
+            gamePath,
+            soundSource,
+            usedSounds,
+            cancellationToken);
+
+        if (sound is null)
+        {
+            return null;
+        }
+
+
+        return sound;
     }
 
     private static BlockUnit UnitInfoToBlockUnit(CGameCtnBlockUnitInfo unit)
