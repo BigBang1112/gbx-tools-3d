@@ -247,9 +247,15 @@ h2.view {
             background-color: #444;
         }
 
-a, .btn-link {
-    color: #006bb7;
+a {
+    color: #0089E5;
+    text-decoration: none;
 }
+
+    a:hover {
+        color: #0099FF;
+        text-decoration: underline;
+    }
 
 .content {
     padding-top: 1.1rem;
