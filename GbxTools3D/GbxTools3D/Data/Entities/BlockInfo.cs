@@ -27,6 +27,8 @@ public sealed class BlockInfo
     public int? IconId { get; set; }
     public Icon? Icon { get; set; }
 
+    public bool IsRoad { get; set; }
+
     public ICollection<BlockVariant> Variants { get; set; } = [];
 
     public override string ToString()

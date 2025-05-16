@@ -15,4 +15,5 @@ public sealed class BlockInfoDto
     public byte? Height { get; set; }
     public bool IsDefaultZone { get; set; }
     public bool HasIcon { get; set; }
+    public bool IsRoad { get; set; }
 }

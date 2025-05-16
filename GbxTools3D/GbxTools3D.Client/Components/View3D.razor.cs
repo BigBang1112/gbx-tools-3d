@@ -664,7 +664,7 @@ public partial class View3D : ComponentBase
 
         foreach (var block in Map.GetBlocks())
         {
-            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue || blockInfo.IsRoad)
             {
                 continue;
             }
@@ -711,7 +711,7 @@ public partial class View3D : ComponentBase
         HashSet<(Int3, Direction)> alreadyPlacedClips)
     {
         var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
-
+        
         if (units.All(x => x.Clips is null or { Length: 0 }))
         {
             yield break;

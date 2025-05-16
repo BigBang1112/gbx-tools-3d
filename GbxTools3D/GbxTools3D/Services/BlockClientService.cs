@@ -64,7 +64,8 @@ public sealed class BlockClientService : IBlockClientService
         GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(MapVariant).ToList(),
         Height = blockInfo.Height,
         IsDefaultZone = blockInfo.Collection.DefaultZoneBlock == blockInfo.Name,
-        HasIcon = blockInfo.IconId.HasValue
+        HasIcon = blockInfo.IconId.HasValue,
+        IsRoad = blockInfo.IsRoad
     };
 
     private static BlockVariantDto MapVariant(BlockVariant variant) => new()

@@ -421,6 +421,7 @@ internal sealed class CollectionService
                 blockInfo.HasAirHelper = blockInfoNode.AirHelperMobil is not null;
                 blockInfo.HasGroundHelper = blockInfoNode.GroundHelperMobil is not null;
                 blockInfo.HasConstructionModeHelper = blockInfoNode.ConstructionModeHelperMobil is not null;
+                blockInfo.IsRoad = blockInfoNode is CGameCtnBlockInfoRoad;
 
                 if (zoneDict.TryGetValue(blockName, out var zone))
                 {
