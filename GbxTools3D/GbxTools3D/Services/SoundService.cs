@@ -26,11 +26,11 @@ internal sealed class SoundService
         Dictionary<string, Sound> sounds,
         CancellationToken cancellationToken)
     {
-        var soundPath = soundSource.AudioSoundFile is null
+        var soundPath = soundSource.PlugSoundFile is null
             ? null
-            : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(soundSource.AudioSoundFile.GetFullPath(), null));
-
-        if (soundSource.AudioSound is not CPlugSound plugSound)
+            : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(soundSource.PlugSoundFile.GetFullPath(), null));
+        
+        if (soundSource.PlugSound is not CPlugSound plugSound)
         {
             logger.LogWarning("PlugSound is null, possibly unrecognized class: {Path}", soundPath);
             return null;

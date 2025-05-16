@@ -1,12 +1,10 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
-using GbxTools3D.Client.Components.Pages;
 using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
@@ -273,7 +271,7 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        if (!vehicles.TryGetValue(VehicleName, out var blockInfo))
+        if (!vehicles.TryGetValue(VehicleName, out var vehicleInfo))
         {
             return false;
         }
@@ -315,54 +313,73 @@ public partial class View3D : ComponentBase
 
         await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken: cancellationToken);
 
+        var baseHeight = await PlaceDecorationAsync(Map, cancellationToken);
+
+        await PlaceBlocksAsync(Map, baseHeight, cancellationToken);
+
+        return true;
+    }
+
+    private async Task<int> PlaceDecorationAsync(CGameCtnChallenge map, CancellationToken cancellationToken)
+    {
         var baseHeight = 5;
 
-        if (decorations.TryGetValue(Map.Size, out var decoSize) == true)
+        if (!decorations.TryGetValue(map.Size, out var decoSize))
         {
-            var deco = decoSize.Decorations
-                .FirstOrDefault(x => x.Name == Map.Decoration.Id);
-
-            baseHeight = decoSize.BaseHeight;
-            var size = $"{Map.Size.X}x{Map.Size.Y}x{Map.Size.Z}";
-
-            var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
-
-            foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
-            {
-                if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
-                {
-                    continue;
-                }
-
-                var hash = $"GbxTools3D|Decoration|{GameVersion}|{Map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
-
-                tasks.Add(http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
-            }
-
-            await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
-            {
-                using var meshResponse = await meshResponseTask;
-
-                if (!meshResponse.IsSuccessStatusCode)
-                {
-                    continue;
-                }
-
-                await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
-                var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
-                solid.Location = tasks[meshResponseTask];
-                scene?.Add(solid);
-            }
+            return baseHeight;
         }
 
+        baseHeight = decoSize.BaseHeight;
+
+        var deco = decoSize.Decorations
+            .FirstOrDefault(x => x.Name == map.Decoration.Id);
+
+        var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
+
+        var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
+
+        foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
+        {
+            if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
+            {
+                continue;
+            }
+
+            var hash = $"GbxTools3D|Decoration|{GameVersion}|{map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
+
+            tasks.Add(http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
+        }
+
+        await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
+        {
+            using var meshResponse = await meshResponseTask;
+
+            if (!meshResponse.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
+            await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+            var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
+            solid.Location = tasks[meshResponseTask];
+            scene?.Add(solid);
+        }
+
+        return baseHeight;
+    }
+
+    private async Task PlaceBlocksAsync(CGameCtnChallenge map, int baseHeight, CancellationToken cancellationToken)
+    {
         var coveredZoneBlocks = GetCoveredZoneBlocks().ToHashSet();
 
         var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
-        var baseZoneBlocks = GetBaseZoneBlocks(baseZoneBlock, baseHeight);
+        var baseZoneBlocks = CreateBaseZoneBlocks(baseZoneBlock, baseHeight);
+        var clipBlocks = CreateClipBlocks();
 
         var uniqueBlockVariants = baseZoneBlocks
-            .Concat(Map.GetBlocks())
+            .Concat(map.GetBlocks())
             .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
+            .Concat(clipBlocks)
             .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
@@ -382,7 +399,7 @@ public partial class View3D : ComponentBase
                 counter = 0;
             }
 
-            await ProcessResponses(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, Map, cancellationToken);
+            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, map, cancellationToken);
 
             counter++;
         }
@@ -390,10 +407,8 @@ public partial class View3D : ComponentBase
         while (responseTasks.Count > 0)
         {
             await Task.Delay(20, cancellationToken);
-            await ProcessResponses(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, Map, cancellationToken);
+            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, map, cancellationToken);
         }
-
-        return true;
     }
 
     internal async Task<Solid?> LoadGhostAsync(CGameCtnGhost ghost, CancellationToken cancellationToken = default)
@@ -434,7 +449,7 @@ public partial class View3D : ComponentBase
         //mapCamera?.CreateMapControls(renderer, default);
     }
 
-    private async Task ProcessResponses(
+    private async Task ProcessBlockResponsesAsync(
         Dictionary<UniqueVariant, Task<HttpResponseMessage>> responseTasks,
         int? maxRequestsToProcess,
         ILookup<UniqueVariant, CGameCtnBlock> uniqueBlockVariantLookup,
@@ -454,7 +469,7 @@ public partial class View3D : ComponentBase
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
                 var solid = await Solid.ParseAsync(stream, materials, expectedCount);
 
-                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], map.Collection.GetValueOrDefault().GetBlockSize());
+                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], map.Collection.GetValueOrDefault().GetBlockSize(), map);
             }
 
             tasksToRemove.Add(variant);
@@ -472,7 +487,7 @@ public partial class View3D : ComponentBase
         }
     }
 
-    private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize)
+    private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize, CGameCtnChallenge map)
     {
         if (scene is null)
         {
@@ -511,7 +526,7 @@ public partial class View3D : ComponentBase
                 _ => throw new ArgumentException("Invalid block direction")
             };
 
-            var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height - Map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
+            var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height - map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
 
             instanceInfos.Add(instanceInfo);
         }
@@ -537,32 +552,7 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
-
-            if (units.Length == 1)
-            {
-                groundPositions.Add(block.Coord);
-                continue;
-            }
-
-            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
-
-            // Determine minimum X and Z after rotation.
-            var minX = int.MaxValue;
-            var minZ = int.MaxValue;
-            for (int i = 0; i < units.Length; i++)
-            {
-                var rotated = RotateUnit(units[i].Offset, block.Direction);
-                rotatedUnits[i] = rotated;
-                if (rotated.X < minX) minX = rotated.X;
-                if (rotated.Z < minZ) minZ = rotated.Z;
-            }
-
-            // Adjust positions so the minimum X and Z become 0.
-            foreach (var rotated in rotatedUnits)
-            {
-                groundPositions.Add(block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ));
-            }
+            PopulateGroundPositionsFromBlock(groundPositions, block, blockInfo);
         }
 
         foreach (var block in Map.GetBlocks())
@@ -577,9 +567,30 @@ public partial class View3D : ComponentBase
                 yield return block;
             }
         }
+
+        static void PopulateGroundPositionsFromBlock(List<Int3> groundPositions, CGameCtnBlock block, BlockInfoDto blockInfo)
+        {
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+            if (units.Length == 1)
+            {
+                groundPositions.Add(block.Coord);
+                return;
+            }
+
+            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
+
+            RotateUnits(units, block.Direction, rotatedUnits, out var minX, out var minZ);
+
+            // Adjust positions so the minimum X and Z become 0.
+            foreach (var rotated in rotatedUnits)
+            {
+                groundPositions.Add(block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ));
+            }
+        }
     }
 
-    private IEnumerable<CGameCtnBlock> GetBaseZoneBlocks(BlockInfoDto? baseZoneInfo, int baseHeight)
+    private IEnumerable<CGameCtnBlock> CreateBaseZoneBlocks(BlockInfoDto? baseZoneInfo, int baseHeight)
     {
         if (Map is null || blockInfos is null || baseZoneInfo is null)
         {
@@ -597,30 +608,7 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
-
-            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
-
-            // Determine minimum X and Z after rotation.
-            var minX = int.MaxValue;
-            var minZ = int.MaxValue;
-            for (int i = 0; i < units.Length; i++)
-            {
-                var rotated = RotateUnit(units[i].Offset, block.Direction);
-                rotatedUnits[i] = rotated;
-                if (rotated.X < minX) minX = rotated.X;
-                if (rotated.Z < minZ) minZ = rotated.Z;
-            }
-
-            // Adjust positions so the minimum X and Z become 0.
-            foreach (var rotated in rotatedUnits)
-            {
-                var unit = block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ);
-                if (unit.Y == groundHeight)
-                {
-                    occupied.Add((unit.X, unit.Z));
-                }
-            }
+            PopulateOccupiedZonesFromBlock(occupied, block, blockInfo, groundHeight);
         }
 
         // Iterate through the entire zone; if a coordinate isn't occupied, yield a new block.
@@ -639,6 +627,151 @@ public partial class View3D : ComponentBase
                     };
                 }
             }
+        }
+
+        static void PopulateOccupiedZonesFromBlock(HashSet<(int X, int Z)> occupied, CGameCtnBlock block, BlockInfoDto blockInfo, int groundHeight)
+        {
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
+
+            RotateUnits(units, block.Direction, rotatedUnits, out var minX, out var minZ);
+
+            // Adjust positions so the minimum X and Z become 0.
+            foreach (var rotated in rotatedUnits)
+            {
+                var unit = block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ);
+                if (unit.Y == groundHeight)
+                {
+                    occupied.Add((unit.X, unit.Z));
+                }
+            }
+        }
+    }
+
+    private IEnumerable<CGameCtnBlock> CreateClipBlocks()
+    {
+        if (Map is null || blockInfos is null)
+        {
+            yield break;
+        }
+
+        var clipBlockDict = Map.GetBlocks()
+            .Where(x => x.IsClip)
+            .ToDictionary(x => x.Coord, x => x);
+
+        var alreadyPlacedClips = new HashSet<(Int3, Direction)>();
+
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
+            {
+                continue;
+            }
+            
+            foreach (var clipBlock in CreateClipBlocks(block, blockInfo, clipBlockDict, alreadyPlacedClips))
+            {
+                yield return clipBlock;
+            }
+        }
+
+        foreach (var (coord, block) in clipBlockDict)
+        {
+            if (!block.IsGround)
+            {
+                continue;
+            }
+
+            for (int i = 0; i < 4; i++)
+            {
+                var dir = (Direction)i;
+
+                if (alreadyPlacedClips.Contains((coord, dir)))
+                {
+                    continue;
+                }
+
+                // TODO condition Fabric in Stadium here
+
+                yield return new CGameCtnBlock
+                {
+                    Name = block.Name,
+                    Coord = coord,
+                    Direction = dir,
+                    IsGround = block.IsGround
+                };
+            }
+        }
+    }
+
+    private static IEnumerable<CGameCtnBlock> CreateClipBlocks(
+        CGameCtnBlock block, 
+        BlockInfoDto blockInfo, 
+        Dictionary<Int3, CGameCtnBlock> clipBlockDict, 
+        HashSet<(Int3, Direction)> alreadyPlacedClips)
+    {
+        var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+        if (units.All(x => x.Clips is null or { Length: 0 }))
+        {
+            yield break;
+        }
+
+        var dirs = new HashSet<Direction>();
+
+        var rotatedUnits = new Int3[units.Length];
+
+        RotateUnits(units, block.Direction, rotatedUnits, out var minX, out var minZ);
+
+        for (var i = 0; i < units.Length; i++)
+        {
+            var unit = units[i];
+            var rotated = rotatedUnits[i];
+            var unitCoord = block.Coord + new Int3(rotated.X - minX, rotated.Y, rotated.Z - minZ);
+
+            foreach (var clip in unit.Clips ?? [])
+            {
+                // be careful with (int)clip.Dir, it also has Top and Bottom on 4 and 5
+                var clipPopDir = (Direction)(((int)block.Direction + (int)clip.Dir) % 4);
+                Int3 clipPop = clipPopDir switch
+                {
+                    Direction.North => (0, 0, 1),
+                    Direction.East => (-1, 0, 0),
+                    Direction.South => (0, 0, -1),
+                    Direction.West => (1, 0, 0),
+                    _ => throw new ArgumentException("Invalid clip direction")
+                };
+
+                var finalDir = (Direction)(((int)clipPopDir + 2) % 4);
+                var finalCoord = unitCoord + clipPop;
+
+                if (clipBlockDict.TryGetValue(finalCoord, out var clipBlock))
+                {
+                    yield return new CGameCtnBlock
+                    {
+                        Name = clip.Id,
+                        Coord = finalCoord,
+                        Direction = finalDir,
+                        IsGround = clipBlock.IsGround
+                    };
+
+                    alreadyPlacedClips.Add((finalCoord, finalDir));
+                }
+            }
+        }
+    }
+
+    private static void RotateUnits(Span<BlockUnit> units, Direction dir, Span<Int3> rotatedUnits, out int minX, out int minZ)
+    {
+        minX = int.MaxValue;
+        minZ = int.MaxValue;
+
+        for (int i = 0; i < units.Length; i++)
+        {
+            var rotated = RotateUnit(units[i].Offset, dir);
+            rotatedUnits[i] = rotated;
+            if (rotated.X < minX) minX = rotated.X;
+            if (rotated.Z < minZ) minZ = rotated.Z;
         }
     }
 
