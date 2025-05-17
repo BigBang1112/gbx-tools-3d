@@ -56,6 +56,7 @@ public partial class View3D : ComponentBase
 
     public int RenderDetailsRefreshInterval { get; set; } = 500;
 
+    private Dictionary<string, CollectionDto> collectionInfos = [];
     private Dictionary<string, BlockInfoDto> blockInfos = [];
     private Dictionary<Int3, DecorationSizeDto> decorations = [];
     private Dictionary<string, MaterialDto> materials = [];
@@ -63,6 +64,8 @@ public partial class View3D : ComponentBase
 
     private readonly CancellationTokenSource cts = new();
     private Timer? timer;
+
+    private const int PillarOffset = 12;
 
     public View3D(HttpClient http)
     {
@@ -122,11 +125,13 @@ public partial class View3D : ComponentBase
 
         var tasks = new List<Task<HttpResponseMessage>>();
 
+        var collectionsTask = default(Task<HttpResponseMessage>);
         var blockInfosTask = default(Task<HttpResponseMessage>);
         var decorationTask = default(Task<HttpResponseMessage>);
 
         if (collection is not null)
         {
+            collectionsTask = collectionInfos.Count == 0 ? http.GetAsync($"/api/collections/{GameVersion}", cts.Token) : null;
             blockInfosTask = loadBlockInfos && blockInfos.Count == 0 ? http.GetAsync($"/api/blocks/{GameVersion}/{collection}", cts.Token) : null;
             decorationTask = loadDecorations && decorations.Count == 0 ? http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
         }
@@ -134,6 +139,7 @@ public partial class View3D : ComponentBase
         var materialTask = loadMaterials && materials.Count == 0 ? http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
         var vehicleTask = loadVehicles && vehicles.Count == 0 ? http.GetAsync($"/api/vehicles/{GameVersion}", cts.Token) : null;
 
+        if (collectionsTask is not null) tasks.Add(collectionsTask);
         if (blockInfosTask is not null) tasks.Add(blockInfosTask);
         if (decorationTask is not null) tasks.Add(decorationTask);
         if (materialTask is not null) tasks.Add(materialTask);
@@ -148,7 +154,12 @@ public partial class View3D : ComponentBase
         {
             task.Result.EnsureSuccessStatusCode(); // show note message that user has to wait, if the block list isnt available yet
 
-            if (task == blockInfosTask)
+            if (task == collectionsTask)
+            {
+                collectionInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListCollectionDto, cts.Token))?
+                    .ToDictionary(x => x.Name) ?? [];
+            }
+            else if (task == blockInfosTask)
             {
                 blockInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cts.Token))?
                     .ToDictionary(x => x.Name) ?? [];
@@ -208,13 +219,15 @@ public partial class View3D : ComponentBase
             return false;
         }
 
+        var collectionInfo = CollectionName is null ? null : collectionInfos.GetValueOrDefault(CollectionName);
+
         var isGround = blockInfo.AirVariants.Count == 0;
         var variant = 0;
         var subVariant = 0;
 
         var units = isGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
 
-        var blockSize = CollectionName is null ? (32, 8, 32) : new Id(CollectionName).GetBlockSize();
+        var blockSize = collectionInfo?.GetSquareSize() ?? (32, 8, 32);
         var size = new Int3(units.Select(x => x.Offset.X).Max() + 1, units.Select(x => x.Offset.Y).Max() + 1, units.Select(x => x.Offset.Z).Max() + 1);
         var realSize = size * blockSize;
 
@@ -304,18 +317,21 @@ public partial class View3D : ComponentBase
 
         await BeforeMapLoad.InvokeAsync();
 
-        var blockSize = Map.Collection.GetValueOrDefault().GetBlockSize();
+        await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken: cancellationToken);
+
+        var collectionInfo = Map.Collection is null ? null : collectionInfos.GetValueOrDefault(Map.Collection);
+
+        var baseHeight = await PlaceDecorationAsync(Map, cancellationToken);
+
+        var blockSize = collectionInfo?.GetSquareSize() ?? Map.Collection.GetValueOrDefault().GetBlockSize();
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
 
         // setup camera
         mapCamera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
         mapCamera.CreateMapControls(renderer, center);
 
-        await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken: cancellationToken);
-
-        var baseHeight = await PlaceDecorationAsync(Map, cancellationToken);
-
-        await PlaceBlocksAsync(Map, baseHeight, cancellationToken);
+        await PlaceBlocksAsync(Map, baseHeight, blockSize, cancellationToken);
+        await PlacePylonsAsync(Map, baseHeight, blockSize, cancellationToken);
 
         return true;
     }
@@ -368,7 +384,7 @@ public partial class View3D : ComponentBase
         return baseHeight;
     }
 
-    private async Task PlaceBlocksAsync(CGameCtnChallenge map, int baseHeight, CancellationToken cancellationToken)
+    private async Task PlaceBlocksAsync(CGameCtnChallenge map, int baseHeight, Int3 blockSize, CancellationToken cancellationToken)
     {
         var coveredZoneBlocks = GetCoveredZoneBlocks().ToHashSet();
 
@@ -399,7 +415,7 @@ public partial class View3D : ComponentBase
                 counter = 0;
             }
 
-            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, map, cancellationToken);
+            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, map, blockSize, cancellationToken);
 
             counter++;
         }
@@ -407,7 +423,7 @@ public partial class View3D : ComponentBase
         while (responseTasks.Count > 0)
         {
             await Task.Delay(20, cancellationToken);
-            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, map, cancellationToken);
+            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, map, blockSize, cancellationToken);
         }
     }
 
@@ -454,6 +470,7 @@ public partial class View3D : ComponentBase
         int? maxRequestsToProcess,
         ILookup<UniqueVariant, CGameCtnBlock> uniqueBlockVariantLookup,
         CGameCtnChallenge map,
+        Int3 blockSize,
         CancellationToken cancellationToken)
     {
         var tasksToRemove = new List<UniqueVariant>();
@@ -469,7 +486,7 @@ public partial class View3D : ComponentBase
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
                 var solid = await Solid.ParseAsync(stream, materials, expectedCount);
 
-                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], map.Collection.GetValueOrDefault().GetBlockSize(), map);
+                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, map);
             }
 
             tasksToRemove.Add(variant);
@@ -526,7 +543,7 @@ public partial class View3D : ComponentBase
                 _ => throw new ArgumentException("Invalid block direction")
             };
 
-            var instanceInfo = Solid.GetInstanceInfoFromBlock((actualCoord + (0, -height - map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
+            var instanceInfo = Solid.GetInstanceInfo((actualCoord + (0, -height - map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
 
             instanceInfos.Add(instanceInfo);
         }
@@ -675,6 +692,7 @@ public partial class View3D : ComponentBase
             }
         }
 
+        // ground fillers
         foreach (var (coord, block) in clipBlockDict)
         {
             if (!block.IsGround)
@@ -745,17 +763,258 @@ public partial class View3D : ComponentBase
                 var finalDir = (Direction)(((int)clipPopDir + 2) % 4);
                 var finalCoord = unitCoord + clipPop;
 
-                if (clipBlockDict.TryGetValue(finalCoord, out var clipBlock))
+                if (!clipBlockDict.TryGetValue(finalCoord, out var clipBlock))
                 {
-                    yield return new CGameCtnBlock
+                    continue;
+                }
+
+                yield return new CGameCtnBlock
+                {
+                    Name = clip.Id,
+                    Coord = finalCoord,
+                    Direction = finalDir,
+                    IsGround = clipBlock.IsGround
+                };
+
+                alreadyPlacedClips.Add((finalCoord, finalDir));
+            }
+        }
+    }
+
+    private async Task PlacePylonsAsync(CGameCtnChallenge map, int baseHeight, Int3 blockSize, CancellationToken cancellationToken)
+    {
+        var pylonDict = CreatePylons(map, blockSize, baseHeight);
+
+        var pylonInfos = pylonDict.Values.Distinct().ToList();
+
+        var pylonMeshResponseTasks = new Dictionary<Task<HttpResponseMessage>, PylonInfo>();
+
+        foreach (var pylonInfo in pylonInfos)
+        {
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{pylonInfo.Name}|TrueMyGuy|{pylonInfo.Height - 1}|0|PleaseDontAbuseThisThankYou:*".Hash();
+            pylonMeshResponseTasks[http.GetAsync($"/api/mesh/{hash}", cancellationToken)] = pylonInfo;
+        }
+
+        await foreach (var meshResponseTask in Task.WhenEach(pylonMeshResponseTasks.Keys).WithCancellation(cancellationToken))
+        {
+            using var meshResponse = await meshResponseTask;
+
+            if (!meshResponse.IsSuccessStatusCode)
+            {
+                continue;
+            }
+
+            var pylonInfo = pylonMeshResponseTasks[meshResponseTask];
+            var pylonKeys = pylonDict
+                .Where(x => x.Value == pylonInfo)
+                .Select(x => x.Key)
+                .ToList();
+
+            await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+            var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: pylonKeys.Count);
+
+            var instanceInfos = new JSObject[pylonKeys.Count];
+
+            for (var i = 0; i < pylonKeys.Count; i++)
+            {
+                var (pylonPos, dir) = pylonKeys[i];
+                instanceInfos[i] = Solid.GetInstanceInfo(pylonPos, dir);
+            }
+
+            solid.Instantiate(instanceInfos);
+            scene?.Add(solid);
+        }
+    }
+
+    private sealed record PylonInfo(int Height, string Name);
+
+    private Dictionary<(Int3, Direction), PylonInfo> CreatePylons(CGameCtnChallenge map, Int3 blockSize, int baseHeight)
+    {
+        if (blockInfos is null)
+        {
+            return [];
+        }
+
+        // tells which pylon mesh to place and at which height it starts
+        // if the zone isn't gonna be available in the dictionary, it is considered to be base zone with baseHeight
+        var zonePylonDict = new Dictionary<Int3, PylonInfo?>();
+
+        foreach (var block in map.GetBlocks())
+        {
+            if (blockInfos.TryGetValue(block.Name, out var blockInfo) && blockInfo.Height.HasValue)
+            {
+                zonePylonDict[block.Coord with { Y = 0 }] = blockInfo.PylonName is null ? null : new(block.Coord.Y, blockInfo.PylonName);
+            }
+        }
+
+        var avoidPylonSet = new HashSet<Int3>();
+
+        foreach (var block in map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
+            {
+                continue;
+            }
+
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+            if (units.All(x => x.AcceptPylons is null or 255))
+            {
+                continue;
+            }
+
+            PopulateAvoidPylonSet(avoidPylonSet, block, units);
+        }
+
+        var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
+        var pylonDict = new Dictionary<(Int3, Direction), PylonInfo>();
+
+        foreach (var block in map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
+            {
+                continue;
+            }
+
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+            
+            if (units.All(x => x.PlacePylons is null or 0))
+            {
+                continue;
+            }
+
+            if (blockInfo.IsRoad && units.Length > 0 && units[0].PlacePylons == 1)
+            {
+                byte pylons = block.Variant switch
+                {
+                    0 => 255,
+                    1 => 3,
+                    2 => 15,
+                    3 => 51,
+                    4 => 63,
+                    5 => 255,
+                    _ => throw new Exception("Invalid pylon variant")
+                };
+
+                units = [new BlockUnit { PlacePylons = pylons, AcceptPylons = 255 }];
+            }
+
+            PopulatePylonsFromBlock(blockSize, zonePylonDict, baseZoneBlock, pylonDict, block, units, baseHeight, avoidPylonSet);
+        }
+
+        return pylonDict;
+        
+        static void PopulateAvoidPylonSet(HashSet<Int3> avoidPylonSet, CGameCtnBlock block, BlockUnit[] units)
+        {
+            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
+
+            RotateUnits(units, block.Direction, rotatedUnits, out var minX, out var minZ);
+
+            for (var i = 0; i < units.Length; i++)
+            {
+                var unit = units[i];
+                var acceptPylons = unit.AcceptPylons ?? 255;
+
+                if (acceptPylons == 255)
+                {
+                    continue;
+                }
+
+                var rotatedUnit = rotatedUnits[i];
+                var unitCoord = block.Coord + new Int3(rotatedUnit.X - minX, rotatedUnit.Y, rotatedUnit.Z - minZ);
+                avoidPylonSet.Add(unitCoord with { Y = 0 });
+            }
+        }
+
+        static void PopulatePylonsFromBlock(
+            Int3 blockSize,
+            Dictionary<Int3, PylonInfo?> zonePylonDict, 
+            BlockInfoDto? baseZoneBlock, 
+            Dictionary<(Int3, Direction), PylonInfo> pylonDict, 
+            CGameCtnBlock block, 
+            BlockUnit[] units,
+            int baseHeight,
+            HashSet<Int3> avoidPylonSet)
+        {
+            Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
+
+            RotateUnits(units, block.Direction, rotatedUnits, out var minX, out var minZ);
+
+            for (var i = 0; i < units.Length; i++)
+            {
+                var unit = units[i];
+                var placePylons = unit.PlacePylons ?? 0;
+
+                if (placePylons == 0)
+                {
+                    continue;
+                }
+
+                var rotatedUnit = rotatedUnits[i];
+                var unitCoord = block.Coord + new Int3(rotatedUnit.X - minX, rotatedUnit.Y, rotatedUnit.Z - minZ);
+                var unitCoordY0 = unitCoord with { Y = 0 };
+
+                if (avoidPylonSet.Contains(unitCoordY0))
+                {
+                    continue;
+                }
+
+                if (!zonePylonDict.TryGetValue(unitCoordY0, out var zonePylonInfo) && baseZoneBlock?.PylonName is not null)
+                {
+                    zonePylonInfo = new PylonInfo(baseHeight, baseZoneBlock.PylonName);
+                }
+
+                if (zonePylonInfo is null)
+                {
+                    continue;
+                }
+
+                var shift = (int)block.Direction * 2;
+                var rotatedPylons = ((placePylons << shift) & 255) | (placePylons >> (8 - shift));
+
+                for (var pylonIndex = 0; pylonIndex < 8; pylonIndex++)
+                {
+                    if ((rotatedPylons >> pylonIndex & 1) == 0)
                     {
-                        Name = clip.Id,
-                        Coord = finalCoord,
-                        Direction = finalDir,
-                        IsGround = clipBlock.IsGround
+                        continue;
+                    }
+
+                    var dir = pylonIndex / 2;
+                    var side = pylonIndex % 2;
+                    var pylonOffset = PillarOffset - side * PillarOffset * 2;
+                    var pos = (unitCoordY0 + (0, zonePylonInfo.Height + 1, 0)) * blockSize + (blockSize.X / 2, 0, blockSize.Z / 2);
+                    // (zonePylonInfo.Height + 1) might cause duplicates around hills when changing heights?
+
+                    pos += (Direction)dir switch
+                    {
+                        Direction.North => (pylonOffset, 0, blockSize.Z / 2),
+                        Direction.East => (-blockSize.X / 2, 0, pylonOffset),
+                        Direction.South => (-pylonOffset, 0, -blockSize.Z / 2),
+                        Direction.West => (blockSize.X / 2, 0, -pylonOffset),
+                        _ => throw new ArgumentException("Invalid block direction")
                     };
 
-                    alreadyPlacedClips.Add((finalCoord, finalDir));
+                    var pylonDir = pylonIndex switch
+                    {
+                        0 => Direction.South,
+                        1 => Direction.North,
+                        2 => Direction.West,
+                        3 => Direction.East,
+                        4 => Direction.North,
+                        5 => Direction.South,
+                        6 => Direction.East,
+                        7 => Direction.West,
+                        _ => throw new ArgumentException("Invalid pylon index")
+                    };
+
+                    var key = (pos, pylonDir);
+                    var height = unitCoord.Y - zonePylonInfo.Height - 1;
+
+                    if (height > 0 && (!pylonDict.TryGetValue(key, out var pylonInfo) || pylonInfo.Height < height))
+                    {
+                        pylonDict[key] = new PylonInfo(height, zonePylonInfo.Name);
+                    }
                 }
             }
         }

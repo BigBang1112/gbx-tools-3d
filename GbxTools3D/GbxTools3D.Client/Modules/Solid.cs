@@ -124,11 +124,11 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("createMesh", nameof(Solid))]
     private static partial JSObject CreateMeshSingleMaterial(JSObject geometry, JSObject material, bool receiveShadow, bool castShadow);
     
-    [JSImport("getInstanceInfoFromBlock", nameof(Solid))]
-    private static partial JSObject GetInstanceInfoFromBlock(int x, int y, int z, int dir);
-    
-    public static JSObject GetInstanceInfoFromBlock(Int3 coord, Direction dir)
-        => GetInstanceInfoFromBlock(coord.X, coord.Y, coord.Z, (int)dir);
+    [JSImport("getInstanceInfo", nameof(Solid))]
+    private static partial JSObject GetInstanceInfo(int x, int y, int z, int dir);
+
+    public static JSObject GetInstanceInfo(Int3 coord, Direction dir)
+        => GetInstanceInfo(coord.X, coord.Y, coord.Z, (int)dir);
 
     [JSImport("instantiate", nameof(Solid))]
     private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);

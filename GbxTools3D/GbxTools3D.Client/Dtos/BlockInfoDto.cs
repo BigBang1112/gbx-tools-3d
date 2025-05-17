@@ -16,4 +16,5 @@ public sealed class BlockInfoDto
     public bool IsDefaultZone { get; set; }
     public bool HasIcon { get; set; }
     public bool IsRoad { get; set; }
+    public string? PylonName { get; set; }
 }

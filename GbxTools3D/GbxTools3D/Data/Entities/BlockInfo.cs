@@ -29,6 +29,9 @@ public sealed class BlockInfo
 
     public bool IsRoad { get; set; }
 
+    [StringLength(64)]
+    public string? PylonName { get; set; }
+
     public ICollection<BlockVariant> Variants { get; set; } = [];
 
     public override string ToString()

@@ -1,4 +1,6 @@
-﻿namespace GbxTools3D.Client.Dtos;
+﻿using GBX.NET;
+
+namespace GbxTools3D.Client.Dtos;
 
 public sealed class CollectionDto
 {
@@ -15,4 +17,6 @@ public sealed class CollectionDto
     public bool HasDecorations { get; set; }
     public bool HasItems { get; set; }
     public bool HasMacroblocks { get; set; }
+
+    internal Int3 GetSquareSize() => new Int3(SquareSize, SquareHeight, SquareSize);
 }

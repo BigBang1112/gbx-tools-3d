@@ -65,7 +65,8 @@ public sealed class BlockClientService : IBlockClientService
         Height = blockInfo.Height,
         IsDefaultZone = blockInfo.Collection.DefaultZoneBlock == blockInfo.Name,
         HasIcon = blockInfo.IconId.HasValue,
-        IsRoad = blockInfo.IsRoad
+        IsRoad = blockInfo.IsRoad,
+        PylonName = blockInfo.PylonName
     };
 
     private static BlockVariantDto MapVariant(BlockVariant variant) => new()

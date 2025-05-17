@@ -126,7 +126,7 @@ export function createMesh(geometry, materials, receiveShadow, castShadow) {
     return mesh;
 }
 
-export function getInstanceInfoFromBlock(x, y, z, dir) {
+export function getInstanceInfo(x, y, z, dir) {
     return {
         pos: { x, y, z },
         rotY: -dir * Math.PI / 2

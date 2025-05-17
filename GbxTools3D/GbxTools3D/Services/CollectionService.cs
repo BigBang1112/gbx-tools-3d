@@ -426,6 +426,11 @@ internal sealed class CollectionService
                 if (zoneDict.TryGetValue(blockName, out var zone))
                 {
                     blockInfo.Height = (byte)zone.Height;
+
+                    if (zone is CGameCtnZoneFlat flat)
+                    {
+                        blockInfo.PylonName = flat.BlockInfoPylon?.Ident.Id;
+                    }
                 }
 
                 await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameFolder, blockName,
