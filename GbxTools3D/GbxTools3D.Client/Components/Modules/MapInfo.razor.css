@@ -15,22 +15,23 @@
 }
 
 .details {
-   display: flex;
-   flex-direction: column;
-   padding: 5px;
-   gap: 5px;
-   flex: 1;
-   overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 5px;
+    gap: 5px;
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
 }
 
 .author {
-   font-size: 80%;
+    font-size: 80%;
 }
 
 .mapuid {
-   display: flex;
-   align-items: center;
-   gap: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
     .mapuid small {
@@ -48,7 +49,7 @@
         }
 
 .mode {
-   font-size: 90%;
+    font-size: 90%;
 }
 
 .icons {

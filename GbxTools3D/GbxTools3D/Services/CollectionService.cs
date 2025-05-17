@@ -255,7 +255,7 @@ internal sealed class CollectionService
                         continue;
                     }
                     
-                    await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, cancellationToken);
+                    await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, isDeco: true, cancellationToken);
                 }
                 
                 var lights = decorationNode.DecoSize.Scene.Lights ?? [];
@@ -538,7 +538,7 @@ internal sealed class CollectionService
                 var hash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
 
                 var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
-                    cancellationToken);
+                    cancellationToken: cancellationToken);
 
                 var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
 
@@ -580,7 +580,7 @@ internal sealed class CollectionService
                     var solidHash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|Hella{isGround}|{i}|{j}|{k}|marosisPakPakGhidraGang".Hash();
                     
                     var objectLinkMesh = await meshService.GetOrCreateMeshAsync(gamePath, solidHash, objectLinkSolidPath, objectLinkSolid, vehicle: null,
-                        cancellationToken);
+                        cancellationToken: cancellationToken);
                     
                     var objectLink = await db.ObjectLinks
                         .Include(x => x.Variant)
@@ -691,7 +691,7 @@ internal sealed class CollectionService
             return null;
         }
         
-        return await meshService.GetOrCreateMeshAsync(relativeTo, toHash.Hash(), path, solid, vehicle: null, cancellationToken);
+        return await meshService.GetOrCreateMeshAsync(relativeTo, toHash.Hash(), path, solid, vehicle: null, cancellationToken: cancellationToken);
     }
 
     public async Task<Collection?> GetAsync(GameVersion gameVersion, string collectionName, CancellationToken cancellationToken)

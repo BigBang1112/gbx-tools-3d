@@ -5,14 +5,14 @@
 <div class="container">
     <h2>About</h2>
     <p>What was your first thought when you were playing on a server in TMUF or TM2 and wanted to see someone's replay? Disconnecting, downloading the replay, moving it to the appropriate folder, then refreshing for 2 minutes?</p>
-    <p>What was your first thought when you wanted to see the run on phone, but the footage of the record doesn't exist?</p>
-    <p>What was your first thought when the map thumbnail was bad and you wanted a quick look on the map before you download it?</p>
+    <p>What was your first thought when you wanted to see the run on phone, but the footage of the record didn't exist?</p>
+    <p>What was your first thought when the map/item thumbnail was bad and you wanted a quick look on it before you downloaded it?</p>
     <p>These 3 are the main reasons why this project started - back in 2023 in fact! Do you know what I'm talking about? Replay Viewer and Map Viewer Engine from Gbx Web Tools. Yeah, it wasn't ever quite used (maybe?), because of the lack of use? No, it was just unfinished and not contributed to. But I still believed in the idea, so this is the next generation of the project.</p>
     <p>This website exists for <b>visualization and analysis purposes only</b>. It does not offer interactive gameplay or allow users to participate in any Trackmania, Shootmania, or Virtual Skipper games directly. All content is purely informational or illustrative. Please do NOT fork this project to create a Trackmania game clone - remember, physics are the best part of Trackmania games, and you are NOT able to replicate those, so, nobody will also play your clone.</p>
     <h3>How does it work?</h3>
     <p>In the end, it's just another large scale implementation of <a href="https://github.com/BigBang1112/gbx-net">GBX.NET</a> features. GBX.NET provides read/write capabilities with Gbx files and this project uses the whole game datasets with it to generate informative visualizations.</p>
     <p>Many of the internal Gbx files were transformed into optimized data structures so that users have to download the least amount of data needed. This transformation happens at the cold start of the application and afterwards, can be updated only by the site hoster by manually running an API endpoint. You cannot access the actual internal Gbx files through the website, they are hidden from public.</p>
-    <p><b>The API has no guarantees</b> and can have breaking changes without notice. You may see that some pieces are also obfuscated - you know, this means that you're probably not supposed to work with them!</p>
+    <p><b>The API has no guarantees</b> and can have breaking changes without notice. You may also see that some pieces are obfuscated - you know, this means that you're probably not supposed to work with them!</p>
     <h3>Why TMInterface/OpenPlanet/TMUnlimiter/Twinkie isn't enough?</h3>
     <p>They are essentially all game mods. This means that you have to run these toolings on a limited set of platforms with all sorts of limitations and they rely on a lot of trust within the community. They are also isolated per individual TM edition, don't support historic elements, and have limited Gbx file observability.</p>
     <p>3D Gbx Tools allows you to explore Gbx game data within your browser basically anywhere - on a phone, TV, any device with a web browser. Web browsers cannot protect you from everything, but they limit web developers to get out of hand with their apps, so you can be sure this site doesn't do anything weird on your device.</p>

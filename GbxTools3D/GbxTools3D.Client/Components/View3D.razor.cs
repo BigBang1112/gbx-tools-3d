@@ -6,6 +6,7 @@ using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 
@@ -27,7 +28,7 @@ public partial class View3D : ComponentBase
     private Scene? scene;
     private Camera? mapCamera;
 
-    private Solid? focusedSolid;
+    private List<Solid> focusedSolids = [];
 
     private bool mapLoadAttempted;
 
@@ -45,6 +46,9 @@ public partial class View3D : ComponentBase
 
     [Parameter]
     public string? VehicleName { get; set; }
+
+    [Parameter]
+    public string? DecorationName { get; set; }
 
     [Parameter]
     public EventCallback BeforeMapLoad { get; set; }
@@ -95,6 +99,7 @@ public partial class View3D : ComponentBase
         await TryLoadMapAsync(cts.Token);
         await TryLoadBlockAsync(cts.Token);
         await TryLoadVehicleAsync(cts.Token);
+        await TryLoadDecorationAsync(cts.Token);
     }
 
     private async Task LoadSceneAsync(CancellationToken cancellationToken)
@@ -190,12 +195,13 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        if (focusedSolid is not null)
+        foreach (var solid in focusedSolids)
         {
-            scene?.Remove(focusedSolid);
-            //focusedSolid.Dispose();
-            focusedSolid = null;
+            scene?.Remove(solid);
+            //solid.Dispose();
         }
+
+        focusedSolids.Clear();
 
         // initial camera position
         var center = new Vec3(16, 4, 16);
@@ -250,8 +256,9 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        var focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
         scene?.Add(focusedSolid);
+        focusedSolids = [focusedSolid];
 
         CurrentBlockInfo = blockInfo;
 
@@ -265,12 +272,13 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        if (focusedSolid is not null)
+        foreach (var solid in focusedSolids)
         {
-            scene?.Remove(focusedSolid);
-            //focusedSolid.Dispose();
-            focusedSolid = null;
+            scene?.Remove(solid);
+            //solid.Dispose();
         }
+
+        focusedSolids.Clear();
 
         mapCamera.Position = new Vec3(0, 5, 10);
         mapCamera.CreateMapControls(renderer, default);
@@ -300,8 +308,72 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        var focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
         scene?.Add(focusedSolid);
+        focusedSolids = [focusedSolid];
+
+        return true;
+    }
+
+    private async Task<bool> TryLoadDecorationAsync(CancellationToken cancellationToken = default)
+    {
+        if (mapCamera is null || renderer is null || DecorationName is null)
+        {
+            return false;
+        }
+
+        foreach (var solid in focusedSolids)
+        {
+            scene?.Remove(solid);
+            //solid.Dispose();
+        }
+
+        focusedSolids.Clear();
+
+        mapCamera.Position = new Vec3(0, 5, 10);
+        mapCamera.CreateMapControls(renderer, default);
+
+        try
+        {
+            await TryFetchDataAsync(loadMaterials: true, loadDecorations: true, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            return false;
+        }
+
+        var decoSizeArray = DecorationName.Split('x');
+
+        if (decoSizeArray.Length != 3)
+        {
+            return false;
+        }
+
+        if (!int.TryParse(decoSizeArray[0], out var decoSizeX)
+            || !int.TryParse(decoSizeArray[1], out var decoSizeY)
+            || !int.TryParse(decoSizeArray[2], out var decoSizeZ))
+        {
+            return false;
+        }
+
+        var decoSize = new Int3(decoSizeX, decoSizeY, decoSizeZ);
+
+        if (!decorations.TryGetValue(decoSize, out var decoInfo))
+        {
+            return false;
+        }
+
+        var blockSize = collectionInfos[CollectionName].GetSquareSize();
+        var center = new Vec3(decoSize.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, decoSize.Z * blockSize.Z / 2f - decoSize.Z * blockSize.Z * 0.15f);
+
+        // setup camera
+        mapCamera.Position = new Vec3(center.X, decoSize.Z * blockSize.Z, -decoSize.Z * blockSize.Z);
+        mapCamera.CreateMapControls(renderer, center);
+
+        await foreach (var solid in CreateDecorationAsync(CollectionName, decoInfo, DecorationName, cancellationToken))
+        {
+            focusedSolids.Add(solid);
+        }
 
         return true;
     }
@@ -352,6 +424,13 @@ public partial class View3D : ComponentBase
 
         var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
 
+        await foreach (var _ in CreateDecorationAsync(map.Collection, decoSize, size, cancellationToken)) { }
+
+        return baseHeight;
+    }
+
+    private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, string size, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
 
         foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
@@ -361,7 +440,7 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            var hash = $"GbxTools3D|Decoration|{GameVersion}|{map.Collection}|{size}|{sceneObject.Solid}|Je te hais".Hash();
+            var hash = $"GbxTools3D|Decoration|{GameVersion}|{collectionName}|{size}|{sceneObject.Solid}|Je te hais".Hash();
 
             tasks.Add(http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
         }
@@ -379,9 +458,9 @@ public partial class View3D : ComponentBase
             var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             scene?.Add(solid);
-        }
 
-        return baseHeight;
+            yield return solid;
+        }
     }
 
     private async Task PlaceBlocksAsync(CGameCtnChallenge map, int baseHeight, Int3 blockSize, CancellationToken cancellationToken)

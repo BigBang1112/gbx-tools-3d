@@ -17,6 +17,9 @@ internal partial class Scene
     [JSImport("remove", nameof(Scene))]
     private static partial void Remove(JSObject scene, JSObject obj);
 
+    [JSImport("clear", nameof(Scene))]
+    private static partial void Clear(JSObject scene);
+
     [JSImport("test", nameof(Scene))]
     private static partial void Test(JSObject scene);
 
@@ -38,6 +41,11 @@ internal partial class Scene
     public void Remove(Solid solid)
     {
         Remove(Object, solid.Object);
+    }
+
+    public void Clear()
+    {
+        Clear(Object);
     }
 
     public void Test()

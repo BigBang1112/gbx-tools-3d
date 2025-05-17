@@ -12,27 +12,29 @@ public class MeshSerializer
     private readonly byte? lod;
     private readonly bool collision;
     private readonly CPlugVehicleVisModelShared? vehicle;
+    private readonly bool isDeco;
 
-    private MeshSerializer(CPlugSolid solid, byte? lod, bool collision, CPlugVehicleVisModelShared? vehicle)
+    private MeshSerializer(CPlugSolid solid, byte? lod, bool collision, CPlugVehicleVisModelShared? vehicle, bool isDeco)
     {
         this.solid = solid;
         this.collision = collision;
         this.vehicle = vehicle;
+        this.isDeco = isDeco;
 
         this.lod = vehicle is not null && lod >= vehicle.VisualVehicles.Length
             ? (byte)(vehicle.VisualVehicles.Length - 1) : lod;
     }
 
-    public static void Serialize(Stream stream, CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
+    public static void Serialize(Stream stream, CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null, bool isDeco = false)
     {
-        var serializer = new MeshSerializer(solid, lod, collision, vehicle);
+        var serializer = new MeshSerializer(solid, lod, collision, vehicle, isDeco);
         serializer.Serialize(stream, gamePath);
     }
 
-    public static byte[] Serialize(CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null)
+    public static byte[] Serialize(CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null, bool isDeco = false)
     {
         using var ms = new MemoryStream();
-        Serialize(ms, solid, gamePath, lod, collision, vehicle);
+        Serialize(ms, solid, gamePath, lod, collision, vehicle, isDeco);
         return ms.ToArray();
     }
 
@@ -78,7 +80,9 @@ public class MeshSerializer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        w.Write7BitEncodedInt(tree.Children.Count(x => ShouldIncludeTree(x, isRoot)));
+        var isSpecialDeco = isDeco && lod is null && tree.Children.Count == 2 && tree.Children[0].Name == "High" && tree.Children[1].Name == "Low";
+
+        w.Write7BitEncodedInt(tree.Children.Count(x => ShouldIncludeTree(x, isRoot) && !isSpecialDeco));
 
         WriteTranslation(w, tree.Location);
         var hasVisual = WriteVisual(w, tree.Visual);
@@ -106,6 +110,19 @@ public class MeshSerializer
 
             WriteVisualMip(w, visualMip, gamePath);
         }
+        else if (isSpecialDeco)
+        {
+            var high = tree.Children[0];
+            var low = tree.Children[1];
+
+            WriteVisualMip(w, new CPlugTreeVisualMip
+            {
+                Levels = [
+                    new CPlugTreeVisualMip.Level(0, high),
+                    new CPlugTreeVisualMip.Level(4096, low)
+                ]
+            }, gamePath);
+        }
         else
         {
             WriteVisualMip(w, tree as CPlugTreeVisualMip, gamePath);
@@ -115,7 +132,7 @@ public class MeshSerializer
 
         w.Write(tree.Name ?? "");
 
-        foreach (var node in tree.Children.Where(x => ShouldIncludeTree(x, isRoot)))
+        foreach (var node in tree.Children.Where(x => ShouldIncludeTree(x, isRoot) && !isSpecialDeco))
         {
             WriteTree(w, node, gamePath);
         }

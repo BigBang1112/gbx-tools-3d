@@ -53,6 +53,13 @@ export function remove(scene, obj) {
     scene.remove(obj);
 }
 
+export function clear(scene) {
+    while (scene.children.length > 0) {
+        const child = scene.children[0];
+        scene.remove(child);
+    }
+}
+
 function createDirectionalLight() {
     const light = new THREE.DirectionalLight(0xffffff, 2);
     light.matrixAutoUpdate = true;

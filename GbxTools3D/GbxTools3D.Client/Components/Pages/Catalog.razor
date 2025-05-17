@@ -26,6 +26,7 @@
         <View3D GameVersion="GameVersionEnum"
                 CollectionName="@CollectionName" 
                 BlockName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Block ? AssetName : null)"
+                DecorationName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Decoration ? AssetName : null)"
                 VehicleName="@(ContentTypeEnum == Enums.ContentType.Vehicle ? AssetName : null)"
                 @ref="view3d"></View3D>
     }

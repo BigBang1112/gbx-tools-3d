@@ -47,19 +47,26 @@ internal sealed class MeshService
         return await db.Meshes.CountAsync(cancellationToken);
     }
 
-    public async Task<Mesh> GetOrCreateMeshAsync(string gamePath, string hash, string? path, CPlugSolid solid, CPlugVehicleVisModelShared? vehicle, CancellationToken cancellationToken = default)
+    public async Task<Mesh> GetOrCreateMeshAsync(
+        string gamePath, 
+        string hash, 
+        string? path, 
+        CPlugSolid solid, 
+        CPlugVehicleVisModelShared? vehicle, 
+        bool isDeco = false, 
+        CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var mesh = await MeshFirstOrDefaultAsync(db, hash);
 
-        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle);
-        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle);
+        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle, isDeco: isDeco);
+        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle, isDeco: isDeco);
         var dataELq = default(byte[]);
 
         if (vehicle?.VisualVehicles.Length > 2)
         {
-            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle);
+            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle, isDeco: isDeco);
         }
 
         if (mesh is null)
