@@ -137,7 +137,8 @@ internal sealed partial class Solid(JSObject obj)
     private static partial void Log(JSObject tree);
 
     public static async Task<Solid> ParseAsync(
-        Stream stream, 
+        Stream stream,
+        GameVersion gameVersion,
         Dictionary<string, MaterialDto>? availableMaterials,
         int? expectedMeshCount = null, 
         bool optimized = true, 
@@ -173,7 +174,7 @@ internal sealed partial class Solid(JSObject obj)
         {
             var geometries = new List<JSObject>();
             var materials = new List<JSObject>();
-            await ReadTreeAsSingleGeometryAsync(r, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials);
+            await ReadTreeAsSingleGeometryAsync(r, gameVersion, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials);
             
             switch (geometries.Count)
             {
@@ -197,7 +198,7 @@ internal sealed partial class Solid(JSObject obj)
         }
         else
         {
-            tree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
+            tree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
             Log(tree); // temporary
         }
 
@@ -211,6 +212,7 @@ internal sealed partial class Solid(JSObject obj)
 
     private static async Task ReadTreeAsSingleGeometryAsync(
         AdjustedBinaryReader r, 
+        GameVersion gameVersion,
         Mat3 rot, 
         Vector3 pos,
         List<JSObject> geometries,
@@ -257,7 +259,7 @@ internal sealed partial class Solid(JSObject obj)
                 r.ReadBoolean(); // castShadow, cannot work here rip
             }
 
-            materials.Add(Material.GetOrCreateMaterial(materialName, availableMaterials));
+            materials.Add(Material.GetOrCreateMaterial(materialName, gameVersion, availableMaterials));
         }
 
         await RestAsync(indexCounter);
@@ -275,7 +277,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                await ReadTreeAsSingleGeometryAsync(r, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials);
+                await ReadTreeAsSingleGeometryAsync(r, gameVersion, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials);
 
                 //AddLod(lod, lodTree, distance);
             }
@@ -289,12 +291,13 @@ internal sealed partial class Solid(JSObject obj)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            await ReadTreeAsSingleGeometryAsync(r, rot, pos, geometries, materials, availableMaterials);
+            await ReadTreeAsSingleGeometryAsync(r, gameVersion, rot, pos, geometries, materials, availableMaterials);
         }
     }
 
     private static async Task<JSObject> ReadTreeAsNestedObjectsAsync(
         AdjustedBinaryReader r, 
+        GameVersion gameVersion,
         int? expectedMeshCount, 
         bool receiveShadow, 
         bool castShadow,
@@ -329,8 +332,8 @@ internal sealed partial class Solid(JSObject obj)
             }
             
             var visual = expectedMeshCount.HasValue
-                ? CreateInstancedMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, availableMaterials), expectedMeshCount.Value, receiveShadow, castShadow)
-                : CreateMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, availableMaterials), receiveShadow, castShadow);
+                ? CreateInstancedMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, gameVersion, availableMaterials), expectedMeshCount.Value, receiveShadow, castShadow)
+                : CreateMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, gameVersion, availableMaterials), receiveShadow, castShadow);
             Add(tree, visual);
         }
 
@@ -349,7 +352,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                var lodTree = await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
+                var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
 
                 AddLod(lod, lodTree, distance + 64);
             }
@@ -365,7 +368,7 @@ internal sealed partial class Solid(JSObject obj)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            Add(tree, await ReadTreeAsNestedObjectsAsync(r, expectedMeshCount, receiveShadow, castShadow, availableMaterials));
+            Add(tree, await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials));
         }
 
         return tree;

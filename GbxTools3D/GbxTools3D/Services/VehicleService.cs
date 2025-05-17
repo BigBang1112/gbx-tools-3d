@@ -32,7 +32,14 @@ internal sealed class VehicleService
 
     public async Task CreateOrUpdateVehiclesAsync(string datasetPath, CancellationToken cancellationToken)
     {
-        var gameVersion = GameVersion.TMF;
+        foreach (var version in GameVersionSupport.Versions)
+        {
+            await CreateOrUpdateVehiclesAsync(datasetPath, version, cancellationToken);
+        }
+    }
+
+    public async Task CreateOrUpdateVehiclesAsync(string datasetPath, GameVersion gameVersion, CancellationToken cancellationToken)
+    {
         var gameFolder = gameVersion.ToString();
         var gamePath = Path.Combine(datasetPath, gameFolder);
 
@@ -118,6 +125,6 @@ internal sealed class VehicleService
         await db.SaveChangesAsync(cancellationToken);
         await outputCache.EvictByTagAsync("mesh", cancellationToken);
         
-        await materialService.CreateOrUpdateMaterialsAsync(gamePath, usedMaterials, cancellationToken);
+        await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, cancellationToken);
     }
 }

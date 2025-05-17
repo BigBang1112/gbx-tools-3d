@@ -44,10 +44,8 @@ internal sealed class MaterialService
             .ToListAsync(cancellationToken);
     }
 
-    public async Task CreateOrUpdateMaterialsAsync(string gamePath, Dictionary<string, CPlugMaterial?> materials, CancellationToken cancellationToken)
-    {
-        var gameVersion = GameVersion.TMF;
-        
+    public async Task CreateOrUpdateMaterialsAsync(string gamePath, GameVersion gameVersion, Dictionary<string, CPlugMaterial?> materials, CancellationToken cancellationToken)
+    {        
         var alreadyProcessedTexturePaths = new HashSet<string>();
         
         logger.LogInformation("Processing materials...");

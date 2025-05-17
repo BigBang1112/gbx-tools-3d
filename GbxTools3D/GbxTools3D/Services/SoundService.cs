@@ -22,6 +22,7 @@ internal sealed class SoundService
 
     public async Task<Sound?> CreateOrUpdateSoundAsync(
         string gamePath,
+        GameVersion gameVersion,
         CHmsSoundSource soundSource,
         Dictionary<string, Sound> sounds,
         CancellationToken cancellationToken)
@@ -36,13 +37,17 @@ internal sealed class SoundService
             return null;
         }
 
-        return await CreateOrUpdateSoundAsync(gamePath, plugSound, soundPath, sounds, cancellationToken);
+        return await CreateOrUpdateSoundAsync(gamePath, gameVersion, plugSound, soundPath, sounds, cancellationToken);
     }
 
-    public async Task<Sound?> CreateOrUpdateSoundAsync(string gamePath, CPlugSound plugSound, string? soundPath, Dictionary<string, Sound> sounds, CancellationToken cancellationToken)
+    public async Task<Sound?> CreateOrUpdateSoundAsync(
+        string gamePath, 
+        GameVersion gameVersion, 
+        CPlugSound plugSound, 
+        string? soundPath, 
+        Dictionary<string, Sound> sounds, 
+        CancellationToken cancellationToken)
     {
-        const GameVersion gameVersion = GameVersion.TMF;
-
         if (soundPath is null)
         {
             return null;

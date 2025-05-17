@@ -1,5 +1,6 @@
 ﻿using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using GBX.NET;
 using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Extensions;
 
@@ -45,6 +46,7 @@ internal sealed partial class Material
         ["Techno2/Media/Material/TSelfI Add"] = new(Transparent: true, Add: true),
         ["Techno2/Media/Material/VDep Fence"] = new(Invisible: true),
         ["Techno/Media/Material/ShadowSkirt"] = new(Invisible: true),
+        ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft NoLightV"] = new(Transparent: true),
     };
 
     private static readonly Dictionary<string, JSObject> textures = [];
@@ -77,7 +79,7 @@ internal sealed partial class Material
     [JSImport("createTexture", nameof(Material))]
     private static partial JSObject CreateTexture(string path);
     
-    private static JSObject? GetOrCreateTexture(string? path)
+    private static JSObject? GetOrCreateTexture(string? path, GameVersion gameVersion)
     {
         if (path is null)
         {
@@ -89,14 +91,14 @@ internal sealed partial class Material
             return texture;
         }
         
-        var hash = $"GbxTools3D|Texture|TMF|{path}|PeopleOnTheBusLikeDMCA".Hash();
+        var hash = $"GbxTools3D|Texture|{gameVersion}|{path}|PeopleOnTheBusLikeDMCA".Hash();
         texture = CreateTexture($"api/texture/{hash}");
         textures.Add(path, texture);
         
         return texture;
     }
     
-    public static JSObject GetOrCreateMaterial(string name, Dictionary<string, MaterialDto>? availableMaterials)
+    public static JSObject GetOrCreateMaterial(string name, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
     {
         if (materials.TryGetValue(name, out var material))
         {
@@ -138,17 +140,17 @@ internal sealed partial class Material
             properties = Properties.Default;
         }
 
-        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse"))
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend1"))
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Panorama"))
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Advert"))
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Glow"))
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Soil"));
-        var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"));
-        var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"));
-        var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"));
-        var blendIntensityTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("BlendI"));
-        var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3"));
+        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse"), gameVersion)
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend1"), gameVersion)
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Panorama"), gameVersion)
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Advert"), gameVersion)
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Glow"), gameVersion)
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Soil"), gameVersion);
+        var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"), gameVersion);
+        var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"), gameVersion);
+        var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"), gameVersion);
+        var blendIntensityTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("BlendI"), gameVersion);
+        var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3"), gameVersion);
 
         material = CreateMaterial(
             diffuseTexture, 

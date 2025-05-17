@@ -1,4 +1,7 @@
+using GBX.NET;
 using GbxTools3D.Configuration;
+
+Gbx.LZO = new GBX.NET.LZO.Lzo();
 
 var builder = WebApplication.CreateBuilder(args);
 

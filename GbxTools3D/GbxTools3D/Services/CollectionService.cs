@@ -14,8 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp;
 using GBX.NET.Imaging.ImageSharp;
-using static GBX.NET.Engines.Function.CFuncKeysSkel;
-using static GBX.NET.Engines.TrackMania.CCtnMediaBlockEventTrackMania;
 
 namespace GbxTools3D.Services;
 
@@ -54,7 +52,14 @@ internal sealed class CollectionService
 
     public async Task CreateOrUpdateCollectionsAsync(string datasetPath, CancellationToken cancellationToken)
     {
-        var gameVersion = GameVersion.TMF;
+        foreach (var version in GameVersionSupport.Versions)
+        {
+            await CreateOrUpdateCollectionsAsync(datasetPath, version, cancellationToken);
+        }
+    }
+
+    public async Task CreateOrUpdateCollectionsAsync(string datasetPath, GameVersion gameVersion, CancellationToken cancellationToken)
+    {
         var gameFolder = gameVersion.ToString();
         var gamePath = Path.Combine(datasetPath, gameFolder);
 
@@ -169,8 +174,11 @@ internal sealed class CollectionService
             var addedMeshHashes = new HashSet<string>();
             var usedSounds = new Dictionary<string, Sound>();
 
+            // may have issue in TMO envs
+            var folderDecoration = collectionNode.FolderDecoration ?? $"{collectionNode.Collection}\\ConstructionDecoration\\";
+
             foreach (var decorationFilePath in Directory.EnumerateFiles(
-                Path.Combine(datasetPath, gameFolder, collectionNode.FolderDecoration!.NormalizePath()), "*.Gbx"))
+                Path.Combine(datasetPath, gameFolder, folderDecoration.NormalizePath()), "*.Gbx"))
             {
                 var decorationNode =
                     (CGameCtnDecoration?)await Gbx.ParseNodeAsync(decorationFilePath,
@@ -206,98 +214,100 @@ internal sealed class CollectionService
                 }
 
                 decorationSize.BaseHeight = decorationNode.DecoSize.BaseHeightBase;
-                
+
                 if (decorationNode.DecoSize.Scene is null)
                 {
-                    throw new Exception("Decoration scene is null");
+                    logger.LogWarning("Decoration scene is null for {GameVersion} {Decoration}, likely due to corrupted Gbx read. Scene will be skipped, but there should be at least guess game for the assets.", gameVersion, decorationNode.Ident);
                 }
-                
-                var size = $"{decorationNode.DecoSize.Size.X}x{decorationNode.DecoSize.Size.Y}x{decorationNode.DecoSize.Size.Z}";
-                var scene = new List<SceneObject>();
-
-                var sceneObjects = decorationNode.DecoSize.Scene.Scene ?? [];
-                for (var i = 0; i < sceneObjects.Length; i++)
+                else
                 {
-                    var sceneObject = sceneObjects[i];
-                    var location = decorationNode.DecoSize.Scene.SceneLocations?[i].U02 ?? new Iso4();
-                    
-                    if (sceneObject.Mobil is not CSceneMobil mobil)
-                    {
-                        continue;
-                    }
+                    var size = $"{decorationNode.DecoSize.Size.X}x{decorationNode.DecoSize.Size.Y}x{decorationNode.DecoSize.Size.Z}";
+                    var scene = new List<SceneObject>();
 
-                    var solid = mobil.GetSolid(gamePath, out var path);
-
-                    if (solid is null)
+                    var sceneObjects = decorationNode.DecoSize.Scene.Scene ?? [];
+                    for (var i = 0; i < sceneObjects.Length; i++)
                     {
-                        continue;
-                    }
-                    
-                    solid.PopulateUsedMaterials(usedMaterials, gamePath);
+                        var sceneObject = sceneObjects[i];
+                        var location = decorationNode.DecoSize.Scene.SceneLocations?[i].U02 ?? new Iso4();
 
-                    if (path is null)
-                    {
-                        throw new Exception("Decoration object path is null");
-                    }
-
-                    path = GbxPath.ChangeExtension(path, null);
-                    
-                    scene.Add(new SceneObject
-                    {
-                        Solid = path,
-                        Location = location
-                    });
-
-                    var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{size}|{path}|Je te hais".Hash();
-
-                    if (!addedMeshHashes.Add(solidHash))
-                    {
-                        continue;
-                    }
-                    
-                    await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, isDeco: true, cancellationToken);
-                }
-                
-                var lights = decorationNode.DecoSize.Scene.Lights ?? [];
-                for (var i = 0; i < lights.Length; i++)
-                {
-                    var light = lights[i];
-                    var location = decorationNode.DecoSize.Scene.LightLocations?[i].U02 ?? new Iso4();
-                    
-                    if (light.Node is null)
-                    {
-                        continue;
-                    }
-                    
-                    var type = light.Node.Light?.MainGxLight switch
-                    {
-                        GxLightAmbient => "Ambient",
-                        GxLightDirectional => "Directional",
-                        null => throw new Exception("Light is null"),
-                        _ => throw new Exception($"Unknown light type ({light.Node.Light.MainGxLight.GetType()})")
-                    };
-
-                    var gxLight = light.Node.Light.MainGxLight;
-                    var gxLightAmbient = gxLight as GxLightAmbient;
-
-                    scene.Add(new SceneObject
-                    {
-                        Light = new Light
+                        if (sceneObject.Mobil is not CSceneMobil mobil)
                         {
-                            Type = type,
-                            IsActive = light.Node.IsActive,
-                            Color = gxLight.Color,
-                            Intensity = gxLight.Intensity,
-                            FlareIntensity = gxLight.FlareIntensity,
-                            ShadowIntensity = gxLight.ShadowIntensity,
-                            ShadeMinY = gxLightAmbient?.ShadeMinY,
-                            ShadeMaxY = gxLightAmbient?.ShadeMaxY,
-                        },
-                        Location = location
-                    });
+                            continue;
+                        }
+
+                        var solid = mobil.GetSolid(gamePath, out var path);
+
+                        if (solid is null)
+                        {
+                            continue;
+                        }
+
+                        solid.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                        if (path is null)
+                        {
+                            throw new Exception("Decoration object path is null");
+                        }
+
+                        path = GbxPath.ChangeExtension(path, null);
+
+                        scene.Add(new SceneObject
+                        {
+                            Solid = path,
+                            Location = location
+                        });
+
+                        var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{size}|{path}|Je te hais".Hash();
+
+                        if (!addedMeshHashes.Add(solidHash))
+                        {
+                            continue;
+                        }
+
+                        await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, isDeco: true, cancellationToken);
+                    }
+
+                    var lights = decorationNode.DecoSize.Scene.Lights ?? [];
+                    for (var i = 0; i < lights.Length; i++)
+                    {
+                        var light = lights[i];
+                        var location = decorationNode.DecoSize.Scene.LightLocations?[i].U02 ?? new Iso4();
+
+                        if (light.Node is null)
+                        {
+                            continue;
+                        }
+
+                        var type = light.Node.Light?.MainGxLight switch
+                        {
+                            GxLightAmbient => "Ambient",
+                            GxLightDirectional => "Directional",
+                            null => throw new Exception("Light is null"),
+                            _ => throw new Exception($"Unknown light type ({light.Node.Light.MainGxLight.GetType()})")
+                        };
+
+                        var gxLight = light.Node.Light.MainGxLight;
+                        var gxLightAmbient = gxLight as GxLightAmbient;
+
+                        scene.Add(new SceneObject
+                        {
+                            Light = new Light
+                            {
+                                Type = type,
+                                IsActive = light.Node.IsActive,
+                                Color = gxLight.Color,
+                                Intensity = gxLight.Intensity,
+                                FlareIntensity = gxLight.FlareIntensity,
+                                ShadowIntensity = gxLight.ShadowIntensity,
+                                ShadeMinY = gxLightAmbient?.ShadeMinY,
+                                ShadeMaxY = gxLightAmbient?.ShadeMaxY,
+                            },
+                            Location = location
+                        });
+                    }
+
+                    decorationSize.Scene = scene.ToArray();
                 }
-                
-                decorationSize.Scene = scene.ToArray();
 
                 var decoration = await db.Decorations
                     .FirstOrDefaultAsync(x => x.DecorationSize == decorationSize && x.Name == decoName, cancellationToken);
@@ -334,6 +344,7 @@ internal sealed class CollectionService
 
                         await soundService.CreateOrUpdateSoundAsync(
                             gamePath,
+                            gameVersion,
                             extNode.Node,
                             musics[key],
                             usedSounds,
@@ -357,6 +368,7 @@ internal sealed class CollectionService
 
                         await soundService.CreateOrUpdateSoundAsync(
                             gamePath,
+                            gameVersion,
                             extNode.Node,
                             sounds[key],
                             usedSounds,
@@ -384,8 +396,11 @@ internal sealed class CollectionService
                 _ => throw new Exception("Unknown zone type")
             }, x => x.Node ?? throw new Exception("Zone node is null")) ?? [];
 
+            // may have issue in TMO envs
+            var folderBlockInfo = collectionNode.FolderBlockInfo ?? $"{collectionNode.Collection}\\ConstructionBlockInfo\\";
+
             foreach (var blockInfoFilePath in Directory.EnumerateFiles(
-                         Path.Combine(datasetPath, gameFolder, collectionNode.FolderBlockInfo!.NormalizePath()), "*.Gbx",
+                         Path.Combine(datasetPath, gameFolder, folderBlockInfo.NormalizePath()), "*.Gbx",
                          SearchOption.AllDirectories))
             {
                 var blockInfoNode =
@@ -433,9 +448,9 @@ internal sealed class CollectionService
                     }
                 }
 
-                await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameFolder, blockName,
+                await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, blockName,
                     isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
-                await ProcessBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameFolder, blockName,
+                await ProcessBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameVersion, blockName,
                     isGround: true, blockInfo, usedMaterials, usedSounds, cancellationToken);
 
                 // Helpers cause a ton of mesh duplicates, but they shouldn't be impactful much
@@ -488,7 +503,7 @@ internal sealed class CollectionService
             await outputCache.EvictByTagAsync("block", cancellationToken);
             await outputCache.EvictByTagAsync("decoration", cancellationToken);
             
-            await materialService.CreateOrUpdateMaterialsAsync(gamePath, usedMaterials, cancellationToken);
+            await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, cancellationToken);
         }
         
         logger.LogInformation("Collections complete!");
@@ -497,7 +512,7 @@ internal sealed class CollectionService
     private async Task ProcessBlockVariantsAsync(
         External<CSceneMobil>[][]? mobils,
         string gamePath,
-        string gameFolder,
+        GameVersion gameVersion,
         string blockName,
         bool isGround,
         BlockInfo blockInfo,
@@ -509,6 +524,8 @@ internal sealed class CollectionService
         {
             return;
         }
+
+        var gameFolder = gameVersion.ToString();
 
         for (var i = 0; i < mobils.Length; i++)
         {
@@ -619,7 +636,7 @@ internal sealed class CollectionService
 
                     if (soundLink is not null)
                     {
-                        objectLink.Sound = await ProcessSoundLinkAsync(gamePath, soundLink, usedSounds, cancellationToken);
+                        objectLink.Sound = await ProcessSoundLinkAsync(gamePath, gameVersion, soundLink, usedSounds, cancellationToken);
 
                         var loc = soundLink.RelativeLocation;
                         objectLink.SoundXX = loc.XX;
@@ -644,6 +661,7 @@ internal sealed class CollectionService
 
     private async Task<Sound?> ProcessSoundLinkAsync(
         string gamePath,
+        GameVersion gameVersion,
         CSceneObjectLink soundLink,
         Dictionary<string, Sound> usedSounds,
         CancellationToken cancellationToken)
@@ -652,6 +670,7 @@ internal sealed class CollectionService
 
         var sound = await soundService.CreateOrUpdateSoundAsync(
             gamePath,
+            gameVersion,
             soundSource,
             usedSounds,
             cancellationToken);

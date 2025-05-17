@@ -256,7 +256,7 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
         scene?.Add(focusedSolid);
         focusedSolids = [focusedSolid];
 
@@ -308,7 +308,7 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var focusedSolid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false);
+        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
         scene?.Add(focusedSolid);
         focusedSolids = [focusedSolid];
 
@@ -455,7 +455,7 @@ public partial class View3D : ComponentBase
             }
 
             await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
-            var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
+            var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             scene?.Add(solid);
 
@@ -528,7 +528,7 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var vehicle = await Solid.ParseAsync(stream, materials, expectedMeshCount: null, optimized: false, castShadow: false);
+        var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false);
         scene?.Add(vehicle);
 
         var camera = new Camera(vehicleInfo.CameraFov);
@@ -563,7 +563,7 @@ public partial class View3D : ComponentBase
                 await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
-                var solid = await Solid.ParseAsync(stream, materials, expectedCount);
+                var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, map);
             }
@@ -754,6 +754,7 @@ public partial class View3D : ComponentBase
 
         var clipBlockDict = Map.GetBlocks()
             .Where(x => x.IsClip)
+            .DistinctBy(x => x.Coord)
             .ToDictionary(x => x.Coord, x => x);
 
         var alreadyPlacedClips = new HashSet<(Int3, Direction)>();
@@ -891,7 +892,7 @@ public partial class View3D : ComponentBase
 
             await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-            var solid = await Solid.ParseAsync(stream, materials, expectedMeshCount: pylonKeys.Count);
+            var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: pylonKeys.Count);
 
             var instanceInfos = new JSObject[pylonKeys.Count];
 
