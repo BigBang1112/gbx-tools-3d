@@ -9,6 +9,8 @@ using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
+using GBX.NET.Components;
+using static GBX.NET.Engines.Plug.CPlugMaterialCustom;
 
 namespace GbxTools3D.Services;
 
@@ -126,38 +128,13 @@ internal sealed class MaterialService
             foreach (var bitmap in node.CustomMaterial.Textures ?? [])
             {
                 var textureName = bitmap.Name ?? throw new Exception("Texture has no name");
-                var textureFullPath = bitmap.TextureFile?.GetFullPath() ?? throw new Exception("Texture has no file");
-                var textureRelativePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(textureFullPath, null));
-                textures.Add(textureName, textureRelativePath);
-                    
-                var imageFullPath = (bitmap.Texture as CPlugBitmap)?.ImageFile?.GetFullPath();
-                if (imageFullPath is null)
-                {
-                    continue;
-                }
-                
-                if (!alreadyProcessedTexturePaths.Add(textureRelativePath))
+
+                if (bitmap.Texture is not CPlugBitmap texture)
                 {
                     continue;
                 }
 
-                _ = Task.Run(async () =>
-                {
-                    await semaphore.WaitAsync(cancellationToken);
-
-                    try
-                    {
-                        await ProcessTextureAsync(gamePath, gameVersion, bitmap, textureRelativePath, imageFullPath, cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Failed to process texture {ImageFullPath}", imageFullPath);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }
-                }, cancellationToken);
+                ProcessTexture(gamePath, gameVersion, texture, bitmap.TextureFile, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
             }
                 
             material.Textures = textures;
@@ -166,19 +143,80 @@ internal sealed class MaterialService
         {
             // is shader-material!
             material.IsShader = true;
+
+            // lookup into shader (SportCar situation)
+            var pc0 = node.DeviceMaterials[0].Shader1 as CPlugShaderApply;
+
+            if (pc0?.BitmapAddresses?.Length > 0)
+            {
+                var bitmapAddress = pc0.BitmapAddresses[0];
+
+                if (bitmapAddress.Bitmap is not null)
+                {
+                    var textures = new Dictionary<string, string>();
+
+                    ProcessTexture(gamePath, gameVersion, bitmapAddress.Bitmap, bitmapAddress.BitmapFile, "Diffuse", textures, alreadyProcessedTexturePaths, cancellationToken);
+                    
+                    material.Textures = textures;
+                }
+            }
         }
         else
         {
             throw new Exception("Material has no custom material or device materials");
         }
-        
+
         return material;
+    }
+
+    private void ProcessTexture(
+        string gamePath,
+        GameVersion gameVersion,
+        CPlugBitmap texture, 
+        GbxRefTableFile? textureFile,
+        string textureName,
+        Dictionary<string, string> textures,
+        HashSet<string> alreadyProcessedTexturePaths,
+        CancellationToken cancellationToken)
+    {
+        var textureFullPath = textureFile?.GetFullPath() ?? throw new Exception("Texture has no file");
+        var textureRelativePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(textureFullPath, null));
+        textures.Add(textureName, textureRelativePath);
+
+        var imageFullPath = texture?.ImageFile?.GetFullPath();
+        if (imageFullPath is null)
+        {
+            return;
+        }
+
+        if (!alreadyProcessedTexturePaths.Add(textureRelativePath))
+        {
+            return;
+        }
+
+        _ = Task.Run(async () =>
+        {
+            await semaphore.WaitAsync(cancellationToken);
+
+            try
+            {
+                await ProcessTextureAsync(gamePath, gameVersion, textureName, textureRelativePath, imageFullPath, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to process texture {ImageFullPath}", imageFullPath);
+            }
+            finally
+            {
+                semaphore.Release();
+            }
+        }, cancellationToken);
     }
 
     private async Task ProcessTextureAsync(
         string gamePath,
-        GameVersion gameVersion, 
-        CPlugMaterialCustom.Bitmap bitmap, 
+        GameVersion gameVersion,
+        string textureName, 
         string textureRelativePath,
         string imageFullPath, 
         CancellationToken cancellationToken)
@@ -192,10 +230,18 @@ internal sealed class MaterialService
             {
                 var newWidth = image.Width / 2;
                 var newHeight = image.Height / 2;
-                image.Mutate(x => x.Resize(newWidth, newHeight));
+
+                // some textures have 0 alpha colors, PremultiplyAlpha has to be set to false to preserve this color
+                var resizeOptions = new ResizeOptions
+                {
+                    PremultiplyAlpha = false,
+                    Size = new Size(newWidth, newHeight)
+                };
+
+                image.Mutate(x => x.Resize(resizeOptions));
             }
 
-            if (bitmap.Name == "Normal")
+            if (textureName == "Normal")
             {
                 if (image is Image<Bgra32> imageRgba)
                 {
@@ -220,7 +266,11 @@ internal sealed class MaterialService
                 }
             }
 
-            await image.SaveAsWebpAsync(ms, new WebpEncoder { Method = WebpEncodingMethod.Fastest },
+            await image.SaveAsWebpAsync(ms, new WebpEncoder
+            {
+                Method = WebpEncodingMethod.Fastest,
+                TransparentColorMode = WebpTransparentColorMode.Preserve // preserve 0 alpha color often used for specularity on textures
+            },
                 cancellationToken);
             data = ms.ToArray();
         }

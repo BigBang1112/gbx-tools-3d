@@ -661,7 +661,6 @@ internal sealed class CollectionService
             return null;
         }
 
-
         return sound;
     }
 

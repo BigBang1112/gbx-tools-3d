@@ -1,13 +1,12 @@
 ﻿.ghost-info {
     padding: 10px;
-    top: 260px;
     width: 300px;
     height: 500px;
     gap: 8px;
 }
 
     .ghost-info.closed {
-        right: -300px;
+        transform: translateX(300px);
     }
 
 .title {

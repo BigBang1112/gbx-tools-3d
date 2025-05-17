@@ -6,7 +6,7 @@
 }
 
     .checkpoint-list.closed {
-        left: -300px;
+        transform: translateX(-300px);
     }
 
 .title {

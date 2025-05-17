@@ -15,8 +15,8 @@
             <FormattedText Text="@(Ghost.GhostNickname ?? Ghost.GhostLogin)"></FormattedText>
         </div>
         <div style="display: flex; font-size: 80%;gap: 5px">
-            <div class="button-generic active" style="flex: 1">Basic info</div>
-            <div class="button-generic" style="flex: 1">Sample info</div>
+            <div class="button-generic" style="flex: 1">Samples</div>
+            <div class="button-generic active" style="flex: 1">Details</div>
         </div>
         <div class="basic table">
             @if (!string.IsNullOrEmpty(Ghost.GhostLogin))
@@ -84,7 +84,7 @@
                 <div>CPU kind:</div>
                 <div class="mono">@Ghost.Validate_CpuKind</div>
             }
-            <div title="Steering Wheel Sensitivity">SWS:</div>
+            <div title="Steering Wheel Sensitivity (TM2+)">SWS:</div>
             <div class="mono">@Ghost.SteeringWheelSensitivity</div>
         </div>
         @if (Ghost.GhostUid is not null)

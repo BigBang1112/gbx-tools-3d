@@ -7,7 +7,7 @@ export function createRandomMaterial() {
 }
 
 export function createInvisibleMaterial() {
-    return new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0 });
+    return new THREE.MeshBasicMaterial({ visible: false });
 }
 
 export function createMaterial(
@@ -20,22 +20,74 @@ export function createMaterial(
     doubleSided,
     worldUV,
     transparent,
-    basic) {
-    const material = basic ? new THREE.MeshBasicMaterial({
-        map: diffuseTexture,
-        transparent: transparent,
-        alphaToCoverage: transparent,
-        side: doubleSided ? THREE.DoubleSide : THREE.FrontSide
-    }) : new THREE.MeshStandardMaterial({
-        map: diffuseTexture,
-        normalMap: normalTexture,
-        //specularMap: specularTexture,
-        transparent: transparent,
-        alphaToCoverage: transparent,
-        side: doubleSided ? THREE.DoubleSide : THREE.FrontSide
-    });
+    basic,
+    specularAlpha,
+    opacity,
+    add,
+    nightOnly,
+    invisible) {
+    let material;
+    if (basic) {
+        material = new THREE.MeshBasicMaterial({
+            map: diffuseTexture,
+            transparent: transparent,
+            alphaToCoverage: transparent,
+            side: doubleSided ? THREE.DoubleSide : THREE.FrontSide
+        });
+    }
+    else if (specularAlpha || specularTexture)
+    {
+        material = new THREE.MeshPhongMaterial({
+            map: diffuseTexture,
+            normalMap: normalTexture,
+            specularMap: specularTexture,
+            transparent: transparent,
+            alphaToCoverage: transparent,
+            side: doubleSided ? THREE.DoubleSide : THREE.FrontSide,
+        });
+    }
+    else {
+        material = new THREE.MeshStandardMaterial({
+            map: diffuseTexture,
+            normalMap: normalTexture,
+            transparent: transparent,
+            alphaToCoverage: transparent,
+            side: doubleSided ? THREE.DoubleSide : THREE.FrontSide,
+            blending: add ? THREE.AdditiveBlending : THREE.NormalBlending,
+            depthWrite: !add, // some stadium transparency sorting problems
+            visible: !invisible,
+        });
+    }
 
-    if ((worldUV && material.map) || (blend2Texture && blendIntensityTexture)) {
+    if (specularAlpha) {
+        material.onBeforeCompile = (shader) => {
+            // set specular based on diffuse alpha, not sure if this does something yet
+            shader.fragmentShader.replace(
+                '#include <specularmap_fragment>',
+                `
+                #include <specularmap_fragment>
+                specularStrength = sampledDiffuseColor.a;
+            `
+            )
+        };
+    }
+    else if (opacity != 0) {
+        material.onBeforeCompile = (shader) => {
+            shader.uniforms.customOpacity = { value: opacity };
+
+            shader.fragmentShader = `
+                uniform float customOpacity;
+
+                ${shader.fragmentShader}`.replace(
+                '#include <map_fragment>',
+                `
+                    #include <map_fragment>
+                    diffuseColor.a = customOpacity;
+                `
+            );
+        };
+    }
+    else if ((worldUV && material.map) || (blend2Texture && blendIntensityTexture)) {
         material.onBeforeCompile = (shader) => {
             if (worldUV && material.map) {
                 shader.uniforms.uvTransform = { value: new THREE.Matrix3().set(1 / 16, 0, 0, 0, 1 / 16, 0, 0, 0, 1) };
@@ -64,6 +116,7 @@ export function createMaterial(
                 uniform sampler2D blendIntensityTexture;
                 uniform sampler2D blend3Texture;
                 ${shader.fragmentShader}`.replace('#include <map_fragment>', `
+                #include <map_fragment>
                 vec4 blend2Color = texture2D(blend2Texture, vMapUv);
                 float blendIntensity = texture2D(blendIntensityTexture, vMapUv).r;
                 vec4 blend3Color = texture2D(blend3Texture, vMapUv);

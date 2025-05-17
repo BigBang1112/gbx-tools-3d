@@ -6,7 +6,7 @@
 }
 
     .map-info.closed {
-        right: -300px;
+        transform: translateX(300px);
     }
 
 .contents {

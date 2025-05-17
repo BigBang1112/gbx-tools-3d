@@ -1,0 +1,15 @@
+﻿.controls {
+    padding: 10px;
+    top: 855px;
+    width: 300px;
+    height: 65px;
+}
+
+    .controls.closed {
+        transform: translateX(-300px);
+    }
+
+.contents {
+    display: flex;
+    gap: 5px;
+}

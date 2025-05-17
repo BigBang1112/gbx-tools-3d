@@ -1,0 +1,53 @@
+﻿.meter {
+    padding: 10px;
+    top: 780px;
+    width: 300px;
+    height: 130px;
+}
+
+    .meter.closed {
+        transform: translateX(300px);
+    }
+
+.contents {
+    display: flex;
+    gap: 10px;
+    flex-direction: column;
+    flex: 1;
+}
+
+.params {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    font-weight: bold;
+    margin: 0 20px;
+}
+
+.speed {
+    flex: 1;
+    text-align: right;
+    font-size: 300%;
+}
+
+.gear {
+    font-size: 200%;
+    border-radius: 10px;
+}
+
+progress {
+    width: 100%;
+    appearance: none;
+}
+
+    progress[value]::-webkit-progress-bar {
+        background-color: #333;
+        border-radius: 3px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
+    }
+
+    progress[value]::-webkit-progress-value {
+        background-color: #08F;
+        border-radius: 3px;
+        background-size: 35px 20px, 100% 100%, 100% 100%;
+    }

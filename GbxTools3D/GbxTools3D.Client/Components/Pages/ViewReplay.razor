@@ -66,12 +66,18 @@ else
     <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
     @if (RendererInfo.IsInteractive)
     {
-        <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@(CurrentGhost?.GhostNickname ?? CurrentGhost?.GhostLogin)" @ref="playback"></Playback>
-        <InputList Ghost="CurrentGhost" Replay="Replay"></InputList>
-        <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Replay?.Challenge) ?? 1" OnCheckpointClick="OnCheckpointListItemClick" @ref="checkpointList"></CheckpointList>
-        <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
-        <MapInfo Map="Replay?.Challenge"></MapInfo>
-        <GhostInfo Ghost="CurrentGhost"></GhostInfo>
         <Checkpoint @ref="checkpoint"></Checkpoint>
+        <div class="panels left">
+            <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@GetPlaybackDescription()" @ref="playback"></Playback>
+            <InputList Ghost="CurrentGhost" Replay="Replay"></InputList>
+            <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Replay?.Challenge) ?? 1" OnCheckpointClick="OnCheckpointListItemClick" @ref="checkpointList"></CheckpointList>
+            <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+            <Controls></Controls>
+        </div>
+        <div class="panels right">
+            <MapInfo Map="Replay?.Challenge"></MapInfo>
+            <GhostInfo Ghost="CurrentGhost"></GhostInfo>
+            <Speedometer></Speedometer>
+        </div>
     }
 }

@@ -8,6 +8,7 @@
 
 
 .catalog {
+    position: fixed;
     padding: 20px;
     top: 120px;
     bottom: 100px;

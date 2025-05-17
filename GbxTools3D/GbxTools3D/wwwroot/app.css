@@ -168,8 +168,24 @@ h2.view {
     margin: 10px 0 35px 0;
 }
 
-.panel {
+.panels {
     position: fixed;
+    top: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+    .panels.left {
+        transform-origin: top left;
+    }
+
+    .panels.right {
+        transform-origin: top right;
+        right: 0;
+    }
+
+.panel {
     box-sizing: border-box;
     background-color: #111D;
     backdrop-filter: blur(10px);
@@ -177,6 +193,7 @@ h2.view {
     display: flex;
     flex-direction: column;
     gap: 10px;
+    transition: transform 0.4s ease;
 }
 
     .panel .opener {
@@ -195,7 +212,6 @@ h2.view {
         border-left: 0;
         border-radius: 0 10px 10px 0;
         left: 0;
-        transition: left 0.4s ease;
     }
 
         .panel.left .opener {
@@ -209,7 +225,6 @@ h2.view {
         border-right: 0;
         border-radius: 10px 0 0 10px;
         right: 0;
-        transition: right 0.4s ease;
     }
 
         .panel.right .opener {

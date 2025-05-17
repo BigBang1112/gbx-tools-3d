@@ -1,0 +1,21 @@
+﻿@inject IJSRuntime JS
+
+<div class="panel right meter @(show ? "" : "closed")">
+    <div class="opener" @onclick="() => show = !show">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+    </div>
+    <div class="contents">
+        <div class="params mono">
+            <div class="gear" title="Gear">5</div>
+            <div class="speed" title="Speed">669</div>
+        </div>
+        <progress max="100" value="70" title="RPM">70%</progress>
+    </div>
+</div>

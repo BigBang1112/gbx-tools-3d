@@ -13,6 +13,7 @@ using GbxTools3D.Client.Enums;
 using GbxTools3D.Client.Components.Modules;
 using GbxTools3D.Client.Extensions;
 using TmEssentials;
+using System.Text;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -52,6 +53,24 @@ public partial class ViewReplay : ComponentBase
     private string selectedTmx = "tmnf";
     private string selectedMx = "tm2020";
     private string externalId = string.Empty;
+
+    private string GetPlaybackDescription()
+    {
+        if (CurrentGhost is null)
+        {
+            return string.Empty;
+        }
+
+        var sb = new StringBuilder();
+        if (CurrentGhost.RaceTime is not null)
+        {
+            sb.Append(CurrentGhost.RaceTime);
+            sb.Append(" by ");
+        }
+
+        sb.Append(CurrentGhost.GhostNickname ?? CurrentGhost.GhostLogin);
+        return sb.ToString();
+    }
 
     protected override async Task OnInitializedAsync()
     {

@@ -63,7 +63,11 @@ else
     <View3D GameVersion="GameVersion.TMF" Map="Map" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
     @if (RendererInfo.IsInteractive)
     {
-        <MapInfo Map="Map"></MapInfo>
-        <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+        <div class="panels left">
+            <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+        </div>
+        <div class="panels right">
+            <MapInfo Map="Map"></MapInfo>
+        </div>
     }
 }
