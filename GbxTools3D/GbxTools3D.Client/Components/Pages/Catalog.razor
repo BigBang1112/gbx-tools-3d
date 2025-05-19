@@ -28,6 +28,7 @@
                 BlockName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Block ? AssetName : null)"
                 DecorationName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Decoration ? AssetName : null)"
                 VehicleName="@(ContentTypeEnum == Enums.ContentType.Vehicle ? AssetName : null)"
+                OnFocusedSolidsChange="() => {}"
                 @ref="view3d"></View3D>
     }
 
@@ -69,7 +70,7 @@
                 <div class="collections">
                     @foreach (var collection in CollectionClientService.Collections)
                     {
-                        <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/collection/{collection.Name}/environment")" width="48" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
+                        <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/collection/{collection.Name}/environment")" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
                     }
                 </div>
 
@@ -148,6 +149,44 @@
             {
                 <InputText type="text" @bind-Value="AssetSearchValue" @oninput="OnAssetSearchInput" placeholder="Search..." />
             }
+        </div>
+    </div>
+    <div class="panels right">
+        <div class="panel right properties @(showProperties ? "" : "closed")">
+            <div class="opener" @onclick="() => showProperties = !showProperties">
+                @if (showProperties)
+                {
+                    <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+                }
+                else
+                {
+                    <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+                }
+            </div>
+            <div>
+                @BlockClientService.Blocks.FirstOrDefault(x => x.Name == AssetName)?.Name
+
+                @foreach (var solid in view3d?.FocusedSolids ?? [])
+                {
+                    <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">Wireframe</div>
+                    @if (view3d?.Scene is not null)
+                    {
+                        <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">Vertex normals</div>
+                    }
+
+                    @foreach (var (matName, shadName) in solid.GetAllMaterials())
+                    {
+                        <ul>
+                            <li>
+                                @matName
+                                <ul>
+                                    <li>@shadName</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    }
+                }
+            </div>
         </div>
     </div>
 }

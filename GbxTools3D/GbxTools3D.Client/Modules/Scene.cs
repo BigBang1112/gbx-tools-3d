@@ -6,7 +6,7 @@ namespace GbxTools3D.Client.Modules;
 [SupportedOSPlatform("browser")]
 internal partial class Scene
 {
-    private JSObject Object { get; } = Create();
+    public JSObject Object { get; } = Create();
 
     [JSImport("create", nameof(Scene))]
     private static partial JSObject Create();

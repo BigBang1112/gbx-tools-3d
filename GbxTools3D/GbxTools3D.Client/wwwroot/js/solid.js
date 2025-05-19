@@ -1,5 +1,6 @@
 ﻿import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
+import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';
 //import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
 const material = new THREE.MeshMatcapMaterial({ color: 0xAD9000 });
@@ -154,6 +155,25 @@ export function instantiate(tree, instanceInfos) {
     }
 
     tree.instanceMatrix.needsUpdate = true;
+}
+
+export function getAllChildren(tree) {
+    const children = tree.children;
+    const allChildren = [];
+    for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        allChildren.push(child);
+        if (child.children.length > 0) {
+            allChildren.push(...getAllChildren(child));
+        }
+    }
+    return allChildren;
+}
+
+export function createVertexNormalHelper(mesh) {
+    const helper = new VertexNormalsHelper(mesh, 1, 0x00ffff);
+    helper.name = "helper";
+    return helper;
 }
 
 export function log(tree) {

@@ -25,10 +25,10 @@ public partial class View3D : ComponentBase
     private JSObject? animationModule;
 
     private JSObject? renderer;
-    private Scene? scene;
     private Camera? mapCamera;
 
-    private List<Solid> focusedSolids = [];
+    internal Scene? Scene { get; private set; }
+    internal List<Solid> FocusedSolids { get; private set; } = [];
 
     private bool mapLoadAttempted;
 
@@ -55,6 +55,9 @@ public partial class View3D : ComponentBase
 
     [Parameter]
     public EventCallback<RenderDetails?> OnRenderDetails { get; set; }
+
+    [Parameter]
+    public EventCallback OnFocusedSolidsChange { get; set; }
 
     public BlockInfoDto? CurrentBlockInfo { get; private set; }
 
@@ -112,11 +115,11 @@ public partial class View3D : ComponentBase
         animationModule = await JSHost.ImportAsync(nameof(Animation), "../js/animation.js", cancellationToken);
 
         renderer = Renderer.Create();
-        scene = new Scene();
+        Scene = new Scene();
         mapCamera = new Camera();
 
         Renderer.Camera = mapCamera;
-        Renderer.Scene = scene;
+        Renderer.Scene = Scene;
     }
 
     private async Task<bool> TryFetchDataAsync(
@@ -195,13 +198,14 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        foreach (var solid in focusedSolids)
+        foreach (var solid in FocusedSolids)
         {
-            scene?.Remove(solid);
+            solid.Remove(Scene);
             //solid.Dispose();
         }
 
-        focusedSolids.Clear();
+        FocusedSolids.Clear();
+        await OnFocusedSolidsChange.InvokeAsync();
 
         // initial camera position
         var center = new Vec3(16, 4, 16);
@@ -257,10 +261,13 @@ public partial class View3D : ComponentBase
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
         var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
-        scene?.Add(focusedSolid);
-        focusedSolids = [focusedSolid];
+        Scene?.Add(focusedSolid);
+        FocusedSolids = [focusedSolid];
+        await OnFocusedSolidsChange.InvokeAsync();
 
         CurrentBlockInfo = blockInfo;
+
+        Renderer.EnableRaycaster();
 
         return true;
     }
@@ -272,13 +279,14 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        foreach (var solid in focusedSolids)
+        foreach (var solid in FocusedSolids)
         {
-            scene?.Remove(solid);
+            solid.Remove(Scene);
             //solid.Dispose();
         }
 
-        focusedSolids.Clear();
+        FocusedSolids.Clear();
+        await OnFocusedSolidsChange.InvokeAsync();
 
         mapCamera.Position = new Vec3(0, 5, 10);
         mapCamera.CreateMapControls(renderer, default);
@@ -309,8 +317,11 @@ public partial class View3D : ComponentBase
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
         var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
-        scene?.Add(focusedSolid);
-        focusedSolids = [focusedSolid];
+        Scene?.Add(focusedSolid);
+        FocusedSolids = [focusedSolid];
+        await OnFocusedSolidsChange.InvokeAsync();
+
+        Renderer.EnableRaycaster();
 
         return true;
     }
@@ -322,13 +333,14 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        foreach (var solid in focusedSolids)
+        foreach (var solid in FocusedSolids)
         {
-            scene?.Remove(solid);
+            solid.Remove(Scene);
             //solid.Dispose();
         }
 
-        focusedSolids.Clear();
+        FocusedSolids.Clear();
+        await OnFocusedSolidsChange.InvokeAsync();
 
         mapCamera.Position = new Vec3(0, 5, 10);
         mapCamera.CreateMapControls(renderer, default);
@@ -372,8 +384,11 @@ public partial class View3D : ComponentBase
 
         await foreach (var solid in CreateDecorationAsync(CollectionName, decoInfo, DecorationName, cancellationToken))
         {
-            focusedSolids.Add(solid);
+            FocusedSolids.Add(solid);
         }
+        await OnFocusedSolidsChange.InvokeAsync();
+
+        Renderer.EnableRaycaster();
 
         return true;
     }
@@ -393,14 +408,14 @@ public partial class View3D : ComponentBase
 
         var collectionInfo = Map.Collection is null ? null : collectionInfos.GetValueOrDefault(Map.Collection);
 
-        var baseHeight = await PlaceDecorationAsync(Map, cancellationToken);
-
         var blockSize = collectionInfo?.GetSquareSize() ?? Map.Collection.GetValueOrDefault().GetBlockSize();
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
 
         // setup camera
         mapCamera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
         mapCamera.CreateMapControls(renderer, center);
+
+        var baseHeight = await PlaceDecorationAsync(Map, cancellationToken);
 
         await PlaceBlocksAsync(Map, baseHeight, blockSize, cancellationToken);
         await PlacePylonsAsync(Map, baseHeight, blockSize, cancellationToken);
@@ -457,7 +472,7 @@ public partial class View3D : ComponentBase
             await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
             var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
-            scene?.Add(solid);
+            Scene?.Add(solid);
 
             yield return solid;
         }
@@ -529,7 +544,7 @@ public partial class View3D : ComponentBase
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
         var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false);
-        scene?.Add(vehicle);
+        Scene?.Add(vehicle);
 
         var camera = new Camera(vehicleInfo.CameraFov);
         Camera.Follow(vehicle.Object, vehicleInfo.CameraFar, vehicleInfo.CameraUp, vehicleInfo.CameraLookAtFactor);
@@ -585,7 +600,7 @@ public partial class View3D : ComponentBase
 
     private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize, CGameCtnChallenge map)
     {
-        if (scene is null)
+        if (Scene is null)
         {
             return;
         }
@@ -628,7 +643,7 @@ public partial class View3D : ComponentBase
         }
 
         solid.Instantiate(instanceInfos.ToArray());
-        scene.Add(solid);
+        Scene.Add(solid);
     }
 
     private IEnumerable<CGameCtnBlock> GetCoveredZoneBlocks()
@@ -903,7 +918,7 @@ public partial class View3D : ComponentBase
             }
 
             solid.Instantiate(instanceInfos);
-            scene?.Add(solid);
+            Scene?.Add(solid);
         }
     }
 
@@ -1180,7 +1195,7 @@ public partial class View3D : ComponentBase
             Renderer.Dispose();
         }
 
-        scene = null;
+        Scene = null;
         mapCamera = null;
 
         rendererModule?.Dispose();

@@ -2,7 +2,10 @@
 import { updateCamera } from './camera.js';
 import { updateMixer } from './animation.js';
 
-let renderer, scene, camera, stats;
+let renderer, scene, camera, stats, raycaster, raycasterEnabled;
+
+const pointer = new THREE.Vector2();
+let INTERSECTED;
 
 //THREE.Object3D.DEFAULT_MATRIX_AUTO_UPDATE = false;
 //THREE.Object3D.DEFAULT_MATRIX_WORLD_AUTO_UPDATE = false;
@@ -22,6 +25,9 @@ export function create() {
 
     window.addEventListener('resize', onWindowResize, false);
 
+    raycaster = new THREE.Raycaster();
+    window.addEventListener('mousemove', onPointerMove);
+
     //stats = new Stats();
     //document.body.appendChild(stats.dom);
 
@@ -40,11 +46,24 @@ export function setCamera(newCamera) {
     camera = newCamera;
 }
 
+function onPointerMove(event) {
+    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
+    pointer.y = - (event.clientY / window.innerHeight) * 2 + 1;
+}
+
+export function enableRaycaster() {
+    raycasterEnabled = true;
+}
+
+export function disableRaycaster() {
+    raycasterEnabled = false;
+}
 
 export function dispose() {
     window.removeEventListener('resize', onWindowResize);
 
     //disposeInstances();
+    disableRaycaster();
 
     if (renderer) {
         renderer.dispose();
@@ -67,6 +86,25 @@ function update() {
     
     if (scene && camera) {
         updateCamera(camera, delta);
+        raycaster.setFromCamera(pointer, camera);
+
+        if (raycasterEnabled) {
+            const intersects = raycaster.intersectObjects(scene.children.filter(item => item.name !== "helper"), true);
+            if (intersects.length > 0) {
+                if (INTERSECTED != intersects[0].object) {
+                    if (INTERSECTED && INTERSECTED.material.emissive) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+                    INTERSECTED = intersects[0].object;
+                    if (INTERSECTED.material.emissive) {
+                        INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+                        INTERSECTED.material.emissive.setHex(0x666666);
+                    }
+                }
+            } else {
+                if (INTERSECTED && INTERSECTED.material.emissive) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+                INTERSECTED = null;
+            }
+        }
+
         renderer.render(scene, camera);
     }
 

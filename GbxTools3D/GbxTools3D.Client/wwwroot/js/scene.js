@@ -4,6 +4,12 @@ export function create() {
     const scene = new THREE.Scene();
     add(scene, new THREE.AmbientLight(0x888888));
     add(scene, createDirectionalLight());
+
+    const gridHelper = new THREE.GridHelper(128, 128, 0x880000);
+    gridHelper.name = "helper";
+    gridHelper.visible = false; // hopefully i wont forget
+    add(scene, gridHelper);
+
     scene.updateMatrixWorld();
     return scene;
 }

@@ -73,7 +73,7 @@ internal sealed class CollectionService
             var collection =
                 await db.Collections
                     .Include(x => x.Icon)
-                    .FirstOrDefaultAsync(x => x.Name == collectionNode.Collection, cancellationToken);
+                    .FirstOrDefaultAsync(x => x.Name == collectionNode.Collection && x.GameVersion == gameVersion, cancellationToken);
 
             if (collection is null)
             {

@@ -15,6 +15,12 @@ internal static partial class Renderer
     [JSImport("setCamera", nameof(Renderer))]
     private static partial void SetCamera(JSObject camera);
 
+    [JSImport("enableRaycaster", nameof(Renderer))]
+    public static partial void EnableRaycaster();
+
+    [JSImport("disableRaycaster", nameof(Renderer))]
+    public static partial void DisableRaycaster();
+
     [JSImport("dispose", nameof(Renderer))]
     public static partial void Dispose();
 

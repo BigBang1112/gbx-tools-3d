@@ -6,6 +6,21 @@
     z-index: 20;
 }
 
+.properties {
+    position: fixed;
+    padding: 20px;
+    top: 120px;
+    bottom: 100px;
+    width: 500px;
+}
+
+    .properties .opener {
+        padding: 0.8rem;
+    }
+
+    .properties.closed {
+        transform: translateX(500px);
+    }
 
 .catalog {
     position: fixed;
@@ -15,8 +30,12 @@
     width: 500px;
 }
 
+    .catalog .opener {
+        padding: 0.8rem;
+    }
+
     .catalog.closed {
-        left: -500px;
+        transform: translateX(-500px);
     }
 
     .catalog .games {
@@ -117,10 +136,6 @@
             .catalog .assets ::deep a img {
                 border-radius: 3px;
             }
-
-    .catalog .opener {
-        padding: 0.8rem;
-    }
 
 @media (max-width: 580px) {
     .catalog {

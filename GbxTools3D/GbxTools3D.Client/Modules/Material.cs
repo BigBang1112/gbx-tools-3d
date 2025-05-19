@@ -33,25 +33,35 @@ internal sealed partial class Material
         ["Techno/Media/Material/TDiffG PX2 CSpec FCOut Trans"] = new(Transparent: true),
         ["Techno/Media/Material/TDiffG PX2 CSpecL Trans"] = new(Transparent: true),
         ["Techno/Media/Material/TDiff PX2 Trans NormY PC3only"] = new(DoubleSided: true, Transparent: true),
-        //["Techno/Media/Material/PDiff Fresnel PX2"] = new(WorldUV: true),
+        ["Techno/Media/Material/PDiff Fresnel PX2"] = new(WorldUV: true),
         ["Techno/Media/Material/Sky"] = new Properties(Basic: true),
-        //["Techno/Media/Material/PDiff PDiff PA PX2"] = new(WorldUV: true), works with coast ground but breaks everything else
+        ["Techno/Media/Material/PDiff PDiff PA PX2"] = new(WorldUV: true),
         ["Techno/Media/Material/TDiffG PX2 CSpecL_Pixel"] = new Properties(SpecularAlpha: true),
         ["Vehicles/Media/Material/SportCarGlass"] = new(Transparent: true, Opacity: 0.89),
         ["Techno/Media/Material/TAdd"] = new(Transparent: true, Add: true),
         ["Techno/Media/Material/TAdd ZBias"] = new(Transparent: true, Add: true),
         ["Techno/Media/Material/TAdd Night"] = new(Transparent: true, Add: true, NightOnly: true),
         ["Techno/Media/Material/TAdd Night ZBias"] = new(Transparent: true, Add: true, NightOnly: true),
+        ["Island/Media/Material/ModelLightVolume"] = new(Transparent: true, Add: true, NightOnly: true),
         ["Alpine/Media/Material/AlpineSignsSelfIllum"] = new(Transparent: true, Add: true),
         ["Techno2/Media/Material/TSelfI Add"] = new(Transparent: true, Add: true),
         ["Techno2/Media/Material/VDep Fence"] = new(Invisible: true),
         ["Techno/Media/Material/ShadowSkirt"] = new(Invisible: true),
         ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft NoLightV"] = new(Transparent: true),
+        ["Techno/Media/Material/PDisp PDiff PX2"] = new(WorldUV: true),
+        //["Techno/Media/Material/PDiff PDiff PA TDiffA PX2"] = new(WorldUV: true), WorldUVDiffuse
+        ["Island/Media/Material/ModelAlpha1SidedLight"] = new(Transparent: true),
+        ["Island/Media/Material/ModelAlpha2SidedNoLight"] = new(Transparent: true, DoubleSided: true),
+        ["Techno2/Media/Material/SoilGen21"] = new(WorldUV: true),
+        ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft Trans"] = new(Transparent: true),
     };
 
-    private static readonly Dictionary<string, JSObject> textures = [];
-    private static readonly Dictionary<string, JSObject> materials = [];
-    
+    private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];
+    private static readonly Dictionary<(string, GameVersion), JSObject> materials = [];
+
+    [JSImport("getWireframeMaterial", nameof(Material))]
+    public static partial JSObject GetWireframeMaterial();
+
     [JSImport("createRandomMaterial", nameof(Material))]
     private static partial JSObject CreateRandomMaterial();
 
@@ -60,12 +70,15 @@ internal sealed partial class Material
 
     [JSImport("createMaterial", nameof(Material))]
     private static partial JSObject CreateMaterial(
+        string materialName,
+        string? shaderName,
         JSObject? diffuseTexture, 
         JSObject? normalTexture,
         JSObject? specularTexture,
         JSObject? blend2Texture,
         JSObject? blendIntensityTexture,
         JSObject? blend3Texture,
+        JSObject? aoTexture,
         bool doubleSided,
         bool worldUV,
         bool transparent,
@@ -77,7 +90,7 @@ internal sealed partial class Material
         bool invisible);
 
     [JSImport("createTexture", nameof(Material))]
-    private static partial JSObject CreateTexture(string path);
+    private static partial JSObject CreateTexture(string path, string urlPath);
     
     private static JSObject? GetOrCreateTexture(string? path, GameVersion gameVersion)
     {
@@ -86,21 +99,21 @@ internal sealed partial class Material
             return null;
         }
 
-        if (textures.TryGetValue(path, out var texture))
+        if (textures.TryGetValue((path, gameVersion), out var texture))
         {
             return texture;
         }
         
         var hash = $"GbxTools3D|Texture|{gameVersion}|{path}|PeopleOnTheBusLikeDMCA".Hash();
-        texture = CreateTexture($"api/texture/{hash}");
-        textures.Add(path, texture);
+        texture = CreateTexture(path, $"api/texture/{hash}");
+        textures.Add((path, gameVersion), texture);
         
         return texture;
     }
     
     public static JSObject GetOrCreateMaterial(string name, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
     {
-        if (materials.TryGetValue(name, out var material))
+        if (materials.TryGetValue((name, gameVersion), out var material))
         {
             return material;
         }
@@ -108,14 +121,14 @@ internal sealed partial class Material
         if (availableMaterials is null || !availableMaterials.TryGetValue(name, out var materialDto))
         {
             material = CreateRandomMaterial();
-            materials.Add(name, material);
+            materials.Add((name, gameVersion), material);
             return material;
         }
 
         if (materialDto.IsShader && materialDto.Textures is null or { Count: 0 }) // BayCollision for example
         {
             material = CreateInvisibleMaterial();
-            materials.Add(name, material);
+            materials.Add((name, gameVersion), material);
             return material;
         }
 
@@ -123,7 +136,7 @@ internal sealed partial class Material
         {
             // TODO: might be water shaders and other special cases
             material = CreateRandomMaterial();
-            materials.Add(name, material);
+            materials.Add((name, gameVersion), material);
             return material;
         }
 
@@ -145,20 +158,25 @@ internal sealed partial class Material
             ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Panorama"), gameVersion)
             ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Advert"), gameVersion)
             ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Glow"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Soil"), gameVersion);
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Soil"), gameVersion)
+            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Grass"), gameVersion);
         var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"), gameVersion);
         var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"), gameVersion);
         var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"), gameVersion);
         var blendIntensityTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("BlendI"), gameVersion);
-        var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3"), gameVersion);
+        var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3") ?? materialDto.Textures.GetValueOrDefault("Borders"), gameVersion);
+        var aoTexture = default(JSObject);//GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Occlusion"), gameVersion);
 
         material = CreateMaterial(
+            name,
+            materialDto.Shader,
             diffuseTexture, 
             normalTexture,
             specularTexture,
             blend2Texture,
             blendIntensityTexture,
             blend3Texture,
+            aoTexture,
             properties.DoubleSided, 
             properties.WorldUV, 
             properties.Transparent,
@@ -168,7 +186,7 @@ internal sealed partial class Material
             properties.Add,
             properties.NightOnly,
             properties.Invisible);
-        materials.Add(name, material);
+        materials.Add((name, gameVersion), material);
         return material;
     }
 }

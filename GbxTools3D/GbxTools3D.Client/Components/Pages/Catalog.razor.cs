@@ -1,11 +1,13 @@
 ﻿using GBX.NET;
 using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Enums;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
-using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
-using System.Runtime.Versioning;
 using GbxTools3D.Client.Extensions;
+using GbxTools3D.Client.Modules;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.JSInterop;
+using System.Runtime.InteropServices.JavaScript;
+using System.Runtime.Versioning;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -19,6 +21,7 @@ public partial class Catalog : ComponentBase
     private IJSObjectReference? module;
 
     private bool showCatalog = true;
+    private bool showProperties = true;
 
     [Parameter]
     public string? GameVersion { get; set; }
@@ -174,7 +177,7 @@ public partial class Catalog : ComponentBase
         };
     }
 
-    internal static string? TestGetSoundHash(BlockInfoDto blockInfo)
+    internal string? TestGetSoundHash(BlockInfoDto blockInfo)
     {
         var firstSoundPath = blockInfo.AirVariants
             .Concat(blockInfo.GroundVariants)
@@ -186,7 +189,7 @@ public partial class Catalog : ComponentBase
             return null;
         }
 
-        return $"GbxTools3D|Sound|TMF|{firstSoundPath}|ItsChallengeNotAltered".Hash();
+        return $"GbxTools3D|Sound|{GameVersionEnum}|{firstSoundPath}|ItsChallengeNotAltered".Hash();
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()

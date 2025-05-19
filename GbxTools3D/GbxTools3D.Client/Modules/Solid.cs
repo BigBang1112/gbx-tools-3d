@@ -18,6 +18,12 @@ internal sealed partial class Solid(JSObject obj)
     private static readonly byte[] MAGIC = [0xD4, 0x54, 0x35, 0x84, 0x03, 0xCD];
     private const int VERSION = 0;
 
+    private JSObject[] vertexNormalHelpers = [];
+    public bool VertexNormalHelperEnabled => vertexNormalHelpers.Length > 0;
+
+    private Dictionary<JSObject, JSObject> wireframeMemorizedMaterials = [];
+    public bool WireframeEnabled => wireframeMemorizedMaterials.Count > 0;
+
     public JSObject Object { get; } = obj;
 
     public Vec3 Position
@@ -132,6 +138,12 @@ internal sealed partial class Solid(JSObject obj)
 
     [JSImport("instantiate", nameof(Solid))]
     private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);
+
+    [JSImport("getAllChildren", nameof(Solid))]
+    private static partial JSObject[] GetAllChildren(JSObject tree);
+
+    [JSImport("createVertexNormalHelper", nameof(Solid))]
+    private static partial JSObject CreateVertexNormalHelper(JSObject mesh);
 
     [JSImport("log", nameof(Solid))]
     private static partial void Log(JSObject tree);
@@ -546,5 +558,144 @@ internal sealed partial class Solid(JSObject obj)
             await Task.Delay(1);
             indexCounter = 0;
         }
+    }
+
+    public JSObject[] GetAllChildren()
+    {
+        return GetAllChildren(Object);
+    }
+
+    public void ToggleVertexNormalHelper(Scene scene)
+    {
+        if (vertexNormalHelpers.Length > 0)
+        {
+            foreach (var vertexNormalHelper in vertexNormalHelpers)
+            {
+                scene.Remove(vertexNormalHelper);
+            }
+            vertexNormalHelpers = [];
+            return;
+        }
+
+        vertexNormalHelpers = GetAllChildren()
+            .Where(x => x.GetPropertyAsBoolean("isMesh"))
+            .Select(CreateVertexNormalHelper)
+            .ToArray();
+
+        foreach (var vertexNormalHelper in vertexNormalHelpers)
+        {
+            scene.Add(vertexNormalHelper);
+        }
+    }
+
+    public void ToggleWireframe()
+    {
+        if (wireframeMemorizedMaterials.Count > 0)
+        {
+            foreach (var child in GetAllChildren())
+            {
+                if (!child.GetPropertyAsBoolean("isMesh"))
+                {
+                    continue;
+                }
+
+                var material = child.GetPropertyAsJSObject("material");
+
+                if (material is null)
+                {
+                    continue;
+                }
+
+                child.SetProperty("material", wireframeMemorizedMaterials[child]);
+            }
+            wireframeMemorizedMaterials = [];
+            return;
+        }
+
+        var memorizedMaterials = new Dictionary<JSObject, JSObject>();
+
+        foreach (var child in GetAllChildren())
+        {
+            if (!child.GetPropertyAsBoolean("isMesh"))
+            {
+                continue;
+            }
+
+            var material = child.GetPropertyAsJSObject("material");
+
+            if (material is null)
+            {
+                continue;
+            }
+
+            memorizedMaterials.Add(child, material);
+
+            var wireframeMaterial = Material.GetWireframeMaterial();
+
+            child.SetProperty("material", wireframeMaterial);
+        }
+
+        wireframeMemorizedMaterials = memorizedMaterials;
+    }
+
+    public void Remove(Scene? scene)
+    {
+        if (scene is null)
+        {
+            return;
+        }
+
+        foreach (var vertexNormalHelper in vertexNormalHelpers)
+        {
+            scene.Remove(vertexNormalHelper);
+        }
+
+        vertexNormalHelpers = [];
+        scene.Remove(Object);
+    }
+
+    public Dictionary<string, string> GetAllMaterials()
+    {
+        var materials = new Dictionary<string, string>();
+
+        foreach (var child in GetAllChildren())
+        {
+            if (!child.GetPropertyAsBoolean("isMesh"))
+            {
+                continue;
+            }
+
+            var material = child.GetPropertyAsJSObject("material");
+
+            if (material is null)
+            {
+                continue;
+            }
+
+            var materialName = material.GetPropertyAsString("name");
+
+            if (string.IsNullOrEmpty(materialName))
+            {
+                continue;
+            }
+
+            if (materials.ContainsKey(materialName))
+            {
+                continue;
+            }
+
+            var userData = material.GetPropertyAsJSObject("userData");
+
+            if (userData is null)
+            {
+                continue;
+            }
+
+            var shaderName = userData.GetPropertyAsString("shaderName");
+
+            materials.Add(materialName, shaderName ?? "");
+        }
+
+        return materials;
     }
 }
