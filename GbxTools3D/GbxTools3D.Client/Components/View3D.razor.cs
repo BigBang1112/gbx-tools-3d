@@ -232,7 +232,9 @@ public partial class View3D : ComponentBase
         var collectionInfo = CollectionName is null ? null : collectionInfos.GetValueOrDefault(CollectionName);
 
         var isGround = blockInfo.AirVariants.Count == 0;
-        var variant = 0;
+        var variant = isGround
+            ? blockInfo.GroundVariants.Select(x => x.Variant).FirstOrDefault()
+            : blockInfo.AirVariants.Select(x => x.Variant).FirstOrDefault();
         var subVariant = 0;
 
         var units = isGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
@@ -246,7 +248,7 @@ public partial class View3D : ComponentBase
         position = center * (4, 6, 1);
 
         mapCamera.Position = position;
-        mapCamera.CreateMapControls(renderer, center);
+        mapCamera.CreateOrbitControls(renderer, center);
         //
 
         var hash = $"GbxTools3D|Solid|{GameVersion}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
@@ -681,7 +683,7 @@ public partial class View3D : ComponentBase
 
         static void PopulateGroundPositionsFromBlock(List<Int3> groundPositions, CGameCtnBlock block, BlockInfoDto blockInfo)
         {
-            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+            var units = (block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits).AsSpan();
 
             if (units.Length == 1)
             {
@@ -742,7 +744,7 @@ public partial class View3D : ComponentBase
 
         static void PopulateOccupiedZonesFromBlock(HashSet<(int X, int Z)> occupied, CGameCtnBlock block, BlockInfoDto blockInfo, int groundHeight)
         {
-            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+            var units = (block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits).AsSpan();
 
             Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
 
@@ -834,7 +836,7 @@ public partial class View3D : ComponentBase
 
         var rotatedUnits = new Int3[units.Length];
 
-        RotateUnits(units, block.Direction, rotatedUnits, out var minX, out var minZ);
+        RotateUnits(units.AsSpan(), block.Direction, rotatedUnits, out var minX, out var minZ);
 
         for (var i = 0; i < units.Length; i++)
         {
@@ -959,7 +961,7 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            PopulateAvoidPylonSet(avoidPylonSet, block, units);
+            PopulateAvoidPylonSet(avoidPylonSet, block, units.AsSpan());
         }
 
         var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
@@ -995,12 +997,12 @@ public partial class View3D : ComponentBase
                 units = [new BlockUnit { PlacePylons = pylons, AcceptPylons = 255 }];
             }
 
-            PopulatePylonsFromBlock(blockSize, zonePylonDict, baseZoneBlock, pylonDict, block, units, baseHeight, avoidPylonSet);
+            PopulatePylonsFromBlock(blockSize, zonePylonDict, baseZoneBlock, pylonDict, block, units.AsSpan(), baseHeight, avoidPylonSet);
         }
 
         return pylonDict;
         
-        static void PopulateAvoidPylonSet(HashSet<Int3> avoidPylonSet, CGameCtnBlock block, BlockUnit[] units)
+        static void PopulateAvoidPylonSet(HashSet<Int3> avoidPylonSet, CGameCtnBlock block, ReadOnlySpan<BlockUnit> units)
         {
             Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
 
@@ -1028,7 +1030,7 @@ public partial class View3D : ComponentBase
             BlockInfoDto? baseZoneBlock, 
             Dictionary<(Int3, Direction), PylonInfo> pylonDict, 
             CGameCtnBlock block, 
-            BlockUnit[] units,
+            ReadOnlySpan<BlockUnit> units,
             int baseHeight,
             HashSet<Int3> avoidPylonSet)
         {
@@ -1115,7 +1117,7 @@ public partial class View3D : ComponentBase
         }
     }
 
-    private static void RotateUnits(Span<BlockUnit> units, Direction dir, Span<Int3> rotatedUnits, out int minX, out int minZ)
+    private static void RotateUnits(ReadOnlySpan<BlockUnit> units, Direction dir, Span<Int3> rotatedUnits, out int minX, out int minZ)
     {
         minX = int.MaxValue;
         minZ = int.MaxValue;

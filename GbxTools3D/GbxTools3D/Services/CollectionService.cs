@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp;
 using GBX.NET.Imaging.ImageSharp;
+using System.Collections.Immutable;
 
 namespace GbxTools3D.Services;
 
@@ -306,7 +307,7 @@ internal sealed class CollectionService
                         });
                     }
 
-                    decorationSize.Scene = scene.ToArray();
+                    decorationSize.Scene = scene.ToImmutableArray();
                 }
 
                 var decoration = await db.Decorations
@@ -324,8 +325,8 @@ internal sealed class CollectionService
 
                 if (decorationNode.DecoAudio is not null)
                 {
-                    var musics = new Dictionary<string, string>();
-                    var sounds = new Dictionary<string, string>();
+                    var musics = ImmutableDictionary.CreateBuilder<string, string>();
+                    var sounds = ImmutableDictionary.CreateBuilder<string, string>();
                     
                     foreach (var (key, extNode) in decorationNode.DecoAudio.Musics ?? [])
                     {
@@ -375,8 +376,8 @@ internal sealed class CollectionService
                             cancellationToken);
                     }
                     
-                    decoration.Musics = musics;
-                    decoration.Sounds = sounds;
+                    decoration.Musics = musics.ToImmutable();
+                    decoration.Sounds = sounds.ToImmutable();
                 }
 
                 if (decorationNode.DecoMood is not null)
@@ -389,12 +390,11 @@ internal sealed class CollectionService
 
             var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone.Node switch
             {
-                CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ??
-                                                 throw new Exception("BlockInfoFrontier is null"),
-                CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ??
-                                         throw new Exception("BlockInfoFlat is null"),
-                _ => throw new Exception("Unknown zone type")
-            }, x => x.Node ?? throw new Exception("Zone node is null")) ?? [];
+                CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ?? throw new Exception("BlockInfoFrontier is null"),
+                CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ?? throw new Exception("BlockInfoFlat is null"),
+                CGameCtnZoneTransition transition => transition.BlockInfoTransition?.Ident.Id ?? throw new Exception("BlockInfoTransition is null"),
+                _ => ""
+            }, x => x.Node) ?? [];
 
             // may have issue in TMO envs
             var folderBlockInfo = collectionNode.FolderBlockInfo ?? $"{collectionNode.Collection}\\ConstructionBlockInfo\\";
@@ -431,14 +431,18 @@ internal sealed class CollectionService
                 }
 
                 blockInfo.Name = blockName;
-                blockInfo.AirUnits = blockInfoNode.AirBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToArray() ?? [];
-                blockInfo.GroundUnits = blockInfoNode.GroundBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToArray() ?? [];
+                blockInfo.AirUnits = gameVersion is GameVersion.MP4
+                    ? blockInfoNode.VariantBaseAir?.BlockUnitModels?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? []
+                    : blockInfoNode.AirBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? [];
+                blockInfo.GroundUnits = gameVersion is GameVersion.MP4
+                    ? blockInfoNode.VariantBaseGround?.BlockUnitModels?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? []
+                    : blockInfoNode.GroundBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? [];
                 blockInfo.HasAirHelper = blockInfoNode.AirHelperMobil is not null;
                 blockInfo.HasGroundHelper = blockInfoNode.GroundHelperMobil is not null;
                 blockInfo.HasConstructionModeHelper = blockInfoNode.ConstructionModeHelperMobil is not null;
                 blockInfo.IsRoad = blockInfoNode is CGameCtnBlockInfoRoad;
 
-                if (zoneDict.TryGetValue(blockName, out var zone))
+                if (zoneDict.TryGetValue(blockName, out var zone) && zone is not null)
                 {
                     blockInfo.Height = (byte)zone.Height;
 
@@ -447,6 +451,9 @@ internal sealed class CollectionService
                         blockInfo.PylonName = flat.BlockInfoPylon?.Ident.Id;
                     }
                 }
+
+                blockInfo.SpawnLocAir = blockInfoNode.SpawnLocAir ?? Iso4.Identity;
+                blockInfo.SpawnLocGround = blockInfoNode.SpawnLocGround ?? Iso4.Identity;
 
                 await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, blockName,
                     isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
@@ -619,38 +626,14 @@ internal sealed class CollectionService
                     objectLink.Path = link.MobilFile is null
                         ? null
                         : Path.GetRelativePath(gamePath, link.MobilFile.GetFullPath());
-                    objectLink.XX = link.RelativeLocation.XX;
-                    objectLink.XY = link.RelativeLocation.XY;
-                    objectLink.XZ = link.RelativeLocation.XZ;
-                    objectLink.YX = link.RelativeLocation.YX;
-                    objectLink.YY = link.RelativeLocation.YY;
-                    objectLink.YZ = link.RelativeLocation.YZ;
-                    objectLink.ZX = link.RelativeLocation.ZX;
-                    objectLink.ZY = link.RelativeLocation.ZY;
-                    objectLink.ZZ = link.RelativeLocation.ZZ;
-                    objectLink.TX = link.RelativeLocation.TX;
-                    objectLink.TY = link.RelativeLocation.TY;
-                    objectLink.TZ = link.RelativeLocation.TZ;
+                    objectLink.Loc = link.RelativeLocation;
 
                     var soundLink = link.Mobil.ObjectLink?.FirstOrDefault(x => x.Object is CSceneSoundSource { SoundSource: not null });
 
                     if (soundLink is not null)
                     {
                         objectLink.Sound = await ProcessSoundLinkAsync(gamePath, gameVersion, soundLink, usedSounds, cancellationToken);
-
-                        var loc = soundLink.RelativeLocation;
-                        objectLink.SoundXX = loc.XX;
-                        objectLink.SoundXY = loc.XY;
-                        objectLink.SoundXZ = loc.XZ;
-                        objectLink.SoundYX = loc.YX;
-                        objectLink.SoundYY = loc.YY;
-                        objectLink.SoundYZ = loc.YZ;
-                        objectLink.SoundZX = loc.ZX;
-                        objectLink.SoundZY = loc.ZY;
-                        objectLink.SoundZZ = loc.ZZ;
-                        objectLink.SoundTX = loc.TX;
-                        objectLink.SoundTY = loc.TY;
-                        objectLink.SoundTZ = loc.TZ;
+                        objectLink.SoundLoc = soundLink.RelativeLocation;
                     }
 
                     k++;

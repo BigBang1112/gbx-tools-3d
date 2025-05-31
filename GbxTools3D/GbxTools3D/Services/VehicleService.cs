@@ -21,13 +21,20 @@ internal sealed class VehicleService
     private readonly MeshService meshService;
     private readonly MaterialService materialService;
     private readonly IOutputCacheStore outputCache;
+    private readonly ILogger<VehicleService> logger;
 
-    public VehicleService(AppDbContext db, MeshService meshService, MaterialService materialService, IOutputCacheStore outputCache)
+    public VehicleService(
+        AppDbContext db, 
+        MeshService meshService, 
+        MaterialService materialService, 
+        IOutputCacheStore outputCache,
+        ILogger<VehicleService> logger)
     {
         this.db = db;
         this.meshService = meshService;
         this.materialService = materialService;
         this.outputCache = outputCache;
+        this.logger = logger;
     }
 
     public async Task CreateOrUpdateVehiclesAsync(string datasetPath, CancellationToken cancellationToken)
@@ -45,13 +52,17 @@ internal sealed class VehicleService
 
         var usedMaterials = new Dictionary<string, CPlugMaterial?>();
 
-        foreach (var vehicleFilePath in Directory.EnumerateFiles(
-                     Path.Combine(datasetPath, gameFolder, "Vehicles", "TrackManiaVehicle"), "*.Gbx"))
+        var vehicleFilePaths = gameVersion is GameVersion.MP4
+            ? Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Trackmania", "Items", "Vehicles"), "*.ObjectInfo.Gbx")
+            : Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles", "TrackManiaVehicle"), "*.Gbx");
+
+        foreach (var vehicleFilePath in vehicleFilePaths)
         {
             var modelNode = Gbx.ParseNode<CGameItemModel>(vehicleFilePath);
 
             if (modelNode.Vehicle is null)
             {
+                logger.LogWarning("Vehicle {Vehicle} has no vehicle data, skipping", modelNode.Ident.Id);
                 continue;
             }
 
@@ -59,15 +70,17 @@ internal sealed class VehicleService
 
             if (solid is null)
             {
-                continue;
+                logger.LogWarning("Vehicle {Vehicle} has no solid or is corrupted, no mesh will be added", modelNode.Ident.Id);
             }
+            else
+            {
+                solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
-            solid.PopulateUsedMaterials(usedMaterials, gamePath);
+                var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
 
-            var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
-
-            var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid,
-                (modelNode.Vehicle as CSceneVehicleCar)?.VehicleStruct, cancellationToken: cancellationToken);
+                var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid,
+                    (modelNode.Vehicle as CSceneVehicleCar)?.VehicleStruct, cancellationToken: cancellationToken);
+            }
 
             var vehicleName = modelNode.Ident.Id;
 

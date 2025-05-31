@@ -2,7 +2,7 @@
 
 namespace GbxTools3D.Client.Models;
 
-public sealed class Light
+public sealed record Light
 {
     public required string Type { get; set; }
     public required bool IsActive { get; set; }

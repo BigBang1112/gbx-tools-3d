@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 using GBX.NET;
 using GBX.NET.Engines.Plug;
 using Microsoft.EntityFrameworkCore;
@@ -19,5 +20,5 @@ public sealed class Material
     public bool IsShader { get; set; }
     public Material? Shader { get; set; }
     
-    public Dictionary<string, string> Textures { get; set; } = [];
+    public ImmutableDictionary<string, string> Textures { get; set; } = ImmutableDictionary<string, string>.Empty;
 }

@@ -1,5 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 
 namespace GbxTools3D.Data.Entities;
 
@@ -14,9 +15,9 @@ public sealed class Decoration
     public int DecorationSizeId { get; set; }
     public required DecorationSize DecorationSize { get; set; }
 
-    public Dictionary<string, string> Musics { get; set; } = [];
-    public Dictionary<string, string> Sounds { get; set; } = [];
-    
+    public ImmutableDictionary<string, string> Musics { get; set; } = ImmutableDictionary<string, string>.Empty;
+    public ImmutableDictionary<string, string> Sounds { get; set; } = ImmutableDictionary<string, string>.Empty;
+
     [StringLength(byte.MaxValue)]
     public string? Remap { get; set; }
 }

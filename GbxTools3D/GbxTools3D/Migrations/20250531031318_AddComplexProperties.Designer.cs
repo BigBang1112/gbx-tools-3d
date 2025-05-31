@@ -5,6 +5,7 @@ using GbxTools3D.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GbxTools3D.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250531031318_AddComplexProperties")]
+    partial class AddComplexProperties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -33,16 +36,16 @@ namespace GbxTools3D.Migrations
 
                     b.Property<string>("AirUnits")
                         .IsRequired()
-                        .HasMaxLength(4096)
-                        .HasColumnType("varchar(4096)");
+                        .HasMaxLength(32767)
+                        .HasColumnType("longtext");
 
                     b.Property<int>("CollectionId")
                         .HasColumnType("int");
 
                     b.Property<string>("GroundUnits")
                         .IsRequired()
-                        .HasMaxLength(4096)
-                        .HasColumnType("varchar(4096)");
+                        .HasMaxLength(32767)
+                        .HasColumnType("longtext");
 
                     b.Property<bool>("HasAirHelper")
                         .HasColumnType("tinyint(1)");
@@ -315,8 +318,8 @@ namespace GbxTools3D.Migrations
 
                     b.Property<string>("Musics")
                         .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)");
+                        .HasMaxLength(32767)
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -329,8 +332,8 @@ namespace GbxTools3D.Migrations
 
                     b.Property<string>("Sounds")
                         .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)");
+                        .HasMaxLength(32767)
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -357,8 +360,8 @@ namespace GbxTools3D.Migrations
 
                     b.Property<string>("Scene")
                         .IsRequired()
-                        .HasMaxLength(4096)
-                        .HasColumnType("varchar(4096)");
+                        .HasMaxLength(32767)
+                        .HasColumnType("longtext");
 
                     b.Property<int>("SizeX")
                         .HasColumnType("int");
@@ -387,7 +390,8 @@ namespace GbxTools3D.Migrations
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<byte[]>("Data")
-                        .HasColumnType("blob");
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
 
                     b.Property<string>("ImagePath")
                         .HasMaxLength(255)
@@ -432,8 +436,8 @@ namespace GbxTools3D.Migrations
 
                     b.Property<string>("Textures")
                         .IsRequired()
-                        .HasMaxLength(1024)
-                        .HasColumnType("varchar(1024)");
+                        .HasMaxLength(32767)
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
@@ -454,16 +458,20 @@ namespace GbxTools3D.Migrations
 
                     b.Property<byte[]>("Data")
                         .IsRequired()
-                        .HasColumnType("mediumblob");
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
 
                     b.Property<byte[]>("DataLQ")
-                        .HasColumnType("mediumblob");
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
 
                     b.Property<byte[]>("DataSurf")
-                        .HasColumnType("mediumblob");
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
 
                     b.Property<byte[]>("DataVLQ")
-                        .HasColumnType("mediumblob");
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
 
                     b.Property<string>("Hash")
                         .IsRequired()
@@ -678,7 +686,8 @@ namespace GbxTools3D.Migrations
 
                     b.Property<byte[]>("Data")
                         .IsRequired()
-                        .HasColumnType("mediumblob");
+                        .HasMaxLength(16777215)
+                        .HasColumnType("longblob");
 
                     b.Property<int>("GameVersion")
                         .HasColumnType("int");

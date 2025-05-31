@@ -1,6 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations;
-using GBX.NET;
+﻿using GBX.NET;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GbxTools3D.Data.Entities;
 
@@ -15,7 +16,7 @@ public sealed class Texture
     [MinLength(64), MaxLength(64)]
     public required string Hash { get; set; }
 
-    [MaxLength(16_777_215)]
+    [Column(TypeName = "mediumblob")]
     public required byte[] Data { get; set; }
     
     [StringLength(255)]

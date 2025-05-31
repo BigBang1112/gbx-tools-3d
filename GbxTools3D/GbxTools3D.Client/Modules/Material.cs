@@ -27,6 +27,7 @@ internal sealed partial class Material
     {
         ["Techno2/Media/Material/PDiff PDiff PA PX2 Grass2"] = new(WorldUV: true),
         ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass"] = new(WorldUV: true),
+        ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass NoLightV"] = new(WorldUV: true),
         ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft"] = new(Transparent: true),
         ["Techno/Media/Material/TDiff PX2 Trans"] = new(Transparent: true),
         ["Techno/Media/Material/TDiff PX2 Trans 2Sided"] = new Properties(DoubleSided: true, Transparent: true),

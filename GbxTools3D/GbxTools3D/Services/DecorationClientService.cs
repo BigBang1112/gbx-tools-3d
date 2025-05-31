@@ -4,6 +4,7 @@ using GbxTools3D.Client.Services;
 using GbxTools3D.Data;
 using GbxTools3D.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Collections.Immutable;
 
 namespace GbxTools3D.Services;
 
@@ -46,7 +47,7 @@ internal sealed class DecorationClientService : IDecorationClientService
                     Musics = x.Musics,
                     Sounds = x.Sounds,
                     Remap = x.Remap
-                }).ToList(),
+                }).ToImmutableList(),
                 Scene = decoGroup.First().DecorationSize.Scene
             });
 }

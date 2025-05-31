@@ -1,4 +1,6 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
+using GBX.NET;
 using GbxTools3D.Client.Models;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,8 +17,8 @@ public sealed class BlockInfo
     [StringLength(64)]
     public required string Name { get; set; }
 
-    public BlockUnit[] AirUnits { get; set; } = [];
-    public BlockUnit[] GroundUnits { get; set; } = [];
+    public ImmutableArray<BlockUnit> AirUnits { get; set; } = [];
+    public ImmutableArray<BlockUnit> GroundUnits { get; set; } = [];
     
     public bool HasAirHelper { get; set; }
     public bool HasGroundHelper { get; set; }
@@ -31,6 +33,9 @@ public sealed class BlockInfo
 
     [StringLength(64)]
     public string? PylonName { get; set; }
+
+    public Iso4 SpawnLocAir { get; set; } = Iso4.Identity;
+    public Iso4 SpawnLocGround { get; set; } = Iso4.Identity;
 
     public ICollection<BlockVariant> Variants { get; set; } = [];
 

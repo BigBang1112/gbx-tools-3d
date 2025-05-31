@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GbxTools3D.Data.Entities;
 
@@ -12,7 +13,7 @@ public sealed class Icon
     [StringLength(255)]
     public string? ImagePath { get; set; }
 
-    [MaxLength(16_777_215)]
+    [Column(TypeName = "blob")]
     public byte[]? Data { get; set; }
 
     [Required]

@@ -11,6 +11,7 @@ using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using GBX.NET.Components;
 using static GBX.NET.Engines.Plug.CPlugMaterialCustom;
+using System.Collections.Immutable;
 
 namespace GbxTools3D.Services;
 
@@ -121,7 +122,7 @@ internal sealed class MaterialService
             // regular material tweaked from Shader
             material.IsShader = false;
                 
-            var textures = new Dictionary<string, string>();
+            var textures = ImmutableDictionary.CreateBuilder<string, string>();
                 
             foreach (var bitmap in node.CustomMaterial.Textures ?? [])
             {
@@ -135,7 +136,7 @@ internal sealed class MaterialService
                 ProcessTexture(gamePath, gameVersion, texture, bitmap.TextureFile, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
             }
                 
-            material.Textures = textures;
+            material.Textures = textures.ToImmutable();
         }
         else if (node.DeviceMaterials?.Length > 0)
         {
@@ -151,11 +152,11 @@ internal sealed class MaterialService
 
                 if (bitmapAddress.Bitmap is not null)
                 {
-                    var textures = new Dictionary<string, string>();
+                    var textures = ImmutableDictionary.CreateBuilder<string, string>();
 
                     ProcessTexture(gamePath, gameVersion, bitmapAddress.Bitmap, bitmapAddress.BitmapFile, "Diffuse", textures, alreadyProcessedTexturePaths, cancellationToken);
                     
-                    material.Textures = textures;
+                    material.Textures = textures.ToImmutable();
                 }
             }
         }
@@ -173,7 +174,7 @@ internal sealed class MaterialService
         CPlugBitmap texture, 
         GbxRefTableFile? textureFile,
         string textureName,
-        Dictionary<string, string> textures,
+        ImmutableDictionary<string, string>.Builder textures,
         HashSet<string> alreadyProcessedTexturePaths,
         CancellationToken cancellationToken)
     {

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GbxTools3D.Data.Entities;
 
@@ -11,16 +12,16 @@ public sealed class Mesh
     [MinLength(64), MaxLength(64)]
     public required string Hash { get; set; }
 
-    [MaxLength(16_777_215)]
+    [Column(TypeName = "mediumblob")]
     public required byte[] Data { get; set; }
 
-    [MaxLength(16_777_215)]
+    [Column(TypeName = "mediumblob")]
     public byte[]? DataLQ { get; set; }
 
-    [MaxLength(16_777_215)]
+    [Column(TypeName = "mediumblob")]
     public byte[]? DataVLQ { get; set; }
 
-    [MaxLength(16_777_215)]
+    [Column(TypeName = "mediumblob")]
     public byte[]? DataSurf { get; set; }
     
     [StringLength(255)]

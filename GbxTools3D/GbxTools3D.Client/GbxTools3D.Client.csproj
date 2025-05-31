@@ -10,11 +10,11 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="GBX.NET" Version="2.2.0-nightly.20250518.2d134aa" />
-        <PackageReference Include="GBX.NET.LZO" Version="2.1.2" />
-        <PackageReference Include="GBX.NET.ZLib" Version="1.1.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.5" />
-        <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+        <PackageReference Include="GBX.NET" Version="2.2.0-nightly.20250530.f80b184" />
+        <PackageReference Include="GBX.NET.LZO" Version="2.*" />
+        <PackageReference Include="GBX.NET.ZLib" Version="1.*" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.*" />
+        <PackageReference Include="System.Linq.Async" Version="6.*" />
     </ItemGroup>
 
 </Project>

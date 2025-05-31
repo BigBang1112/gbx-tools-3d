@@ -12,7 +12,10 @@ internal sealed partial class Camera(double fov = 80)
     
     [JSImport("createMapControls", nameof(Camera))]
     private static partial void CreateMapControls(JSObject camera, JSObject renderer, double targetX, double targetY, double targetZ);
-    
+
+    [JSImport("createOrbitControls", nameof(Camera))]
+    private static partial void CreateOrbitControls(JSObject camera, JSObject renderer, double targetX, double targetY, double targetZ);
+
     [JSImport("setPosition", nameof(Camera))]
     private static partial void SetPosition(JSObject camera, double x, double y, double z);
 
@@ -30,5 +33,10 @@ internal sealed partial class Camera(double fov = 80)
     public void CreateMapControls(JSObject renderer, Vec3 target)
     {
         CreateMapControls(Object, renderer, target.X, target.Y, target.Z);
+    }
+
+    public void CreateOrbitControls(JSObject renderer, Vec3 target)
+    {
+        CreateOrbitControls(Object, renderer, target.X, target.Y, target.Z);
     }
 }

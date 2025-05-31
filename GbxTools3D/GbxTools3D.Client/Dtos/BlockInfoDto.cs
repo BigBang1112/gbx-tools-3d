@@ -1,12 +1,13 @@
 ﻿using GbxTools3D.Client.Models;
+using System.Collections.Immutable;
 
 namespace GbxTools3D.Client.Dtos;
 
 public sealed class BlockInfoDto
 {
     public required string Name { get; set; }
-    public required BlockUnit[] AirUnits { get; set; }
-    public required BlockUnit[] GroundUnits { get; set; }
+    public required ImmutableArray<BlockUnit> AirUnits { get; set; }
+    public required ImmutableArray<BlockUnit> GroundUnits { get; set; }
     public bool HasAirHelper { get; set; }
     public bool HasGroundHelper { get; set; }
     public bool HasConstructionModeHelper { get; set; }

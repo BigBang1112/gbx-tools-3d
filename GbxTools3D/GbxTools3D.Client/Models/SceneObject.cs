@@ -2,7 +2,7 @@
 
 namespace GbxTools3D.Client.Models;
 
-public sealed class SceneObject
+public sealed record SceneObject
 {
     public string? Solid { get; set; }
     public Light? Light { get; set; }

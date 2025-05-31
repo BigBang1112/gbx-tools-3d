@@ -75,7 +75,7 @@ public sealed class BlockClientService : IBlockClientService
         SubVariant = variant.SubVariant,
         ObjectLinks = variant.ObjectLinks.Count == 0 ? null : variant.ObjectLinks.Select(x => new ObjectLinkDto
         {
-            Location = new Iso4(x.XX, x.XY, x.XZ, x.YX, x.YY, x.YZ, x.ZX, x.ZY, x.ZZ, x.TX, x.TY, x.TZ),
+            Location = x.Loc,
             SoundPath = x.Sound?.Path
         }).ToList()
     };
