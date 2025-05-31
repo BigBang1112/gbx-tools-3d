@@ -5,6 +5,7 @@ using GbxTools3D.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GbxTools3D.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250531164455_IncreaseBlockUnitLength")]
+    partial class IncreaseBlockUnitLength
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,18 +34,18 @@ namespace GbxTools3D.Migrations
 
                     MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<byte[]>("AirUnits")
+                    b.Property<string>("AirUnits")
                         .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("varbinary(3000)");
+                        .HasMaxLength(6144)
+                        .HasColumnType("varchar(6144)");
 
                     b.Property<int>("CollectionId")
                         .HasColumnType("int");
 
-                    b.Property<byte[]>("GroundUnits")
+                    b.Property<string>("GroundUnits")
                         .IsRequired()
-                        .HasMaxLength(3000)
-                        .HasColumnType("varbinary(3000)");
+                        .HasMaxLength(6144)
+                        .HasColumnType("varchar(6144)");
 
                     b.Property<bool>("HasAirHelper")
                         .HasColumnType("tinyint(1)");
@@ -64,8 +67,8 @@ namespace GbxTools3D.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(96)
-                        .HasColumnType("varchar(96)");
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
 
                     b.Property<string>("PylonName")
                         .HasMaxLength(64)

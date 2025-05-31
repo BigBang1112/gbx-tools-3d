@@ -1,12 +1,14 @@
 ﻿using GBX.NET;
+using GbxTools3D.Client.Deserializers;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Data.Entities;
+using GbxTools3D.Enums;
+using GbxTools3D.Serializers;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System.Collections.Immutable;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace GbxTools3D.Data;
 
@@ -44,16 +46,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         {
             entity.Property(x => x.AirUnits)
                 .HasConversion(
-                    obj => JsonSerializer.Serialize(obj, DbJsonContext.Default.ImmutableArrayBlockUnit),
-                    json => JsonSerializer.Deserialize(json, DbJsonContext.Default.ImmutableArrayBlockUnit),
+                    obj => SerializeUnits(obj),
+                    json => DeserializeUnits(json),
                     blockUnitValueComparer)
-                .HasMaxLength(4096);
+                .HasMaxLength(3000);
             entity.Property(x => x.GroundUnits)
                 .HasConversion(
-                    obj => JsonSerializer.Serialize(obj, DbJsonContext.Default.ImmutableArrayBlockUnit),
-                    json => JsonSerializer.Deserialize(json, DbJsonContext.Default.ImmutableArrayBlockUnit),
+                    obj => SerializeUnits(obj),
+                    json => DeserializeUnits(json),
                     blockUnitValueComparer)
-                .HasMaxLength(4096);
+                .HasMaxLength(3000);
 
             entity.ComplexProperty(x => x.SpawnLocAir, x => ApplyIso4(x, "SpawnLocAir"));
             entity.ComplexProperty(x => x.SpawnLocGround, x => ApplyIso4(x, "SpawnLocGround"));
@@ -119,5 +121,86 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         x.Property("TX").HasColumnName($"{prefix}_TX");
         x.Property("TY").HasColumnName($"{prefix}_TY");
         x.Property("TZ").HasColumnName($"{prefix}_TZ");
+    }
+
+    private static byte[] SerializeUnits(ImmutableArray<BlockUnit> units)
+    {
+        using var ms = new MemoryStream();
+        using var w = new AdjustedBinaryWriter(ms);
+
+        w.Write7BitEncodedInt(units.Length);
+        foreach (var unit in units)
+        {
+            w.Write(unit.Offset.X);
+            w.Write(unit.Offset.Y);
+            w.Write(unit.Offset.Z);
+
+            if (unit.Clips.HasValue)
+            {
+                w.Write((byte)unit.Clips.Value.Length);
+                foreach (var clip in unit.Clips.Value)
+                {
+                    w.Write((byte)(int)clip.Dir);
+                    w.WriteRepeatingString(clip.Id);
+                }
+            }
+            else
+            {
+                w.Write((byte)0); // No clips
+            }
+
+            w.Write(unit.AcceptPylons ?? 255);
+            w.Write(unit.PlacePylons ?? 0);
+        }
+
+        if (ms.Length > 2048)
+        {
+            throw new InvalidOperationException($"Serialized block units exceed maximum length of 2048 bytes ({ms.Length} bytes).");
+        }
+
+        return ms.ToArray();
+    }
+
+    private static ImmutableArray<BlockUnit> DeserializeUnits(byte[] data)
+    {
+        using var ms = new MemoryStream(data);
+        using var r = new AdjustedBinaryReader(ms);
+
+        var count = r.Read7BitEncodedInt();
+        var units = ImmutableArray.CreateBuilder<BlockUnit>(count);
+        for (int i = 0; i < count; i++)
+        {
+            var offset = new Byte3(r.ReadByte(), r.ReadByte(), r.ReadByte());
+
+            var clipCount = r.ReadByte();
+            var clips = default(ImmutableArray<BlockClip>.Builder?);
+            if (clipCount > 0)
+            {
+                clips = ImmutableArray.CreateBuilder<BlockClip>(clipCount);
+                for (int j = 0; j < clipCount; j++)
+                {
+                    clips.Add(new BlockClip
+                    {
+                        Dir = (ClipDir)r.ReadByte(),
+                        Id = r.ReadRepeatingString()
+                    });
+                }
+            }
+
+            byte? acceptPylons = r.ReadByte();
+            if (acceptPylons == 255) acceptPylons = null;
+            byte? placePylons = r.ReadByte();
+            if (placePylons == 0) placePylons = null;
+
+            units.Add(new BlockUnit
+            {
+                Offset = offset,
+                Clips = clips?.ToImmutable(),
+                AcceptPylons = acceptPylons,
+                PlacePylons = placePylons
+            });
+        }
+
+        return units.ToImmutable();
     }
 }

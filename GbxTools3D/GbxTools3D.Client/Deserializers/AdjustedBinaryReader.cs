@@ -2,7 +2,7 @@
 
 namespace GbxTools3D.Client.Deserializers;
 
-internal sealed class AdjustedBinaryReader : BinaryReader
+public sealed class AdjustedBinaryReader : BinaryReader
 {
     private readonly Dictionary<int, string> strings = [];
 

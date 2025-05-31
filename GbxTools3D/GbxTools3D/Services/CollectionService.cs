@@ -103,7 +103,11 @@ internal sealed class CollectionService
             collection.DefaultZoneBlock = collectionNode.DefaultZoneId;
             collection.SortIndex = collectionNode.SortIndex;
 
-            if (collectionNode.IconFidFile is not null)
+            var iconTextureRelativePath = collectionNode.IconFidFile is null
+                ? collectionNode.IconFullName?.Replace('\\', Path.DirectorySeparatorChar)
+                : Path.GetRelativePath(gamePath, collectionNode.IconFidFile.GetFullPath());
+
+            if (iconTextureRelativePath is not null)
             {
                 if (collection.Icon is null)
                 {
@@ -111,10 +115,11 @@ internal sealed class CollectionService
                     await db.Icons.AddAsync(collection.Icon, cancellationToken);
                 }
 
-                collection.Icon.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(collectionNode.IconFidFile.GetFullPath(), null));
+                collection.Icon.TexturePath = GbxPath.ChangeExtension(iconTextureRelativePath, null);
                 collection.Icon.UpdatedAt = DateTime.UtcNow;
 
-                var imageFullPath = collectionNode.IconFid?.ImageFile?.GetFullPath();
+                var iconFid = await Gbx.ParseNodeAsync<CPlugBitmap>(Path.Combine(gamePath, iconTextureRelativePath), cancellationToken: cancellationToken);
+                var imageFullPath = iconFid?.ImageFile?.GetFullPath();
 
                 if (imageFullPath is not null)
                 {
@@ -391,9 +396,9 @@ internal sealed class CollectionService
             var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone.Node switch
             {
                 CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ?? throw new Exception("BlockInfoFrontier is null"),
-                CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ?? throw new Exception("BlockInfoFlat is null"),
-                CGameCtnZoneTransition transition => transition.BlockInfoTransition?.Ident.Id ?? throw new Exception("BlockInfoTransition is null"),
-                _ => ""
+                CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ?? Guid.NewGuid().ToString() /*throw new Exception("BlockInfoFlat is null") some zones are corrupted */,
+                CGameCtnZoneTransition transition => transition.BlockInfoTransition?.Ident.Id ?? Guid.NewGuid().ToString() /*?? throw new Exception("BlockInfoTransition is null") some zones are corrupted */,
+                _ => Guid.NewGuid().ToString()
             }, x => x.Node) ?? [];
 
             // may have issue in TMO envs
@@ -403,9 +408,17 @@ internal sealed class CollectionService
                          Path.Combine(datasetPath, gameFolder, folderBlockInfo.NormalizePath()), "*.Gbx",
                          SearchOption.AllDirectories))
             {
-                var blockInfoNode =
-                    (CGameCtnBlockInfo?)await Gbx.ParseNodeAsync(blockInfoFilePath,
-                        cancellationToken: cancellationToken);
+                CGameCtnBlockInfo? blockInfoNode;
+
+                try
+                {
+                    blockInfoNode = (CGameCtnBlockInfo?)await Gbx.ParseNodeAsync(blockInfoFilePath, cancellationToken: cancellationToken);
+                }
+                catch
+                {
+                    logger.LogWarning("Failed to parse block info {BlockInfoFilePath}. It may be corrupted or not supported.", blockInfoFilePath);
+                    continue;
+                }
 
                 if (blockInfoNode is null)
                 {
@@ -414,7 +427,7 @@ internal sealed class CollectionService
 
                 var blockName = blockInfoNode.Ident.Id;
                 
-                if (blockName.Length > 64)
+                if (blockName.Length > 96)
                 {
                     throw new Exception($"Block name {blockName} is too long");
                 }
@@ -452,8 +465,10 @@ internal sealed class CollectionService
                     }
                 }
 
-                blockInfo.SpawnLocAir = blockInfoNode.SpawnLocAir ?? Iso4.Identity;
-                blockInfo.SpawnLocGround = blockInfoNode.SpawnLocGround ?? Iso4.Identity;
+                blockInfo.SpawnLocAir = blockInfoNode.SpawnLocAir ?? (blockInfoNode.VariantBaseAir is null ? Iso4.Identity
+                    : new Iso4(0, 0, 0, 0, 0, 0, 0, 0, 0, blockInfoNode.VariantBaseAir.SpawnTrans.X, blockInfoNode.VariantBaseAir.SpawnTrans.Y, blockInfoNode.VariantBaseAir.SpawnTrans.Z));
+                blockInfo.SpawnLocGround = blockInfoNode.SpawnLocGround ?? (blockInfoNode.VariantBaseGround is null ? Iso4.Identity
+                    : new Iso4(0, 0, 0, 0, 0, 0, 0, 0, 0, blockInfoNode.VariantBaseGround.SpawnTrans.X, blockInfoNode.VariantBaseGround.SpawnTrans.Y, blockInfoNode.VariantBaseGround.SpawnTrans.Z));
 
                 await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, blockName,
                     isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
@@ -670,13 +685,13 @@ internal sealed class CollectionService
     {
         return new BlockUnit
         {
-            Offset = unit.RelativeOffset,
+            Offset = (Byte3)unit.RelativeOffset,
             Clips = unit.Clips?.Any(x => x.Node is not null) == true
                 ? unit.Clips.Select((x, i) => new BlockClip
                 {
                     Dir = (ClipDir)i,
                     Id = x.Node?.Ident.Id ?? ""
-                }).Where(x => !string.IsNullOrEmpty(x.Id)).ToArray()
+                }).Where(x => !string.IsNullOrEmpty(x.Id)).ToImmutableArray()
                 : null,
             AcceptPylons = unit.AcceptPylons == 255 ? null : (byte)unit.AcceptPylons,
             PlacePylons = unit.PlacePylons == 0 ? null : (byte)unit.PlacePylons,

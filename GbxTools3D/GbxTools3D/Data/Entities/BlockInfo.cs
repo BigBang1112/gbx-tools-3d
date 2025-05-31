@@ -14,7 +14,7 @@ public sealed class BlockInfo
     public int CollectionId { get; set; }
     public required Collection Collection { get; set; }
 
-    [StringLength(64)]
+    [StringLength(96)]
     public required string Name { get; set; }
 
     public ImmutableArray<BlockUnit> AirUnits { get; set; } = [];

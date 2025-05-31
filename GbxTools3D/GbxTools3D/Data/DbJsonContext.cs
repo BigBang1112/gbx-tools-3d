@@ -4,7 +4,6 @@ using System.Collections.Immutable;
 
 namespace GbxTools3D.Data;
 
-[JsonSerializable(typeof(ImmutableArray<BlockUnit>))]
 [JsonSerializable(typeof(ImmutableArray<SceneObject>))]
 [JsonSerializable(typeof(ImmutableDictionary<string, string>))]
 [JsonSourceGenerationOptions(DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault)]
