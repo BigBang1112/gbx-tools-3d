@@ -273,21 +273,12 @@ internal sealed class MaterialService
                             {
                                 var pixel = row[x];
 
-                                // Invert red and green channels
-                                var invertedRed = (byte)(255 - pixel.R);
-                                var invertedGreen = (byte)(255 - pixel.G);
+                                var r = pixel.R / 255f * 2 - 1;// remap 0..1 to -1..1
+                                var g = pixel.G / 255f * 2 - 1;
+                                var b = MathF.Sqrt(MathF.Max(0, 1 - r * r - g * g));
 
-                                // Convert to grayscale
-                                var grayscaleInvertedRed = (byte)(0.3 * invertedRed + 0.59 * invertedGreen + 0.11 * pixel.B);
-                                var grayscaleOriginal = (byte)(0.3 * pixel.R + 0.59 * pixel.G + 0.11 * pixel.B);
-
-                                // Blend the two grayscale values (overlay logic)
-                                var blended = (byte)((grayscaleOriginal < 128)
-                                    ? (2 * grayscaleOriginal * grayscaleInvertedRed / 255)
-                                    : (255 - 2 * (255 - grayscaleOriginal) * (255 - grayscaleInvertedRed) / 255));
-
-                                // Invert the blended result to create the blue channel
-                                pixel.B = (byte)(255 - blended);
+                                (pixel.R, pixel.G) = (pixel.G, pixel.R);
+                                pixel.B = (byte)((b + 1) * 127.5f); // remap -1..1 to 0..255
 
                                 row[x] = pixel;
                             }
