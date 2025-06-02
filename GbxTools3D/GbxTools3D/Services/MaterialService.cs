@@ -143,20 +143,23 @@ internal sealed class MaterialService
             // is shader-material!
             material.IsShader = true;
 
-            // lookup into shader (SportCar situation)
-            var pc0 = node.DeviceMaterials[0].Shader1 as CPlugShaderApply;
-
-            if (pc0?.BitmapAddresses?.Length > 0)
+            if (gameVersion != GameVersion.MP4) // some random StackOverflowException in MP4 when trying to access Shader1
             {
-                var bitmapAddress = pc0.BitmapAddresses[0];
+                // lookup into shader (SportCar situation)
+                var pc0 = node.DeviceMaterials[0].Shader1 as CPlugShaderApply;
 
-                if (bitmapAddress.Bitmap is not null)
+                if (pc0?.BitmapAddresses?.Length > 0)
                 {
-                    var textures = ImmutableDictionary.CreateBuilder<string, string>();
+                    var bitmapAddress = pc0.BitmapAddresses[0];
 
-                    ProcessTexture(gamePath, gameVersion, bitmapAddress.Bitmap, bitmapAddress.BitmapFile, "Diffuse", textures, alreadyProcessedTexturePaths, cancellationToken);
-                    
-                    material.Textures = textures.ToImmutable();
+                    if (bitmapAddress.Bitmap is not null)
+                    {
+                        var textures = ImmutableDictionary.CreateBuilder<string, string>();
+
+                        ProcessTexture(gamePath, gameVersion, bitmapAddress.Bitmap, bitmapAddress.BitmapFile, "Diffuse", textures, alreadyProcessedTexturePaths, cancellationToken);
+
+                        material.Textures = textures.ToImmutable();
+                    }
                 }
             }
         }
@@ -254,6 +257,38 @@ internal sealed class MaterialService
                                 var pixel = row[x];
                                 pixel.R = pixel.A;
                                 pixel.A = 255;
+                                row[x] = pixel;
+                            }
+                        }
+                    });
+                }
+                else if (image is Image<Bgr24> imageRgb)
+                {
+                    imageRgb.ProcessPixelRows(accessor =>
+                    {
+                        for (var y = 0; y < accessor.Height; y++)
+                        {
+                            var row = accessor.GetRowSpan(y);
+                            for (var x = 0; x < row.Length; x++)
+                            {
+                                var pixel = row[x];
+
+                                // Invert red and green channels
+                                var invertedRed = (byte)(255 - pixel.R);
+                                var invertedGreen = (byte)(255 - pixel.G);
+
+                                // Convert to grayscale
+                                var grayscaleInvertedRed = (byte)(0.3 * invertedRed + 0.59 * invertedGreen + 0.11 * pixel.B);
+                                var grayscaleOriginal = (byte)(0.3 * pixel.R + 0.59 * pixel.G + 0.11 * pixel.B);
+
+                                // Blend the two grayscale values (overlay logic)
+                                var blended = (byte)((grayscaleOriginal < 128)
+                                    ? (2 * grayscaleOriginal * grayscaleInvertedRed / 255)
+                                    : (255 - 2 * (255 - grayscaleOriginal) * (255 - grayscaleInvertedRed) / 255));
+
+                                // Invert the blended result to create the blue channel
+                                pixel.B = (byte)(255 - blended);
+
                                 row[x] = pixel;
                             }
                         }

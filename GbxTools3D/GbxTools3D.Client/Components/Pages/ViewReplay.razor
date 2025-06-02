@@ -63,7 +63,7 @@
 }
 else
 {
-    <View3D GameVersion="GameVersion.TMF" Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
+    <View3D Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
     @if (RendererInfo.IsInteractive)
     {
         <Checkpoint @ref="checkpoint"></Checkpoint>

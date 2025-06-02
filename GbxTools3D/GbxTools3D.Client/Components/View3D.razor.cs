@@ -32,7 +32,7 @@ public partial class View3D : ComponentBase
 
     private bool mapLoadAttempted;
 
-    [Parameter, EditorRequired]
+    [Parameter]
     public GameVersion GameVersion { get; set; }
 
     [Parameter]
@@ -403,6 +403,8 @@ public partial class View3D : ComponentBase
         }
 
         mapLoadAttempted = true; // because map load doesnt have good cleanup process, this hack will prevent multiple map loads
+
+        GameVersion = Map.GameVersion;
 
         await BeforeMapLoad.InvokeAsync();
 

@@ -395,7 +395,7 @@ internal sealed class CollectionService
 
             var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone.Node switch
             {
-                CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ?? throw new Exception("BlockInfoFrontier is null"),
+                CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ?? Guid.NewGuid().ToString() /* throw new Exception("BlockInfoFrontier is null")*/,
                 CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ?? Guid.NewGuid().ToString() /*throw new Exception("BlockInfoFlat is null") some zones are corrupted */,
                 CGameCtnZoneTransition transition => transition.BlockInfoTransition?.Ident.Id ?? Guid.NewGuid().ToString() /*?? throw new Exception("BlockInfoTransition is null") some zones are corrupted */,
                 _ => Guid.NewGuid().ToString()
@@ -470,13 +470,18 @@ internal sealed class CollectionService
                 blockInfo.SpawnLocGround = blockInfoNode.SpawnLocGround ?? (blockInfoNode.VariantBaseGround is null ? Iso4.Identity
                     : new Iso4(0, 0, 0, 0, 0, 0, 0, 0, 0, blockInfoNode.VariantBaseGround.SpawnTrans.X, blockInfoNode.VariantBaseGround.SpawnTrans.Y, blockInfoNode.VariantBaseGround.SpawnTrans.Z));
 
-                await ProcessBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, blockName,
+                await ProcessOldBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, blockName,
                     isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
-                await ProcessBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameVersion, blockName,
+                await ProcessOldBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameVersion, blockName,
+                    isGround: true, blockInfo, usedMaterials, usedSounds, cancellationToken);
+
+                await ProcessNewBlockVariantsAsync(blockInfoNode.VariantBaseAir, gamePath, gameVersion, blockName,
+                    isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
+                await ProcessNewBlockVariantsAsync(blockInfoNode.VariantBaseGround, gamePath, gameVersion, blockName,
                     isGround: true, blockInfo, usedMaterials, usedSounds, cancellationToken);
 
                 // Helpers cause a ton of mesh duplicates, but they shouldn't be impactful much
-                
+
                 if (blockInfoNode.AirHelperMobil is not null)
                 {
                     await GetOrCreateMeshFromMobilAsync(blockInfoNode.AirHelperMobil,
@@ -531,7 +536,7 @@ internal sealed class CollectionService
         logger.LogInformation("Collections complete!");
     }
 
-    private async Task ProcessBlockVariantsAsync(
+    private async Task ProcessOldBlockVariantsAsync(
         External<CSceneMobil>[][]? mobils,
         string gamePath,
         GameVersion gameVersion,
@@ -653,6 +658,75 @@ internal sealed class CollectionService
 
                     k++;
                 }
+            }
+        }
+    }
+
+    private async Task ProcessNewBlockVariantsAsync(
+        CGameCtnBlockInfoVariant? variant,
+        string gamePath,
+        GameVersion gameVersion,
+        string blockName,
+        bool isGround,
+        BlockInfo blockInfo,
+        Dictionary<string, CPlugMaterial?> usedMaterials,
+        Dictionary<string, Sound> usedSounds,
+        CancellationToken cancellationToken)
+    {
+        if (variant?.Mobils is null)
+        {
+            return;
+        }
+
+        var gameFolder = gameVersion.ToString();
+
+        for (var i = 0; i < variant.Mobils.Length; i++)
+        {
+            for (var j = 0; j < variant.Mobils[i].Length; j++)
+            {
+                var mobil = variant.Mobils[i][j];
+
+                if (mobil is null)
+                {
+                    continue;
+                }
+
+                var path = mobil.SolidFidFile is null
+                    ? null
+                    : Path.GetRelativePath(gamePath, mobil.SolidFidFile.GetFullPath());
+
+                var solid = mobil.SolidFid;
+
+                if (solid is null)
+                {
+                    continue;
+                }
+
+                solid.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                var hash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
+
+                var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
+                    cancellationToken: cancellationToken);
+
+                var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
+
+                if (blockVariant is null)
+                {
+                    blockVariant = new BlockVariant
+                    {
+                        BlockInfo = blockInfo,
+                        Mesh = mesh,
+                    };
+
+                    await db.BlockVariants.AddAsync(blockVariant, cancellationToken);
+                }
+
+                blockVariant.BlockInfo = blockInfo;
+                blockVariant.Ground = isGround;
+                blockVariant.Variant = (byte)i;
+                blockVariant.SubVariant = (byte)j;
+                blockVariant.Mesh = mesh;
             }
         }
     }
