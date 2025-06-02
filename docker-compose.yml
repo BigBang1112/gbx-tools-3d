@@ -18,6 +18,7 @@ services:
   mariadb:
     image: mariadb
     restart: unless-stopped
+    command: --max_allowed_packet=32505856
     environment:
       TZ: CET
       MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1

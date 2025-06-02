@@ -20,6 +20,6 @@ public static class StringExtensions
             throw new InvalidOperationException("Failed to hash string");
         }
         
-        return Convert.ToHexString(hash);
+        return Convert.ToHexStringLower(hash);
     }
 }

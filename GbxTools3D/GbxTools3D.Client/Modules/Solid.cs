@@ -366,7 +366,7 @@ internal sealed partial class Solid(JSObject obj)
 
                 var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials);
 
-                AddLod(lod, lodTree, distance + 64);
+                AddLod(lod, lodTree, distance * 8);
             }
 
             Add(tree, lod);

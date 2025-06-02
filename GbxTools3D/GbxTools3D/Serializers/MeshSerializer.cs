@@ -245,9 +245,10 @@ public class MeshSerializer
         }
         else
         {
-            w.Write(false); // has normals (it has, just not exposed)
-
             var vertStream = visual3d.VertexStreams[0];
+
+            var hasNormals = vertStream.Normals?.Length > 0;
+            w.Write(hasNormals); // has normals (it has, just not exposed) (exposed as of June 2 build)
 
             w.Write7BitEncodedInt(vertStream.Positions?.Length ?? 0);
 
@@ -267,6 +268,16 @@ public class MeshSerializer
                 w.Write(v.X);
                 w.Write(v.Y);
                 w.Write(v.Z);
+            }
+
+            if (hasNormals)
+            {
+                foreach (var n in vertStream.Normals ?? [])
+                {
+                    w.Write(n.X);
+                    w.Write(n.Y);
+                    w.Write(n.Z);
+                }
             }
         }
 

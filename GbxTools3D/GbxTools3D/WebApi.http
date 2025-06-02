@@ -1,6 +1,6 @@
 ﻿@RootUrl = https://localhost:7130
 
 ### GetMaterials
-GET {{RootUrl}}/api/materials/TMF
+POST {{RootUrl}}/api/dataimport
 
 ###
