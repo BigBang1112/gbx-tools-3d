@@ -1,0 +1,11 @@
+﻿@using GBX.NET
+
+<small>@Value.X.ToString("0.00")</small>
+<small>@Value.Y.ToString("0.00")</small>
+<small>@Value.Z.ToString("0.00")</small>
+<small>@Value.W.ToString("0.00")</small>
+
+@code {
+    [Parameter]
+    public Quat Value { get; set; }
+}

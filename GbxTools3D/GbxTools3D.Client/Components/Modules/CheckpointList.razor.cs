@@ -23,8 +23,8 @@ public partial class CheckpointList : ComponentBase
 
     public TimeInt32? CurrentCheckpoint { get; private set; }
 
-    public int CurrentCheckpointIndex => -1;
-    public int CurrentLapIndex => 0;
+    public int CurrentCheckpointIndex { get; private set; } = -1;
+    public int CurrentLapIndex => (CurrentCheckpointIndex + 1) / CheckpointsPerLap;
 
     private CheckpointInfo[] Checkpoints => GetCheckpoints().ToArray();
 
@@ -54,6 +54,12 @@ public partial class CheckpointList : ComponentBase
     public void SetCurrentCheckpoint(TimeInt32? time)
     {
         CurrentCheckpoint = time;
+        StateHasChanged();
+    }
+
+    public void SetCurrentCheckpointIndex(int index)
+    {
+        CurrentCheckpointIndex = index;
         StateHasChanged();
     }
 }

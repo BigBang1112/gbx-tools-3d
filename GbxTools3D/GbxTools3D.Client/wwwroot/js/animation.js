@@ -81,10 +81,15 @@ export function setMixerTimeScale(timeScale, isPaused) {
     }
 }
 
+let prevMixerTime;
+
 export function updateMixer(delta) {
     if (mixer) {
         mixer.update(delta);
-        dotNetObjRef.invokeMethodAsync("UpdateTimeline", mixer.time);
+        if (mixer.time !== prevMixerTime) {
+            dotNetObjRef.invokeMethodAsync("UpdateTimeline", mixer.time);
+            prevMixerTime = mixer.time;
+        }
     }
 }
 

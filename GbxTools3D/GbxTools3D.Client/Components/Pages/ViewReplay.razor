@@ -76,8 +76,8 @@ else
         </div>
         <div class="panels right">
             <MapInfo Map="Replay?.Challenge"></MapInfo>
-            <GhostInfo Ghost="CurrentGhost"></GhostInfo>
-            <Speedometer></Speedometer>
+            <GhostInfo @ref="ghostInfo" Ghost="CurrentGhost"></GhostInfo>
+            <Speedometer @ref="speedometer"></Speedometer>
         </div>
     }
 }

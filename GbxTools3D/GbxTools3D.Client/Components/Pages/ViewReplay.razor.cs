@@ -25,6 +25,8 @@ public partial class ViewReplay : ComponentBase
     private RenderInfo? renderInfo;
     private Checkpoint? checkpoint;
     private CheckpointList? checkpointList;
+    private Speedometer? speedometer;
+    private GhostInfo? ghostInfo;
 
     private readonly Dictionary<string, JSObject> actions = [];
 
@@ -299,6 +301,8 @@ public partial class ViewReplay : ComponentBase
     }
 
     private double prevTime;
+    private int prevSampleIndex = -1;
+    private int prevCheckpointPassedIndex = -1;
     private TimeInt32? prevCheckpointPassedTime;
 
     [JSInvokable]
@@ -307,42 +311,115 @@ public partial class ViewReplay : ComponentBase
         var time = actions.GetValueOrDefault("Vehicle")?.GetPropertyAsDouble("time") ?? 0;
         playback?.SetTime(TimeSpan.FromSeconds(time));
 
-        var checkpointPassedTime = default(TimeInt32?);
-
-        // on maps with many checkpoints could be a performance hit
-        foreach (var cp in CurrentGhost?.Checkpoints ?? [])
+        if (CurrentGhost is not null)
         {
-            if (cp.Time is null)
+            // Ensure checkpoints are sorted by Time
+            var checkpoints = CurrentGhost.Checkpoints ?? [];
+            if (checkpoints.Length == 0)
             {
-                continue;
+                return;
             }
 
-            var cpTime = cp.Time.Value.TotalSeconds;
+            int left = 0, right = checkpoints.Length - 1, mid = -1;
+            TimeInt32? checkpointPassedTime = null;
 
-            if (time >= cpTime - 0.001 && time < cpTime + 3)
+            // Binary search for the first checkpoint within the range
+            while (left <= right)
             {
-                checkpointPassedTime = cp.Time;
-
-                if (checkpointPassedTime != prevCheckpointPassedTime)
+                mid = (left + right) / 2;
+                var cp = checkpoints[mid];
+                if (cp.Time is null)
                 {
-                    checkpoint?.Set(cp.Time);
-                    checkpointList?.SetCurrentCheckpoint(cp.Time);
-                    prevCheckpointPassedTime = checkpointPassedTime;
+                    continue;
+                }
+
+                var cpTime = cp.Time.Value.TotalSeconds;
+                var nextCpTime = (mid + 1 < checkpoints.Length && checkpoints[mid + 1].Time.HasValue)
+                    ? checkpoints[mid + 1].Time!.Value.TotalSeconds
+                    : double.MaxValue; // Handle last checkpoint case
+
+                if (time >= cpTime - 0.001 && time < nextCpTime)
+                {
+                    if (mid != prevCheckpointPassedIndex)
+                    {
+                        checkpointList?.SetCurrentCheckpoint(cp.Time);
+                        checkpointList?.SetCurrentCheckpointIndex(nextCpTime == double.MaxValue ? (mid - 1) : mid);
+                        prevCheckpointPassedIndex = mid;
+                    }
+
+                    if (time < cpTime + 3)
+                    {
+                        checkpointPassedTime = cp.Time;
+
+                        if (checkpointPassedTime != prevCheckpointPassedTime)
+                        {
+                            checkpoint?.Set(cp.Time);
+                            prevCheckpointPassedTime = checkpointPassedTime;
+                        }
+                    }
+                    break;
+                }
+                else if (time < cpTime - 0.001)
+                {
+                    right = mid - 1;
+
+                    if (right == -1)
+                    {
+                        // No checkpoint found before this time, reset
+                        prevCheckpointPassedIndex = -1;
+                        checkpointList?.SetCurrentCheckpoint(null);
+                        checkpointList?.SetCurrentCheckpointIndex(-1);
+                        checkpoint?.Set(null);
+                        prevCheckpointPassedTime = null;
+                    }
+                }
+                else
+                {
+                    left = mid + 1;
                 }
             }
 
-            // after passed checkpoint, dont check for the next checkpoints after 3 seconds
-            if (checkpointPassedTime.HasValue && time > cpTime + 3)
+            // Handle case where no checkpoint is passed
+            if (checkpointPassedTime is null && prevCheckpointPassedTime is not null)
             {
-                break;
+                checkpoint?.Set(null);
+                prevCheckpointPassedTime = null;
             }
-        }
 
-        if (checkpointPassedTime is null && prevCheckpointPassedTime is not null)
-        {
-            checkpoint?.Set(null);
-            checkpointList?.SetCurrentCheckpoint(null);
-            prevCheckpointPassedTime = null;
+            if (CurrentGhost.SampleData is not null)
+            {
+                var sampleIndex = (int)(time / CurrentGhost.SampleData.SamplePeriod.TotalSeconds);
+                var nextSampleIndex = sampleIndex + 1;
+
+                if (nextSampleIndex >= CurrentGhost.SampleData.Samples.Count)
+                {
+                    nextSampleIndex = CurrentGhost.SampleData.Samples.Count - 1;
+                }
+
+                var currentSample = CurrentGhost.SampleData.Samples[sampleIndex];
+                var nextSample = CurrentGhost.SampleData.Samples[nextSampleIndex];
+                var lerpFactor = (time - currentSample.Time.TotalSeconds) / (nextSample.Time.TotalSeconds - currentSample.Time.TotalSeconds);
+
+                if (currentSample is CSceneVehicleCar.Sample currentCarSampleToLerp && nextSample is CSceneVehicleCar.Sample nextCarSampleToLerp)
+                {
+                    speedometer?.SetRPM(AdditionalMath.Lerp(currentCarSampleToLerp.RPM, nextCarSampleToLerp.RPM, (float)lerpFactor));
+                    speedometer?.SetSpeed(AdditionalMath.Lerp(currentCarSampleToLerp.VelocitySpeed, nextCarSampleToLerp.VelocitySpeed, (float)lerpFactor));
+                }
+
+                // only per sample update, not interpolated
+                if (sampleIndex != prevSampleIndex)
+                {
+                    //speedometer?.SetSpeed((int)currentSample.VelocitySpeed);
+                    ghostInfo?.SetCurrentSample(currentSample);
+
+                    if (currentSample is CSceneVehicleCar.Sample currentCarSample)
+                    {
+                        //speedometer?.SetRPM(carSample.RPM);
+                    }
+
+                    prevSampleIndex = sampleIndex;
+                }
+            }
         }
 
         prevTime = time;

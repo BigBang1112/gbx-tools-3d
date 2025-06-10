@@ -1,4 +1,6 @@
-﻿@inject IJSRuntime JS
+﻿@using System.Globalization
+
+@inject IJSRuntime JS
 
 <div class="panel right meter @(show ? "" : "closed")">
     <div class="opener" @onclick="() => show = !show">
@@ -13,9 +15,9 @@
     </div>
     <div class="contents">
         <div class="params mono">
-            <div class="gear" title="Gear">5</div>
-            <div class="speed" title="Speed">669</div>
+            <div class="gear" title="Gear">@(Gear?.ToString() ?? "?")</div>
+            <div class="speed" title="Speed">@Speed.ToString("0", CultureInfo.InvariantCulture)</div>
         </div>
-        <progress max="100" value="70" title="RPM">70%</progress>
+        <progress max="11000" value="@RPM.ToString(CultureInfo.InvariantCulture)" title="RPM"></progress>
     </div>
 </div>
