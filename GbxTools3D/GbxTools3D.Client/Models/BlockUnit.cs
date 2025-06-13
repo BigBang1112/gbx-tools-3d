@@ -9,4 +9,5 @@ public sealed record BlockUnit
     public ImmutableArray<BlockClip>? Clips { get; set; }
     public byte? AcceptPylons { get; set; }
     public byte? PlacePylons { get; set; }
+    public string? TerrainModifier { get; set; }
 }

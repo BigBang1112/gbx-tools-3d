@@ -129,6 +129,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         using var ms = new MemoryStream();
         using var w = new AdjustedBinaryWriter(ms);
 
+        w.Write((byte)0); // Version 0
         w.Write7BitEncodedInt(units.Length);
         foreach (var unit in units)
         {
@@ -152,6 +153,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             w.Write(unit.AcceptPylons ?? 255);
             w.Write(unit.PlacePylons ?? 0);
+            w.WriteRepeatingString(unit.TerrainModifier ?? string.Empty);
         }
 
         if (ms.Length > 2048)
@@ -167,6 +169,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         using var ms = new MemoryStream(data);
         using var r = new AdjustedBinaryReader(ms);
 
+        var version = r.ReadByte();
         var count = r.Read7BitEncodedInt();
         var units = ImmutableArray.CreateBuilder<BlockUnit>(count);
         for (int i = 0; i < count; i++)
@@ -193,12 +196,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             byte? placePylons = r.ReadByte();
             if (placePylons == 0) placePylons = null;
 
+            string? terrainModifier = r.ReadRepeatingString();
+            if (string.IsNullOrEmpty(terrainModifier)) terrainModifier = null;
+
             units.Add(new BlockUnit
             {
                 Offset = offset,
                 Clips = clips?.ToImmutable(),
                 AcceptPylons = acceptPylons,
-                PlacePylons = placePylons
+                PlacePylons = placePylons,
+                TerrainModifier = r.ReadRepeatingString()
             });
         }
 
