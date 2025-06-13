@@ -5,7 +5,7 @@
         }
         const file = event.target.files[0];
         const data = new Uint8Array(await file.arrayBuffer());
-        await dotNetHelper.invokeMethodAsync("UploadAsync", file.name, data);
+        await dotNetHelper.invokeMethodAsync("UploadAsync", file.name, data, file.lastModified);
         event.target.value = null;
     });
 }

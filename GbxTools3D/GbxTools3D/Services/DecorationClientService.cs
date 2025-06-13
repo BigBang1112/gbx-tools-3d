@@ -22,6 +22,7 @@ internal sealed class DecorationClientService : IDecorationClientService
     public async Task<List<DecorationSizeDto>> GetAllAsync(GameVersion gameVersion, string collectionName, CancellationToken cancellationToken)
     {
         var decorations = await db.Decorations
+            .Include(x => x.TerrainModifierCovered)
             .Include(x => x.DecorationSize)
                 .ThenInclude(x => x.Collection)
             .Where(x => x.DecorationSize.Collection.GameVersion == gameVersion && x.DecorationSize.Collection.Name == collectionName)
@@ -46,7 +47,8 @@ internal sealed class DecorationClientService : IDecorationClientService
                     Name = x.Name,
                     Musics = x.Musics,
                     Sounds = x.Sounds,
-                    Remap = x.Remap
+                    Remap = x.Remap,
+                    TerrainModifierCovered = x.TerrainModifierCovered?.Name,
                 }).ToImmutableList(),
                 Scene = decoGroup.First().DecorationSize.Scene
             });

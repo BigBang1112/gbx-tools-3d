@@ -15,6 +15,7 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp;
 using GBX.NET.Imaging.ImageSharp;
 using System.Collections.Immutable;
+using GBX.NET.Components;
 
 namespace GbxTools3D.Services;
 
@@ -179,6 +180,8 @@ internal sealed class CollectionService
             var usedMaterials = new Dictionary<string, CPlugMaterial?>();
             var addedMeshHashes = new HashSet<string>();
             var usedSounds = new Dictionary<string, Sound>();
+
+            var terrainModifierDict = new Dictionary<string, (TerrainModifier Modifier, HashSet<string> Materials)>();
 
             // may have issue in TMO envs
             var folderDecoration = collectionNode.FolderDecoration ?? $"{collectionNode.Collection}\\ConstructionDecoration\\";
@@ -389,6 +392,21 @@ internal sealed class CollectionService
                 {
                     decoration.Remap = decorationNode.DecoMood.RemapFolder;
                 }
+
+                if (decorationNode.TerrainModifierCovered is null && decorationNode.TerrainModifierCoveredFile is not null)
+                {
+                    logger.LogWarning("Decoration terrain modifier covered is null ({File}) in collection {Collection}. It may be corrupted or not supported.", decorationNode.TerrainModifierCoveredFile, collection.Name);
+                }
+
+                if (decorationNode.TerrainModifierCovered is not null && decorationNode.TerrainModifierCoveredFile is not null)
+                {
+                    decoration.TerrainModifierCovered = await ProcessTerrainModifierAsync(
+                        decorationNode.TerrainModifierCovered, 
+                        decorationNode.TerrainModifierCoveredFile, 
+                        terrainModifierDict, 
+                        collection, 
+                        cancellationToken);
+                }
             }
             
             logger.LogInformation("Checking block changes...");
@@ -400,6 +418,26 @@ internal sealed class CollectionService
                 CGameCtnZoneTransition transition => transition.BlockInfoTransition?.Ident.Id ?? Guid.NewGuid().ToString() /*?? throw new Exception("BlockInfoTransition is null") some zones are corrupted */,
                 _ => Guid.NewGuid().ToString()
             }, x => x.Node) ?? [];
+
+            foreach (var terrainModifierExt in collectionNode.ReplacementTerrainModifiers ?? [])
+            {
+                if (terrainModifierExt.Node is null && terrainModifierExt.File is not null)
+                {
+                    logger.LogWarning("Terrain modifier node is null ({File}) in collection {Collection}. It may be corrupted or not supported.", terrainModifierExt.File, collection.Name);
+                    continue;
+                }
+
+                if (terrainModifierExt.Node is null || terrainModifierExt.File is null)
+                {
+                    continue;
+                }
+
+                await ProcessTerrainModifierAsync(terrainModifierExt.Node, terrainModifierExt.File, terrainModifierDict, collection, cancellationToken);
+            }
+
+            var terrainModifierLookup = terrainModifierDict
+                .SelectMany(kvp => kvp.Value.Materials.Select(material => new { material, kvp.Value.Modifier }))
+                .ToLookup(x => x.material, x => x.Modifier);
 
             // may have issue in TMO envs
             var folderBlockInfo = collectionNode.FolderBlockInfo ?? $"{collectionNode.Collection}\\ConstructionBlockInfo\\";
@@ -470,14 +508,14 @@ internal sealed class CollectionService
                 blockInfo.SpawnLocGround = blockInfoNode.SpawnLocGround ?? (blockInfoNode.VariantBaseGround is null ? Iso4.Identity
                     : new Iso4(0, 0, 0, 0, 0, 0, 0, 0, 0, blockInfoNode.VariantBaseGround.SpawnTrans.X, blockInfoNode.VariantBaseGround.SpawnTrans.Y, blockInfoNode.VariantBaseGround.SpawnTrans.Z));
 
-                await ProcessOldBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, blockName,
+                await ProcessOldBlockVariantsAsync(blockInfoNode.AirMobils, gamePath, gameVersion, collection.Name, blockName,
                     isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
-                await ProcessOldBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameVersion, blockName,
+                await ProcessOldBlockVariantsAsync(blockInfoNode.GroundMobils, gamePath, gameVersion, collection.Name, blockName,
                     isGround: true, blockInfo, usedMaterials, usedSounds, cancellationToken);
 
-                await ProcessNewBlockVariantsAsync(blockInfoNode.VariantBaseAir, gamePath, gameVersion, blockName,
+                await ProcessNewBlockVariantsAsync(blockInfoNode.VariantBaseAir, gamePath, gameVersion, collection.Name, blockName,
                     isGround: false, blockInfo, usedMaterials, usedSounds, cancellationToken);
-                await ProcessNewBlockVariantsAsync(blockInfoNode.VariantBaseGround, gamePath, gameVersion, blockName,
+                await ProcessNewBlockVariantsAsync(blockInfoNode.VariantBaseGround, gamePath, gameVersion, collection.Name, blockName,
                     isGround: true, blockInfo, usedMaterials, usedSounds, cancellationToken);
 
                 // Helpers cause a ton of mesh duplicates, but they shouldn't be impactful much
@@ -522,6 +560,15 @@ internal sealed class CollectionService
                 {
                     blockInfo.Icon = null;
                 }
+
+                blockInfo.TerrainModifier = blockName switch
+                {
+                    "StadiumDirt" => terrainModifierDict["TerrainModifierDirt"].Modifier,
+                    "RallyRockyGrass" => terrainModifierDict["TerrainModifierRockyGrass"].Modifier,
+                    "AlpineTundra" => terrainModifierDict["TerrainModifierTundra"].Modifier,
+                    "SpeedRock" => terrainModifierDict["TerrainModifierRock"].Modifier,
+                    _ => null
+                };
             }
 
             logger.LogInformation("Saving collection changes ({Collection})...", collection.Name);
@@ -530,16 +577,67 @@ internal sealed class CollectionService
             await outputCache.EvictByTagAsync("block", cancellationToken);
             await outputCache.EvictByTagAsync("decoration", cancellationToken);
             
-            await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, cancellationToken);
+            await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, terrainModifierLookup, cancellationToken);
         }
         
         logger.LogInformation("Collections complete!");
+    }
+
+    private async Task<TerrainModifier?> ProcessTerrainModifierAsync(
+        CGameCtnDecorationTerrainModifier terrainModifier,
+        GbxRefTableFile terrainModifierFile, 
+        Dictionary<string, (TerrainModifier Modifier, HashSet<string> Materials)> terrainModifierDict, 
+        Collection collection,
+        CancellationToken cancellationToken)
+    {
+        if (terrainModifier is null)
+        {
+            logger.LogWarning("Terrain modifier node is null ({File}) in collection {Collection}. It may be corrupted or not supported.", terrainModifierFile, collection.Name);
+            return null;
+        }
+
+        if (terrainModifier.Remapping is null)
+        {
+            logger.LogWarning("Terrain modifier remapping is null ({File}) in collection {Collection}. It may be corrupted or not supported.", terrainModifier.RemappingFile, collection.Name);
+            return null;
+        }
+
+        if (terrainModifier.IdName is null)
+        {
+            logger.LogWarning("Terrain modifier IdName is null ({File}) in collection {Collection}.", terrainModifierFile, collection.Name);
+            return null;
+        }
+
+        var materials = terrainModifier.Remapping.CustomizableFids?.Select(x => x.Name).ToHashSet() ?? [];
+        var remapFolder = terrainModifier.RemapFolder?.NormalizePath() ?? throw new Exception("Terrain modifier remap folder is null");
+
+        var terrainModifierModel = await db.TerrainModifiers
+            .FirstOrDefaultAsync(x => x.Name == terrainModifier.IdName
+                && x.CollectionId == collection.Id, cancellationToken: cancellationToken);
+
+        if (terrainModifierModel is null)
+        {
+            terrainModifierModel = new TerrainModifier
+            {
+                Name = terrainModifier.IdName,
+                Collection = collection,
+                RemapFolder = remapFolder,
+            };
+            await db.TerrainModifiers.AddAsync(terrainModifierModel, cancellationToken);
+        }
+
+        terrainModifierModel.RemapFolder = remapFolder;
+
+        terrainModifierDict[terrainModifier.IdName] = (terrainModifierModel, materials);
+
+        return terrainModifierModel;
     }
 
     private async Task ProcessOldBlockVariantsAsync(
         External<CSceneMobil>[][]? mobils,
         string gamePath,
         GameVersion gameVersion,
+        string collectionName,
         string blockName,
         bool isGround,
         BlockInfo blockInfo,
@@ -579,7 +677,7 @@ internal sealed class CollectionService
 
                 solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
-                var hash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
+                var hash = $"GbxTools3D|Solid|{gameFolder}|{collectionName}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
 
                 var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
                     cancellationToken: cancellationToken);
@@ -621,7 +719,7 @@ internal sealed class CollectionService
                     
                     solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
-                    var solidHash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|Hella{isGround}|{i}|{j}|{k}|marosisPakPakGhidraGang".Hash();
+                    var solidHash = $"GbxTools3D|Solid|{gameFolder}|{collectionName}|{blockName}|Hella{isGround}|{i}|{j}|{k}|marosisPakPakGhidraGang".Hash();
                     
                     var objectLinkMesh = await meshService.GetOrCreateMeshAsync(gamePath, solidHash, objectLinkSolidPath, objectLinkSolid, vehicle: null,
                         cancellationToken: cancellationToken);
@@ -666,6 +764,7 @@ internal sealed class CollectionService
         CGameCtnBlockInfoVariant? variant,
         string gamePath,
         GameVersion gameVersion,
+        string collectionName,
         string blockName,
         bool isGround,
         BlockInfo blockInfo,
@@ -704,7 +803,7 @@ internal sealed class CollectionService
 
                 solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
-                var hash = $"GbxTools3D|Solid|{gameFolder}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
+                var hash = $"GbxTools3D|Solid|{gameFolder}|{collectionName}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
 
                 var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
                     cancellationToken: cancellationToken);

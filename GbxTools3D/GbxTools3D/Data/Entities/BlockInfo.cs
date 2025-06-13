@@ -37,6 +37,8 @@ public sealed class BlockInfo
     public Iso4 SpawnLocAir { get; set; } = Iso4.Identity;
     public Iso4 SpawnLocGround { get; set; } = Iso4.Identity;
 
+    public TerrainModifier? TerrainModifier { get; set; }
+
     public ICollection<BlockVariant> Variants { get; set; } = [];
 
     public override string ToString()

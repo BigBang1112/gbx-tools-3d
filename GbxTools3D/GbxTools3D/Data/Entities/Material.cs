@@ -13,12 +13,15 @@ public sealed class Material
     
     public required GameVersion GameVersion { get; set; }
     
+    // NOT unique, even within GameVersion
     [StringLength(byte.MaxValue)]
     public required string Name { get; set; }
     
     public CPlugSurface.MaterialId SurfaceId { get; set; }
     public bool IsShader { get; set; }
     public Material? Shader { get; set; }
-    
+
+    public TerrainModifier? Modifier { get; set; }
+
     public ImmutableDictionary<string, string> Textures { get; set; } = ImmutableDictionary<string, string>.Empty;
 }

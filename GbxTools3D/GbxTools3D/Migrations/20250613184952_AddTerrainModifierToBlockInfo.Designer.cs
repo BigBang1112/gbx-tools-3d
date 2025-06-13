@@ -5,6 +5,7 @@ using GbxTools3D.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GbxTools3D.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250613184952_AddTerrainModifierToBlockInfo")]
+    partial class AddTerrainModifierToBlockInfo
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -337,16 +340,11 @@ namespace GbxTools3D.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("varchar(1024)");
 
-                    b.Property<int?>("TerrainModifierCoveredId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DecorationSizeId");
 
                     b.HasIndex("Name");
-
-                    b.HasIndex("TerrainModifierCoveredId");
 
                     b.ToTable("Decorations");
                 });
@@ -858,13 +856,7 @@ namespace GbxTools3D.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("GbxTools3D.Data.Entities.TerrainModifier", "TerrainModifierCovered")
-                        .WithMany()
-                        .HasForeignKey("TerrainModifierCoveredId");
-
                     b.Navigation("DecorationSize");
-
-                    b.Navigation("TerrainModifierCovered");
                 });
 
             modelBuilder.Entity("GbxTools3D.Data.Entities.DecorationSize", b =>

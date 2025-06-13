@@ -42,9 +42,9 @@ public partial class UploadArea : ComponentBase
     }
 
     [JSInvokable]
-    public async Task UploadAsync(string fileName, byte[] data)
+    public async Task UploadAsync(string fileName, byte[] data, long lastModified)
     {
-        await OnUpload.InvokeAsync(new UploadEventArgs(fileName, data));
+        await OnUpload.InvokeAsync(new UploadEventArgs(fileName, data, DateTimeOffset.FromUnixTimeMilliseconds(lastModified)));
     }
 
     public void SetUploadFileName(string fileName)
@@ -80,5 +80,7 @@ public partial class UploadArea : ComponentBase
             {
             }
         }
+
+        objRef?.Dispose();
     }
 }

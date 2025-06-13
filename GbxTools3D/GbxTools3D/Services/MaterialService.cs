@@ -10,7 +10,6 @@ using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp.Processing;
 using GBX.NET.Components;
-using static GBX.NET.Engines.Plug.CPlugMaterialCustom;
 using System.Collections.Immutable;
 
 namespace GbxTools3D.Services;
@@ -40,12 +39,18 @@ internal sealed class MaterialService
     {
         return await db.Materials
             .Include(x => x.Shader)
+            .Include(x => x.Modifier)
             .Where(x => x.GameVersion == gameVersion)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
 
-    public async Task CreateOrUpdateMaterialsAsync(string gamePath, GameVersion gameVersion, Dictionary<string, CPlugMaterial?> materials, CancellationToken cancellationToken)
+    public async Task CreateOrUpdateMaterialsAsync(
+        string gamePath, 
+        GameVersion gameVersion, 
+        Dictionary<string, CPlugMaterial?> materials, 
+        ILookup<string, TerrainModifier>? terrainModifierLookup, 
+        CancellationToken cancellationToken)
     {        
         var alreadyProcessedTexturePaths = new HashSet<string>();
         
@@ -58,7 +63,9 @@ internal sealed class MaterialService
                 continue;
             }
 
-            await AddOrUpdateMaterialAsync(gamePath, gameVersion, path, node, alreadyProcessedTexturePaths, cancellationToken);
+            var modifiers = terrainModifierLookup?[GbxPath.GetFileNameWithoutExtension(path)] ?? [];
+
+            await AddOrUpdateMaterialAsync(gamePath, gameVersion, path, node, alreadyProcessedTexturePaths, modifiers, currentModifier: null, cancellationToken);
         }
         
         logger.LogInformation("Saving materials...");
@@ -80,15 +87,19 @@ internal sealed class MaterialService
             
             if (!alreadyProcessedShaders.TryGetValue(path, out var shaderMaterial))
             {
-                shaderMaterial = await AddOrUpdateMaterialAsync(gamePath, gameVersion, path, shaderMaterialNode, alreadyProcessedTexturePaths, cancellationToken);
+                shaderMaterial = await AddOrUpdateMaterialAsync(gamePath, gameVersion, path, shaderMaterialNode, alreadyProcessedTexturePaths, [], currentModifier: null, cancellationToken);
                 alreadyProcessedShaders.Add(path, shaderMaterial);
             }
             
             var parentName = GbxPath.ChangeExtension(parentPath, null);
-            var material = await db.Materials.FirstOrDefaultAsync(x =>
-                x.GameVersion == gameVersion && x.Name == parentName, cancellationToken) ?? throw new Exception("Parent material not found");
+            var parentMaterials = await db.Materials
+                .Where(x => x.GameVersion == gameVersion && x.Name == parentName)
+                .ToListAsync(cancellationToken);
 
-            material.Shader = shaderMaterial;
+            foreach (var material in parentMaterials)
+            {
+                material.Shader = shaderMaterial;
+            }
         }
         
         logger.LogInformation("Saving shader materials...");
@@ -97,13 +108,20 @@ internal sealed class MaterialService
         await outputCache.EvictByTagAsync("texture", cancellationToken); // probably not needed, but just to be sure
     }
 
-    private async Task<Material> AddOrUpdateMaterialAsync(string gamePath, GameVersion gameVersion,
-        string materialPath, CPlugMaterial node, HashSet<string> alreadyProcessedTexturePaths, CancellationToken cancellationToken)
+    private async Task<Material> AddOrUpdateMaterialAsync(
+        string gamePath, 
+        GameVersion gameVersion,
+        string path, 
+        CPlugMaterial node, 
+        HashSet<string> alreadyProcessedTexturePaths, 
+        IEnumerable<TerrainModifier> modifiers, 
+        TerrainModifier? currentModifier,
+        CancellationToken cancellationToken)
     {
-        var name = GbxPath.ChangeExtension(materialPath, null);
-            
+        var name = GbxPath.ChangeExtension(path, null);
+
         var material = await db.Materials.FirstOrDefaultAsync(x =>
-            x.GameVersion == gameVersion && x.Name == name, cancellationToken);
+            x.GameVersion == gameVersion && x.Name == name && x.Modifier == currentModifier, cancellationToken);
 
         if (material is null)
         {
@@ -166,6 +184,21 @@ internal sealed class MaterialService
         else
         {
             throw new Exception("Material has no custom material or device materials");
+        }
+
+        foreach (var modifier in modifiers)
+        {
+            var modifierMaterialFilePath = Path.Combine(gamePath, modifier.RemapFolder, Path.GetFileName(path));
+
+            if (!File.Exists(modifierMaterialFilePath))
+            {
+                logger.LogWarning("Modifier material file {ModifierMaterialFileName} of {ModifierName} does not exist for material {MaterialName}", modifierMaterialFilePath, modifier.Name, name);
+                continue;
+            }
+
+            var modifierMaterial = await Gbx.ParseNodeAsync<CPlugMaterial>(modifierMaterialFilePath, cancellationToken: cancellationToken);
+            var modifierMaterialModel = await AddOrUpdateMaterialAsync(gamePath, gameVersion, name, modifierMaterial, alreadyProcessedTexturePaths, [], modifier, cancellationToken);
+            modifierMaterialModel.Modifier = modifier;
         }
 
         return material;
@@ -290,7 +323,7 @@ internal sealed class MaterialService
                     logger.LogWarning("Normal map {ImageFullPath} is not RGBA32 - {Type}", imageFullPath, image.GetType());
                 }
             }
-
+            
             await image.SaveAsWebpAsync(ms, new WebpEncoder
             {
                 Method = WebpEncodingMethod.Fastest,

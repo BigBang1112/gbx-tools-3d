@@ -20,4 +20,6 @@ public sealed class Decoration
 
     [StringLength(byte.MaxValue)]
     public string? Remap { get; set; }
+
+    public TerrainModifier? TerrainModifierCovered { get; set; } // Fabric
 }

@@ -18,4 +18,5 @@ public sealed class BlockInfoDto
     public bool HasIcon { get; set; }
     public bool IsRoad { get; set; }
     public string? PylonName { get; set; }
+    public string? TerrainModifier { get; set; }
 }

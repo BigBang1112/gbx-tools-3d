@@ -5,6 +5,7 @@ using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
+using System.Collections.Immutable;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
@@ -99,10 +100,25 @@ public partial class View3D : ComponentBase
             await LoadSceneAsync(cts.Token);
         }
 
-        await TryLoadMapAsync(cts.Token);
-        await TryLoadBlockAsync(cts.Token);
-        await TryLoadVehicleAsync(cts.Token);
-        await TryLoadDecorationAsync(cts.Token);
+        try
+        {
+            await TryLoadMapAsync(cts.Token);
+            await TryLoadBlockAsync(cts.Token);
+            await TryLoadVehicleAsync(cts.Token);
+            await TryLoadDecorationAsync(cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Ignore cancellation exceptions
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore disposed exceptions, which can happen if the component is disposed while waiting for async operations
+        }
+        catch (HttpRequestException ex)
+        {
+            // Handle HTTP request exceptions, e.g., show a message to the user
+        }
     }
 
     private async Task LoadSceneAsync(CancellationToken cancellationToken)
@@ -251,7 +267,7 @@ public partial class View3D : ComponentBase
         mapCamera.CreateOrbitControls(renderer, center);
         //
 
-        var hash = $"GbxTools3D|Solid|{GameVersion}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
+        var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
 
         using var meshResponse = await http.GetAsync($"/api/mesh/{hash}", cancellationToken);
 
@@ -330,7 +346,7 @@ public partial class View3D : ComponentBase
 
     private async Task<bool> TryLoadDecorationAsync(CancellationToken cancellationToken = default)
     {
-        if (mapCamera is null || renderer is null || DecorationName is null)
+        if (mapCamera is null || renderer is null || DecorationName is null || CollectionName is null)
         {
             return false;
         }
@@ -438,12 +454,11 @@ public partial class View3D : ComponentBase
 
         baseHeight = decoSize.BaseHeight;
 
-        var deco = decoSize.Decorations
-            .FirstOrDefault(x => x.Name == map.Decoration.Id);
+        var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == map.Decoration.Id);
 
         var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
 
-        await foreach (var _ in CreateDecorationAsync(map.Collection, decoSize, size, cancellationToken)) { }
+        await foreach (var _ in CreateDecorationAsync(map.Collection ?? throw new Exception("Collection is null"), decoSize, size, cancellationToken)) { }
 
         return baseHeight;
     }
@@ -484,7 +499,10 @@ public partial class View3D : ComponentBase
 
     private async Task PlaceBlocksAsync(CGameCtnChallenge map, int baseHeight, Int3 blockSize, CancellationToken cancellationToken)
     {
-        var coveredZoneBlocks = GetCoveredZoneBlocks().ToHashSet();
+        var collection = CollectionName ?? Map?.Collection;
+
+        var coveredZoneBlocks = GetCoveredZoneBlocks().ToImmutableHashSet();
+        var terrainModifiers = GetTerrainModifiers();
 
         var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
         var baseZoneBlocks = CreateBaseZoneBlocks(baseZoneBlock, baseHeight);
@@ -492,18 +510,19 @@ public partial class View3D : ComponentBase
 
         var uniqueBlockVariants = baseZoneBlocks
             .Concat(map.GetBlocks())
+            .Concat(map.GetBakedBlocks())
             .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
             .Concat(clipBlocks)
-            .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant));
+            .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant, terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 })));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
 
         var counter = 0;
         foreach (var uniqueGroup in uniqueBlockVariants)
         {
-            var (name, isGround, variant, subVariant) = uniqueGroup.Key;
+            var (name, isGround, variant, subVariant, terrainModifier) = uniqueGroup.Key;
 
-            var hash = $"GbxTools3D|Solid|{GameVersion}|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{collection}|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
 
             responseTasks.Add(uniqueGroup.Key, http.GetAsync($"/api/mesh/{hash}", cancellationToken));
 
@@ -582,7 +601,7 @@ public partial class View3D : ComponentBase
                 await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
-                var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedCount);
+                var solid = await Solid.ParseAsync(stream, GameVersion, materials, variant.TerrainModifier, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, map);
             }
@@ -638,7 +657,7 @@ public partial class View3D : ComponentBase
                 Direction.East => (blockCoordSize.Z, 0, 0),
                 Direction.South => (blockCoordSize.X, 0, blockCoordSize.Z),
                 Direction.West => (0, 0, blockCoordSize.X),
-                _ => throw new ArgumentException("Invalid block direction")
+                _ => (0, 0, 0) // possible top/bottom in baked blocks?
             };
 
             var instanceInfo = Solid.GetInstanceInfo((actualCoord + (0, -height - map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
@@ -882,6 +901,8 @@ public partial class View3D : ComponentBase
 
     private async Task PlacePylonsAsync(CGameCtnChallenge map, int baseHeight, Int3 blockSize, CancellationToken cancellationToken)
     {
+        var collection = CollectionName ?? Map?.Collection;
+
         var pylonDict = CreatePylons(map, blockSize, baseHeight);
 
         var pylonInfos = pylonDict.Values.Distinct().ToList();
@@ -890,7 +911,7 @@ public partial class View3D : ComponentBase
 
         foreach (var pylonInfo in pylonInfos)
         {
-            var hash = $"GbxTools3D|Solid|{GameVersion}|{pylonInfo.Name}|TrueMyGuy|{pylonInfo.Height - 1}|0|PleaseDontAbuseThisThankYou:*".Hash();
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{collection}|{pylonInfo.Name}|TrueMyGuy|{pylonInfo.Height - 1}|0|PleaseDontAbuseThisThankYou:*".Hash();
             pylonMeshResponseTasks[http.GetAsync($"/api/mesh/{hash}", cancellationToken)] = pylonInfo;
         }
 
@@ -1117,6 +1138,28 @@ public partial class View3D : ComponentBase
                 }
             }
         }
+    }
+
+    private ImmutableDictionary<Int3, string> GetTerrainModifiers()
+    {
+        if (Map is null || blockInfos is null)
+        {
+            return ImmutableDictionary<Int3, string>.Empty;
+        }
+
+        var terrainModifiers = ImmutableDictionary.CreateBuilder<Int3, string>();
+
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.TerrainModifier is null)
+            {
+                continue;
+            }
+
+            terrainModifiers[block.Coord with { Y = 0 }] = blockInfo.TerrainModifier;
+        }
+
+        return terrainModifiers.ToImmutable();
     }
 
     private static void RotateUnits(ReadOnlySpan<BlockUnit> units, Direction dir, Span<Int3> rotatedUnits, out int minX, out int minZ)

@@ -5,6 +5,7 @@ using GbxTools3D.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -12,9 +13,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace GbxTools3D.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250610233715_RemoveModifierOfMaterial")]
+    partial class RemoveModifierOfMaterial
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -70,9 +73,6 @@ namespace GbxTools3D.Migrations
                     b.Property<string>("PylonName")
                         .HasMaxLength(64)
                         .HasColumnType("varchar(64)");
-
-                    b.Property<int?>("TerrainModifierId")
-                        .HasColumnType("int");
 
                     b.ComplexProperty<Dictionary<string, object>>("SpawnLocAir", "GbxTools3D.Data.Entities.BlockInfo.SpawnLocAir#Iso4", b1 =>
                         {
@@ -183,8 +183,6 @@ namespace GbxTools3D.Migrations
                     b.HasIndex("IconId");
 
                     b.HasIndex("Name");
-
-                    b.HasIndex("TerrainModifierId");
 
                     b.ToTable("BlockInfos");
                 });
@@ -337,16 +335,11 @@ namespace GbxTools3D.Migrations
                         .HasMaxLength(1024)
                         .HasColumnType("varchar(1024)");
 
-                    b.Property<int?>("TerrainModifierCoveredId")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("DecorationSizeId");
 
                     b.HasIndex("Name");
-
-                    b.HasIndex("TerrainModifierCoveredId");
 
                     b.ToTable("Decorations");
                 });
@@ -805,15 +798,9 @@ namespace GbxTools3D.Migrations
                         .WithMany()
                         .HasForeignKey("IconId");
 
-                    b.HasOne("GbxTools3D.Data.Entities.TerrainModifier", "TerrainModifier")
-                        .WithMany()
-                        .HasForeignKey("TerrainModifierId");
-
                     b.Navigation("Collection");
 
                     b.Navigation("Icon");
-
-                    b.Navigation("TerrainModifier");
                 });
 
             modelBuilder.Entity("GbxTools3D.Data.Entities.BlockVariant", b =>
@@ -858,13 +845,7 @@ namespace GbxTools3D.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("GbxTools3D.Data.Entities.TerrainModifier", "TerrainModifierCovered")
-                        .WithMany()
-                        .HasForeignKey("TerrainModifierCoveredId");
-
                     b.Navigation("DecorationSize");
-
-                    b.Navigation("TerrainModifierCovered");
                 });
 
             modelBuilder.Entity("GbxTools3D.Data.Entities.DecorationSize", b =>
@@ -881,7 +862,7 @@ namespace GbxTools3D.Migrations
             modelBuilder.Entity("GbxTools3D.Data.Entities.Material", b =>
                 {
                     b.HasOne("GbxTools3D.Data.Entities.TerrainModifier", "Modifier")
-                        .WithMany("Materials")
+                        .WithMany()
                         .HasForeignKey("ModifierId");
 
                     b.HasOne("GbxTools3D.Data.Entities.Material", "Shader")
@@ -958,11 +939,6 @@ namespace GbxTools3D.Migrations
             modelBuilder.Entity("GbxTools3D.Data.Entities.DecorationSize", b =>
                 {
                     b.Navigation("Decorations");
-                });
-
-            modelBuilder.Entity("GbxTools3D.Data.Entities.TerrainModifier", b =>
-                {
-                    b.Navigation("Materials");
                 });
 #pragma warning restore 612, 618
         }

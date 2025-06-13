@@ -26,6 +26,7 @@ public sealed class BlockClientService : IBlockClientService
         return await cache.GetOrCreateAsync($"blocks:{gameVersion}:{collectionName}", async (token) =>
         {
             var blockInfos = await db.BlockInfos
+                .Include(x => x.TerrainModifier)
                 .Include(x => x.Collection)
                 .Include(x => x.Variants)
                     .ThenInclude(x => x.ObjectLinks)
@@ -40,6 +41,7 @@ public sealed class BlockClientService : IBlockClientService
     public async Task<BlockInfoDto?> GetAsync(GameVersion gameVersion, string collectionName, string blockName, CancellationToken cancellationToken)
     {
         var blockInfo = await db.BlockInfos
+            .Include(x => x.TerrainModifier)
             .Include(x => x.Variants)
             .AsNoTracking()
             .FirstOrDefaultAsync(
@@ -66,7 +68,8 @@ public sealed class BlockClientService : IBlockClientService
         IsDefaultZone = blockInfo.Collection.DefaultZoneBlock == blockInfo.Name,
         HasIcon = blockInfo.IconId.HasValue,
         IsRoad = blockInfo.IsRoad,
-        PylonName = blockInfo.PylonName
+        PylonName = blockInfo.PylonName,
+        TerrainModifier = blockInfo.TerrainModifier?.Name,
     };
 
     private static BlockVariantDto MapVariant(BlockVariant variant) => new()

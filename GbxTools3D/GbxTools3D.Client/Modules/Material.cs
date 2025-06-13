@@ -23,6 +23,11 @@ internal sealed partial class Material
         public static readonly Properties Default = new();
     }
 
+    private readonly record struct UniqueMaterial(string Name, GameVersion GameVersion, string? TerrainModifier = null)
+    {
+        public override string ToString() => $"{Name} | {GameVersion} | {TerrainModifier}";
+    }
+
     private static readonly Dictionary<string, Properties> shaderProperties = new()
     {
         ["Techno2/Media/Material/PDiff PDiff PA PX2 Grass2"] = new(WorldUV: true),
@@ -58,7 +63,7 @@ internal sealed partial class Material
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];
-    private static readonly Dictionary<(string, GameVersion), JSObject> materials = [];
+    private static readonly Dictionary<UniqueMaterial, JSObject> materials = [];
 
     [JSImport("getWireframeMaterial", nameof(Material))]
     public static partial JSObject GetWireframeMaterial();
@@ -112,9 +117,11 @@ internal sealed partial class Material
         return texture;
     }
     
-    public static JSObject GetOrCreateMaterial(string name, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    public static JSObject GetOrCreateMaterial(string name, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials, string? terrainModifier)
     {
-        if (materials.TryGetValue((name, gameVersion), out var material))
+        var uniqueMaterial = new UniqueMaterial(name, gameVersion, terrainModifier);
+
+        if (materials.TryGetValue(uniqueMaterial, out var material))
         {
             return material;
         }
@@ -122,14 +129,19 @@ internal sealed partial class Material
         if (availableMaterials is null || !availableMaterials.TryGetValue(name, out var materialDto))
         {
             material = CreateRandomMaterial();
-            materials.Add((name, gameVersion), material);
+            materials.Add(uniqueMaterial, material);
             return material;
+        }
+
+        if (terrainModifier is not null && materialDto.Modifiers?.TryGetValue(terrainModifier, out var modifierDto) == true)
+        {
+            materialDto = modifierDto;
         }
 
         if (materialDto.IsShader && materialDto.Textures is null or { Count: 0 }) // BayCollision for example
         {
             material = CreateInvisibleMaterial();
-            materials.Add((name, gameVersion), material);
+            materials.Add(uniqueMaterial, material);
             return material;
         }
 
@@ -137,7 +149,7 @@ internal sealed partial class Material
         {
             // TODO: might be water shaders and other special cases
             material = CreateRandomMaterial();
-            materials.Add((name, gameVersion), material);
+            materials.Add(uniqueMaterial, material);
             return material;
         }
 
@@ -187,7 +199,7 @@ internal sealed partial class Material
             properties.Add,
             properties.NightOnly,
             properties.Invisible);
-        materials.Add((name, gameVersion), material);
+        materials.Add(uniqueMaterial, material);
         return material;
     }
 }
