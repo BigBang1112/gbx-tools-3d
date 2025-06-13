@@ -13,6 +13,22 @@ public partial class GhostInfo : ComponentBase
     [Parameter, EditorRequired]
     public CGameCtnGhost? Ghost { get; set; }
 
+    private (string, string)? VersionName => Ghost?.SampleData?.Version switch
+    {
+        1 or 2 => ("SVehicleSimpleState_ReplayAfter211003", "2003-10-21"),
+        4 => ("SVehicleSimpleState_ReplayAfter040104", "2004-01-04"),
+        5 or 7 => ("SVehicleSimpleState_ReplayAfter100205", "2005-02-10"),
+        8 or 9 => ("SVehicleSimpleState_ReplayAfter081205", "2005-12-08"),
+        10 or 11 or 12 => ("SVehicleSimpleState_ReplayAfter230211", "2011-02-23"),
+        13 => ("SVehicleSimpleNetState", "network"),
+        14 or 15 => ("SVehicleSimpleState_ReplayAfter270115", "2015-01-27"),
+        16 => ("SVehicleSimpleState_ReplayAfter160216", "2016-02-16"),
+        17 => ("SVehicleSimpleState_ReplayAfter100117", "2017-01-10"),
+        18 or 19 => ("SVehicleSimpleState_ReplayAfter111217", "2017-12-11"),
+        20 => ("SVehicleSimpleState_ReplayAfter2018_03_09", "2018-03-09"),
+        _ => null
+    };
+
     public void SetCurrentSample(CGameGhost.Data.Sample? sample)
     {
         if (currentSample == sample)

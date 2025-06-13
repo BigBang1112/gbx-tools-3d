@@ -30,15 +30,28 @@
                     @if (Ghost.CompressedData is not null)
                     {
                         <div>Size:</div>
-                        <div class="mono">@((Ghost.CompressedData.UncompressedSize / 1024f).ToString("0.0")) kB / @((Ghost.CompressedData.Data.Length / 1024f).ToString("0.0")) kB</div>
+                        <div class="mono">
+                            <span title="Compressed sample data size">@((Ghost.CompressedData.Data.Length / 1024f).ToString("0.0")) kB</span>
+                            <span title="@((1 - Ghost.CompressedData.Data.Length / (float)Ghost.CompressedData.UncompressedSize).ToString("P")) compressed">/</span>
+                            <span title="Uncompressed sample data size">@((Ghost.CompressedData.UncompressedSize / 1024f).ToString("0.0")) kB</span>
+                        </div>
                     }
                     <div>Period:</div>
                     <div class="mono">@Ghost.SampleData.SamplePeriod</div>
                     <div>Version:</div>
-                    <div class="mono">@Ghost.SampleData.Version</div>
+                    <div class="mono">
+                        <span>@Ghost.SampleData.Version</span>
+                        @if (VersionName.HasValue)
+                        {
+                            <small title="@VersionName.Value.Item1"> (@VersionName.Value.Item2)</small>
+                        }
+                    </div>
                 </div>
                 @if (currentSample is not null)
                 {
+                    <div class="sub-title">
+                        Sample
+                    </div>
                     <div class="basic table">
                         <div>Time:</div>
                         <div class="mono">@currentSample.Time</div>
@@ -70,6 +83,9 @@
                             <div>U14:</div>
                             <div class="mono">@carSample.U14</div>
                         }
+
+                        <div title="Size of the sample">Size:</div>
+                        <div class="mono">@currentSample.Data.Length bytes</div>
                     </div>
                 }
             }
