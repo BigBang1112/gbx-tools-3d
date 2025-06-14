@@ -452,7 +452,7 @@ public partial class View3D : ComponentBase
             return baseHeight;
         }
 
-        baseHeight = decoSize.BaseHeight;
+        baseHeight = decoSize.BaseHeight + (decoSize.OffsetBlockY ? 1 : 0);
 
         var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == map.Decoration.Id);
 
@@ -501,11 +501,13 @@ public partial class View3D : ComponentBase
     {
         var collection = CollectionName ?? Map?.Collection;
 
+        var yOffset = GameVersion >= GameVersion.MP4 ? map.DecoBaseHeightOffset + baseHeight : 0;
+
         var coveredZoneBlocks = GetCoveredZoneBlocks().ToImmutableHashSet();
         var terrainModifiers = GetTerrainModifiers();
 
         var baseZoneBlock = blockInfos.Values.FirstOrDefault(x => x.IsDefaultZone);
-        var baseZoneBlocks = CreateBaseZoneBlocks(baseZoneBlock, baseHeight);
+        var baseZoneBlocks = GameVersion >= GameVersion.MP3 ? [] : CreateBaseZoneBlocks(baseZoneBlock, baseHeight);
         var clipBlocks = CreateClipBlocks();
 
         var uniqueBlockVariants = baseZoneBlocks
@@ -532,7 +534,7 @@ public partial class View3D : ComponentBase
                 counter = 0;
             }
 
-            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, map, blockSize, cancellationToken);
+            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: 10, uniqueBlockVariants, yOffset, blockSize, cancellationToken);
 
             counter++;
         }
@@ -540,7 +542,7 @@ public partial class View3D : ComponentBase
         while (responseTasks.Count > 0)
         {
             await Task.Delay(20, cancellationToken);
-            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, map, blockSize, cancellationToken);
+            await ProcessBlockResponsesAsync(responseTasks, maxRequestsToProcess: null, uniqueBlockVariants, yOffset, blockSize, cancellationToken);
         }
     }
 
@@ -586,7 +588,7 @@ public partial class View3D : ComponentBase
         Dictionary<UniqueVariant, Task<HttpResponseMessage>> responseTasks,
         int? maxRequestsToProcess,
         ILookup<UniqueVariant, CGameCtnBlock> uniqueBlockVariantLookup,
-        CGameCtnChallenge map,
+        int yOffset,
         Int3 blockSize,
         CancellationToken cancellationToken)
     {
@@ -603,7 +605,7 @@ public partial class View3D : ComponentBase
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
                 var solid = await Solid.ParseAsync(stream, GameVersion, materials, variant.TerrainModifier, expectedCount);
 
-                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, map);
+                PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
             }
 
             tasksToRemove.Add(variant);
@@ -621,7 +623,7 @@ public partial class View3D : ComponentBase
         }
     }
 
-    private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize, CGameCtnChallenge map)
+    private void PlaceBlocks(Solid solid, UniqueVariant variant, IEnumerable<CGameCtnBlock> blocks, Int3 blockSize, int yOffset)
     {
         if (Scene is null)
         {
@@ -647,6 +649,11 @@ public partial class View3D : ComponentBase
             height = blockInfo.Height ?? 0;
         }
 
+        if (GameVersion >= GameVersion.MP3)
+        {
+            height = 0;
+        }
+        
         var instanceInfos = new List<JSObject>();
 
         foreach (var block in blocks)
@@ -660,7 +667,7 @@ public partial class View3D : ComponentBase
                 _ => (0, 0, 0) // possible top/bottom in baked blocks?
             };
 
-            var instanceInfo = Solid.GetInstanceInfo((actualCoord + (0, -height - map.DecoBaseHeightOffset, 0)) * blockSize, block.Direction);
+            var instanceInfo = Solid.GetInstanceInfo((actualCoord - (0, height + yOffset, 0)) * blockSize, block.Direction);
 
             instanceInfos.Add(instanceInfo);
         }
@@ -676,7 +683,7 @@ public partial class View3D : ComponentBase
             yield break;
         }
 
-        const bool isManiaPlanet = false;
+        var isManiaPlanet = GameVersion >= GameVersion.MP3;
         var groundPositions = new List<Int3>();
 
         foreach (var block in Map.GetBlocks())
@@ -689,7 +696,7 @@ public partial class View3D : ComponentBase
             PopulateGroundPositionsFromBlock(groundPositions, block, blockInfo);
         }
 
-        foreach (var block in Map.GetBlocks())
+        foreach (var block in Map.GetBlocks().Concat(Map.GetBakedBlocks()))
         {
             if (!block.IsGround || !blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height is null)
             {

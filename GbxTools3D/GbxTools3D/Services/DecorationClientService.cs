@@ -42,6 +42,7 @@ internal sealed class DecorationClientService : IDecorationClientService
             {
                 Size = decoGroup.Key,
                 BaseHeight = decoGroup.First().DecorationSize.BaseHeight,
+                OffsetBlockY = decoGroup.First().DecorationSize.OffsetBlockY,
                 Decorations = decoGroup.Select(x => new DecorationDto
                 {
                     Name = x.Name,

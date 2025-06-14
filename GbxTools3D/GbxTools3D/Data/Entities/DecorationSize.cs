@@ -12,6 +12,7 @@ public sealed class DecorationSize
     public int SizeY { get; set; }
     public int SizeZ { get; set; }
     public int BaseHeight { get; set; }
+    public bool OffsetBlockY { get; set; }
     public ImmutableArray<SceneObject> Scene { get; set; } = [];
     
     public int CollectionId { get; set; }

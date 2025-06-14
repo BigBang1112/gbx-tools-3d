@@ -223,6 +223,7 @@ internal sealed class CollectionService
                 }
 
                 decorationSize.BaseHeight = decorationNode.DecoSize.BaseHeightBase;
+                decorationSize.OffsetBlockY = decorationNode.DecoSize.OffsetBlockY;
 
                 if (decorationNode.DecoSize.Scene is null)
                 {
