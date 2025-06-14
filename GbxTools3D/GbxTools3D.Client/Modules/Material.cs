@@ -177,7 +177,9 @@ internal sealed partial class Material
         var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"), gameVersion);
         var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"), gameVersion);
         var blendIntensityTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("BlendI"), gameVersion);
-        var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3") ?? materialDto.Textures.GetValueOrDefault("Borders"), gameVersion);
+        var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3")
+            ?? materialDto.Textures.GetValueOrDefault("Borders")
+            ?? materialDto.Textures.GetValueOrDefault("SoilFix"), gameVersion);
         var aoTexture = default(JSObject);//GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Occlusion"), gameVersion);
 
         material = CreateMaterial(
