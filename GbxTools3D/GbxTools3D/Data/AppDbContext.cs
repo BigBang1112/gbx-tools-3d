@@ -130,6 +130,40 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         using var w = new AdjustedBinaryWriter(ms);
 
         w.Write((byte)0); // Version 0
+
+        var hasClips = false;
+        var acceptsPylons = true;
+        var placesPylons = false;
+        var modifiesTerrain = false;
+
+        foreach (var unit in units)
+        {
+            if (unit.Clips?.Length > 0)
+            {
+                hasClips = true;
+            }
+
+            if (unit.AcceptPylons.HasValue && unit.AcceptPylons.Value != 255)
+            {
+                acceptsPylons = false;
+            }
+
+            if (unit.PlacePylons.HasValue && unit.PlacePylons.Value != 0)
+            {
+                placesPylons = true;
+            }
+
+            if (!string.IsNullOrEmpty(unit.TerrainModifier))
+            {
+                modifiesTerrain = true;
+            }
+        }
+
+        w.Write(hasClips);
+        w.Write(acceptsPylons);
+        w.Write(placesPylons);
+        w.Write(modifiesTerrain);
+
         w.Write7BitEncodedInt(units.Length);
         foreach (var unit in units)
         {
@@ -137,23 +171,37 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             w.Write(unit.Offset.Y);
             w.Write(unit.Offset.Z);
 
-            if (unit.Clips.HasValue)
+            if (hasClips)
             {
-                w.Write((byte)unit.Clips.Value.Length);
-                foreach (var clip in unit.Clips.Value)
+                if (unit.Clips.HasValue)
                 {
-                    w.Write((byte)(int)clip.Dir);
-                    w.WriteRepeatingString(clip.Id);
+                    w.Write((byte)unit.Clips.Value.Length);
+                    foreach (var clip in unit.Clips.Value)
+                    {
+                        w.Write((byte)(int)clip.Dir);
+                        w.WriteRepeatingString(clip.Id);
+                    }
+                }
+                else
+                {
+                    w.Write((byte)0); // No clips
                 }
             }
-            else
+
+            if (!acceptsPylons)
             {
-                w.Write((byte)0); // No clips
+                w.Write(unit.AcceptPylons ?? 255);
             }
 
-            w.Write(unit.AcceptPylons ?? 255);
-            w.Write(unit.PlacePylons ?? 0);
-            w.WriteRepeatingString(unit.TerrainModifier ?? string.Empty);
+            if (placesPylons)
+            {
+                w.Write(unit.PlacePylons ?? 0);
+            }
+
+            if (modifiesTerrain)
+            {
+                w.WriteRepeatingString(unit.TerrainModifier ?? string.Empty);
+            }
         }
 
         if (ms.Length > 2048)
@@ -170,34 +218,56 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         using var r = new AdjustedBinaryReader(ms);
 
         var version = r.ReadByte();
+
+        var hasClips = r.ReadBoolean();
+        var acceptsPylons = r.ReadBoolean();
+        var placesPylons = r.ReadBoolean();
+        var modifiesTerrain = r.ReadBoolean();
+
         var count = r.Read7BitEncodedInt();
         var units = ImmutableArray.CreateBuilder<BlockUnit>(count);
         for (int i = 0; i < count; i++)
         {
             var offset = new Byte3(r.ReadByte(), r.ReadByte(), r.ReadByte());
 
-            var clipCount = r.ReadByte();
             var clips = default(ImmutableArray<BlockClip>.Builder?);
-            if (clipCount > 0)
+            if (hasClips)
             {
-                clips = ImmutableArray.CreateBuilder<BlockClip>(clipCount);
-                for (int j = 0; j < clipCount; j++)
+                var clipCount = r.ReadByte();
+                if (clipCount > 0)
                 {
-                    clips.Add(new BlockClip
+                    clips = ImmutableArray.CreateBuilder<BlockClip>(clipCount);
+                    for (int j = 0; j < clipCount; j++)
                     {
-                        Dir = (ClipDir)r.ReadByte(),
-                        Id = r.ReadRepeatingString()
-                    });
+                        clips.Add(new BlockClip
+                        {
+                            Dir = (ClipDir)r.ReadByte(),
+                            Id = r.ReadRepeatingString()
+                        });
+                    }
                 }
             }
 
-            byte? acceptPylons = r.ReadByte();
-            if (acceptPylons == 255) acceptPylons = null;
-            byte? placePylons = r.ReadByte();
-            if (placePylons == 0) placePylons = null;
+            var acceptPylons = default(byte?);
+            if (!acceptsPylons)
+            {
+                acceptPylons = r.ReadByte();
+                if (acceptPylons == 255) acceptPylons = null;
+            }
 
-            string? terrainModifier = r.ReadRepeatingString();
-            if (string.IsNullOrEmpty(terrainModifier)) terrainModifier = null;
+            var placePylons = default(byte?);
+            if (placesPylons)
+            {
+                placePylons = r.ReadByte();
+                if (placePylons == 0) placePylons = null;
+            }
+
+            var terrainModifier = default(string?);
+            if (modifiesTerrain)
+            {
+                terrainModifier = r.ReadRepeatingString();
+                if (string.IsNullOrEmpty(terrainModifier)) terrainModifier = null;
+            }
 
             units.Add(new BlockUnit
             {
@@ -205,7 +275,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 Clips = clips?.ToImmutable(),
                 AcceptPylons = acceptPylons,
                 PlacePylons = placePylons,
-                TerrainModifier = r.ReadRepeatingString()
+                TerrainModifier = terrainModifier
             });
         }
 
