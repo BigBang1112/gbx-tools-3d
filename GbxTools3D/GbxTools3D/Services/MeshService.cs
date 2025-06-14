@@ -90,4 +90,46 @@ internal sealed class MeshService
 
         return mesh;
     }
+
+    public async Task<Mesh> GetOrCreateMeshAsync(
+        string gamePath,
+        string hash,
+        string? path,
+        CPlugSolid2Model solid,
+        CPlugVehicleVisModelShared? vehicle,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var mesh = await MeshFirstOrDefaultAsync(db, hash);
+
+        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle);
+        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle);
+        var dataELq = default(byte[]);
+
+        if (vehicle?.VisualVehicles.Length > 2)
+        {
+            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle);
+        }
+
+        if (mesh is null)
+        {
+            logger.LogInformation("New mesh: {Hash} (path: {Path})", hash, path);
+
+            mesh = new Mesh
+            {
+                Hash = hash,
+                Data = data,
+                Path = path,
+            };
+            await db.Meshes.AddAsync(mesh, cancellationToken);
+        }
+
+        mesh.Data = data;
+        mesh.DataLQ = data.Length == dataLq.Length ? null : dataLq;
+        mesh.DataVLQ = dataELq is null || dataLq.Length == dataELq.Length ? null : dataELq;
+        mesh.UpdatedAt = DateTime.UtcNow;
+
+        return mesh;
+    }
 }

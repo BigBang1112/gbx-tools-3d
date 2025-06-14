@@ -12,6 +12,7 @@ using GbxTools3D.Extensions;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Webp;
+using System.IO.Compression;
 
 namespace GbxTools3D.Services;
 
@@ -60,26 +61,98 @@ internal sealed class VehicleService
         {
             var modelNode = Gbx.ParseNode<CGameItemModel>(vehicleFilePath);
 
-            if (modelNode.Vehicle is null)
+            if (gameVersion < GameVersion.MP3)
             {
-                logger.LogWarning("Vehicle {Vehicle} has no vehicle data, skipping", modelNode.Ident.Id);
-                continue;
-            }
+                if (modelNode.Vehicle is null)
+                {
+                    logger.LogWarning("Vehicle {Vehicle} has no vehicle data, skipping", modelNode.Ident.Id);
+                    continue;
+                }
 
-            var solid = modelNode.Vehicle.GetSolid(gamePath, out var path);
+                var solid = modelNode.Vehicle.GetSolid(gamePath, out var path);
 
-            if (solid is null)
-            {
-                logger.LogWarning("Vehicle {Vehicle} has no solid or is corrupted, no mesh will be added", modelNode.Ident.Id);
+                if (solid is null)
+                {
+                    logger.LogWarning("Vehicle {Vehicle} has no solid or is corrupted, no mesh will be added", modelNode.Ident.Id);
+                }
+                else
+                {
+                    solid.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                    var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
+
+                    var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid,
+                        (modelNode.Vehicle as CSceneVehicleCar)?.VehicleStruct, cancellationToken: cancellationToken);
+                }
             }
             else
             {
-                solid.PopulateUsedMaterials(usedMaterials, gamePath);
+                if (modelNode.DefaultSkinFile is null)
+                {
+                    logger.LogWarning("Vehicle {Vehicle} has no default skin file, cannot create any solid, skipping", modelNode.Ident.Id);
+                    continue;
+                }
 
-                var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
+                var skinPath = modelNode.DefaultSkinFile.GetFullPath();
 
-                var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid,
-                    (modelNode.Vehicle as CSceneVehicleCar)?.VehicleStruct, cancellationToken: cancellationToken);
+                // this is to avoid usage of MainBody.Mesh.gbx which has complicated bone logic
+                if (skinPath.EndsWith("ValleyCarDefaultSkin.zip"))
+                {
+                    skinPath = Path.Combine(Path.GetDirectoryName(skinPath)!, "ValleyCar_Original.zip");
+                }
+                else if (skinPath.EndsWith("LagoonCarDefaultSkin.zip"))
+                {
+                    skinPath = Path.Combine(Path.GetDirectoryName(skinPath)!, "LagoonCar_New.zip");
+                }
+
+                using var zip = ZipFile.OpenRead(skinPath);
+
+                var entry = zip.GetEntry("MainBodyHigh.Solid.Gbx") ?? zip.GetEntry("MainBody.Solid.Gbx")
+                    ?? zip.GetEntry("MainBodyHigh.solid.gbx") ?? zip.GetEntry("MainBody.solid.gbx")
+                    ?? zip.GetEntry("MainBody.Mesh.gbx");
+
+                if (entry is null)
+                {
+                    logger.LogWarning("Vehicle {Vehicle} has no MainBody.Mesh.gbx or MainBodyHigh.Solid.Gbx in default skin file, cannot create any solid, skipping", modelNode.Ident.Id);
+                    continue;
+                }
+
+                await using var entryStream = entry.Open();
+                await using var ms = new MemoryStream((int)entry.Length);
+                await entryStream.CopyToAsync(ms, cancellationToken);
+                ms.Position = 0;
+
+                try
+                {
+                    var node = await Gbx.ParseNodeAsync(ms, cancellationToken: cancellationToken);
+
+                    var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
+
+                    if (node is CPlugSolid solid)
+                    {
+                        solid.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                        var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path: null, solid,
+                            vehicle: null, cancellationToken: cancellationToken);
+                    }
+                    else if (node is CPlugSolid2Model solid2)
+                    {
+                        // popuate materials manually based on these material IDs
+                        // _DetailsDmg_Details
+                        // _GlassDmg_Details
+                        // _SkinDmg_Skin
+                        // _DetailsDmg_Wheels
+
+                        var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path: null, solid2,
+                            vehicle: null, cancellationToken: cancellationToken);
+                    }
+
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Failed to process solid for vehicle {Vehicle}", modelNode.Ident.Id);
+                    continue;
+                }
             }
 
             var vehicleName = modelNode.Ident.Id;
@@ -114,6 +187,13 @@ internal sealed class VehicleService
                 vehicle.CameraLookAtFactor = camera2.LookAtFactor;
                 vehicle.CameraFov = camera2.Fov;
             }
+            else
+            {
+                vehicle.CameraFar = 4.5f;
+                vehicle.CameraUp = 2.2f;
+                vehicle.CameraLookAtFactor = 0.88f;
+                vehicle.CameraFov = 75;
+            }
 
             using var iconMs = new MemoryStream();
             if (await modelNode.ExportIconAsync(iconMs, new WebpEncoder { FileFormat = WebpFileFormatType.Lossless }, cancellationToken))
@@ -138,6 +218,6 @@ internal sealed class VehicleService
         await db.SaveChangesAsync(cancellationToken);
         await outputCache.EvictByTagAsync("mesh", cancellationToken);
         
-        await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, cancellationToken);
+        await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, null, cancellationToken);
     }
 }
