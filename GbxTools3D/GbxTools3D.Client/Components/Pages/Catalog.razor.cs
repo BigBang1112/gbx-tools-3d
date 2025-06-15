@@ -2,11 +2,10 @@
 using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Enums;
 using GbxTools3D.Client.Extensions;
-using GbxTools3D.Client.Modules;
+using GbxTools3D.Client.Models;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
-using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 
 namespace GbxTools3D.Client.Components.Pages;
@@ -47,6 +46,9 @@ public partial class Catalog : ComponentBase
 
     public CollectionDto? SelectedCollection => ContentTypeEnum == Enums.ContentType.Collection
         ? CollectionClientService.Collections?.FirstOrDefault(c => c.Name == CollectionName) : null;
+
+    private string? materialName;
+    private string? shaderName;
 
     private string assetSearchValue = "";
 
@@ -91,6 +93,13 @@ public partial class Catalog : ComponentBase
         {
             module = await JS.InvokeAsync<IJSObjectReference>("import", $"./Components/Pages/Catalog.razor.js");
             //await module.InvokeVoidAsync("addHandlers", assets);
+        }
+    
+        if (view3d is not null)
+        {
+            // the view3d is available after the render event, however, to guarantee only a single subscription to an event, gotta first unsubscribe
+            view3d.OnIntersect -= OnFocusedSolidHover;
+            view3d.OnIntersect += OnFocusedSolidHover;
         }
     }
 
@@ -177,6 +186,18 @@ public partial class Catalog : ComponentBase
         };
     }
 
+    private void OnFocusedSolidHover(IntersectionInfo intersection)
+    {
+        materialName = intersection.MaterialName;
+
+        if (intersection.MaterialUserData?.RootElement.TryGetProperty("shaderName", out var shaderJson) == true)
+        {
+            shaderName = shaderJson.GetString();
+        }
+
+        StateHasChanged();
+    }
+
     internal string? TestGetSoundHash(BlockInfoDto blockInfo)
     {
         var firstSoundPath = blockInfo.AirVariants
@@ -203,6 +224,11 @@ public partial class Catalog : ComponentBase
             catch (JSDisconnectedException)
             {
             }
+        }
+
+        if (view3d is not null)
+        {
+            view3d.OnIntersect -= OnFocusedSolidHover;
         }
     }
 }

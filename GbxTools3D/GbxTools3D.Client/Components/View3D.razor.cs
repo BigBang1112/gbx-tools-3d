@@ -5,11 +5,13 @@ using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using System.Collections.Immutable;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using System.Text.Json;
 
 namespace GbxTools3D.Client.Components;
 
@@ -17,6 +19,7 @@ namespace GbxTools3D.Client.Components;
 public partial class View3D : ComponentBase
 {
     private readonly HttpClient http;
+    private readonly IJSRuntime js;
 
     private JSObject? rendererModule;
     private JSObject? sceneModule;
@@ -24,9 +27,11 @@ public partial class View3D : ComponentBase
     private JSObject? solidModule;
     private JSObject? materialModule;
     private JSObject? animationModule;
-
     private JSObject? renderer;
     private Camera? mapCamera;
+
+    private DotNetObjectReference<View3D>? objRef;
+    private IJSObjectReference? rendererModuleInterop;
 
     internal Scene? Scene { get; private set; }
     internal List<Solid> FocusedSolids { get; private set; } = [];
@@ -60,6 +65,8 @@ public partial class View3D : ComponentBase
     [Parameter]
     public EventCallback OnFocusedSolidsChange { get; set; }
 
+    public event Action<IntersectionInfo>? OnIntersect;
+
     public BlockInfoDto? CurrentBlockInfo { get; private set; }
 
     public int RenderDetailsRefreshInterval { get; set; } = 500;
@@ -75,9 +82,10 @@ public partial class View3D : ComponentBase
 
     private const int PillarOffset = 12;
 
-    public View3D(HttpClient http)
+    public View3D(HttpClient http, IJSRuntime js)
     {
         this.http = http;
+        this.js = js;
     }
 
     protected override void OnInitialized()
@@ -86,6 +94,8 @@ public partial class View3D : ComponentBase
         {
             timer = new Timer(TimerCallback, null, 0, RenderDetailsRefreshInterval);
         }
+
+        objRef = DotNetObjectReference.Create(this);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -129,6 +139,9 @@ public partial class View3D : ComponentBase
         solidModule = await JSHost.ImportAsync(nameof(Solid), "../js/solid.js", cancellationToken);
         materialModule = await JSHost.ImportAsync(nameof(Material), "../js/material.js", cancellationToken);
         animationModule = await JSHost.ImportAsync(nameof(Animation), "../js/animation.js", cancellationToken);
+
+        rendererModuleInterop = await js.InvokeAsync<IJSObjectReference>("import", $"./js/renderer.js");
+        await rendererModuleInterop.InvokeVoidAsync("passDotNet", objRef);
 
         renderer = Renderer.Create();
         Scene = new Scene();
@@ -427,6 +440,16 @@ public partial class View3D : ComponentBase
             GameVersion = Map.TitleId == "TMCE@nadeolabs" ? GameVersion.TMT : GameVersion.MP3;
         }
 
+        if (GameVersion == GameVersion.MP3) // temporary
+        {
+            GameVersion = GameVersion.MP4;
+        }
+
+        if (GameVersion < GameVersion.TMSX) // temporary
+        {
+            GameVersion = GameVersion.TMF;
+        }
+
         await BeforeMapLoad.InvokeAsync();
 
         await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken: cancellationToken);
@@ -446,6 +469,12 @@ public partial class View3D : ComponentBase
         await PlacePylonsAsync(Map, baseHeight, blockSize, cancellationToken);
 
         return true;
+    }
+
+    [JSInvokable]
+    public void Intersects(string objectName, string materialName, JsonDocument? materialUserData)
+    {
+        OnIntersect?.Invoke(new(objectName, materialName, materialUserData));
     }
 
     private async Task<int> PlaceDecorationAsync(CGameCtnChallenge map, CancellationToken cancellationToken)
@@ -1263,5 +1292,18 @@ public partial class View3D : ComponentBase
         solidModule?.Dispose();
         materialModule?.Dispose();
         animationModule?.Dispose();
+
+        if (rendererModuleInterop is not null)
+        {
+            try
+            {
+                await rendererModuleInterop.DisposeAsync();
+            }
+            catch (JSDisconnectedException)
+            {
+            }
+        }
+
+        objRef?.Dispose();
     }
 }

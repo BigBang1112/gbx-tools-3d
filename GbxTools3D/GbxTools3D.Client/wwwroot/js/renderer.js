@@ -2,7 +2,7 @@
 import { updateCamera } from './camera.js';
 import { updateMixer } from './animation.js';
 
-let renderer, scene, camera, stats, raycaster, raycasterEnabled;
+let renderer, scene, camera, stats, raycaster, raycasterEnabled, dotNetHelper;
 
 const pointer = new THREE.Vector2();
 let INTERSECTED;
@@ -59,6 +59,10 @@ export function disableRaycaster() {
     raycasterEnabled = false;
 }
 
+export function passDotNet(helper) {
+    dotNetHelper = helper;
+}
+
 export function dispose() {
     window.removeEventListener('resize', onWindowResize);
 
@@ -97,6 +101,7 @@ function update() {
                     if (INTERSECTED.material.emissive) {
                         INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
                         INTERSECTED.material.emissive.setHex(0x666666);
+                        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.name, INTERSECTED.material.name, INTERSECTED.material.userData);
                     }
                 }
             } else {
