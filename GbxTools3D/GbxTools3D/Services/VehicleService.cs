@@ -53,9 +53,16 @@ internal sealed class VehicleService
 
         var usedMaterials = new Dictionary<string, CPlugMaterial?>();
 
-        var vehicleFilePaths = gameVersion is GameVersion.MP4
-            ? Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Trackmania", "Items", "Vehicles"), "*.ObjectInfo.Gbx")
-            : Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles", "TrackManiaVehicle"), "*.Gbx");
+        var vehicleFilePaths = gameVersion switch
+        {
+            GameVersion.TMT => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "CanyonCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx")
+                .Concat(Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "ValleyCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx"))
+                .Concat(Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "LagoonCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx"))
+                .Concat(Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "StadiumCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx")),
+            GameVersion.MP4 => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Trackmania", "Items", "Vehicles"), "*.ObjectInfo.Gbx"),
+            GameVersion.TMF or GameVersion.TMSX or GameVersion.TMNESWC => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles"), "*.Gbx"),
+            _ => throw new NotSupportedException($"Game version {gameVersion} is not supported.")
+        };
 
         foreach (var vehicleFilePath in vehicleFilePaths)
         {
@@ -96,13 +103,16 @@ internal sealed class VehicleService
                 var skinPath = modelNode.DefaultSkinFile.GetFullPath();
 
                 // this is to avoid usage of MainBody.Mesh.gbx which has complicated bone logic
-                if (skinPath.EndsWith("ValleyCarDefaultSkin.zip"))
+                if (gameVersion == GameVersion.MP4)
                 {
-                    skinPath = Path.Combine(Path.GetDirectoryName(skinPath)!, "ValleyCar_Original.zip");
-                }
-                else if (skinPath.EndsWith("LagoonCarDefaultSkin.zip"))
-                {
-                    skinPath = Path.Combine(Path.GetDirectoryName(skinPath)!, "LagoonCar_New.zip");
+                    if (skinPath.EndsWith("ValleyCarDefaultSkin.zip"))
+                    {
+                        skinPath = Path.Combine(Path.GetDirectoryName(skinPath)!, "ValleyCar_Original.zip");
+                    }
+                    else if (skinPath.EndsWith("LagoonCarDefaultSkin.zip"))
+                    {
+                        skinPath = Path.Combine(Path.GetDirectoryName(skinPath)!, "LagoonCar_New.zip");
+                    }
                 }
 
                 using var zip = ZipFile.OpenRead(skinPath);

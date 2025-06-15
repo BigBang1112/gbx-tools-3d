@@ -422,6 +422,11 @@ public partial class View3D : ComponentBase
 
         GameVersion = Map.GameVersion;
 
+        if (GameVersion == (GameVersion.MP3 | GameVersion.TMT))
+        {
+            GameVersion = Map.TitleId == "TMCE@nadeolabs" ? GameVersion.TMT : GameVersion.MP3;
+        }
+
         await BeforeMapLoad.InvokeAsync();
 
         await TryFetchDataAsync(loadBlockInfos: true, loadDecorations: true, loadMaterials: true, cancellationToken: cancellationToken);
@@ -501,7 +506,7 @@ public partial class View3D : ComponentBase
     {
         var collection = CollectionName ?? Map?.Collection;
 
-        var yOffset = GameVersion >= GameVersion.MP4 ? map.DecoBaseHeightOffset + baseHeight : 0;
+        var yOffset = GameVersion >= GameVersion.TMT ? map.DecoBaseHeightOffset + baseHeight : 0;
 
         var coveredZoneBlocks = GetCoveredZoneBlocks().ToImmutableHashSet();
         var terrainModifiers = GetTerrainModifiers();

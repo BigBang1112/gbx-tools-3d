@@ -483,10 +483,10 @@ internal sealed class CollectionService
                 }
 
                 blockInfo.Name = blockName;
-                blockInfo.AirUnits = gameVersion is GameVersion.MP4
+                blockInfo.AirUnits = gameVersion >= GameVersion.TMT
                     ? blockInfoNode.VariantBaseAir?.BlockUnitModels?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? []
                     : blockInfoNode.AirBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? [];
-                blockInfo.GroundUnits = gameVersion is GameVersion.MP4
+                blockInfo.GroundUnits = gameVersion >= GameVersion.TMT
                     ? blockInfoNode.VariantBaseGround?.BlockUnitModels?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? []
                     : blockInfoNode.GroundBlockUnitInfos?.Select(UnitInfoToBlockUnit).ToImmutableArray() ?? [];
                 blockInfo.HasAirHelper = blockInfoNode.AirHelperMobil is not null;
