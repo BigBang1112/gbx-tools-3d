@@ -204,6 +204,37 @@ internal sealed class MaterialService
         return material;
     }
 
+    public async Task<Material> AddOrUpdateMaterialAsync(
+        GameVersion gameVersion,
+        string name,
+        ImmutableDictionary<string, string>? textures,
+        Material? shader,
+        CancellationToken cancellationToken)
+    {
+        var material = await db.Materials.FirstOrDefaultAsync(x =>
+            x.GameVersion == gameVersion && x.Name == name, cancellationToken);
+
+        if (material is null)
+        {
+            material = new Material
+            {
+                Name = name,
+                GameVersion = gameVersion
+            };
+            await db.Materials.AddAsync(material, cancellationToken);
+        }
+
+        material.Textures = textures ?? ImmutableDictionary<string, string>.Empty;
+        material.Shader = shader;
+
+        if (shader is null)
+        {
+            material.IsShader = true;
+        }
+
+        return material;
+    }
+
     private void ProcessTexture(
         string gamePath,
         GameVersion gameVersion,
@@ -259,85 +290,24 @@ internal sealed class MaterialService
         byte[] data;
 
         using (var image = DdsUtils.ToImageSharp(imageFullPath))
-        using (var ms = new MemoryStream())
         {
-            if (image.Width > 512 || image.Height > 512)
-            {
-                var newWidth = image.Width / 2;
-                var newHeight = image.Height / 2;
-
-                // some textures have 0 alpha colors, PremultiplyAlpha has to be set to false to preserve this color
-                var resizeOptions = new ResizeOptions
-                {
-                    PremultiplyAlpha = false,
-                    Size = new Size(newWidth, newHeight)
-                };
-
-                image.Mutate(x => x.Resize(resizeOptions));
-            }
-
-            if (textureName == "Normal")
-            {
-                if (image is Image<Bgra32> imageRgba)
-                {
-                    imageRgba.ProcessPixelRows(accessor =>
-                    {
-                        for (var y = 0; y < accessor.Height; y++)
-                        {
-                            var row = accessor.GetRowSpan(y);
-                            for (var x = 0; x < row.Length; x++)
-                            {
-                                var pixel = row[x];
-                                pixel.R = pixel.A;
-                                pixel.A = 255;
-                                row[x] = pixel;
-                            }
-                        }
-                    });
-                }
-                else if (image is Image<Bgr24> imageRgb)
-                {
-                    imageRgb.ProcessPixelRows(accessor =>
-                    {
-                        for (var y = 0; y < accessor.Height; y++)
-                        {
-                            var row = accessor.GetRowSpan(y);
-                            for (var x = 0; x < row.Length; x++)
-                            {
-                                var pixel = row[x];
-
-                                var r = pixel.R / 255f * 2 - 1;// remap 0..1 to -1..1
-                                var g = pixel.G / 255f * 2 - 1;
-                                var b = MathF.Sqrt(MathF.Max(0, 1 - r * r - g * g));
-
-                                (pixel.R, pixel.G) = (pixel.G, pixel.R);
-                                pixel.B = (byte)((b + 1) * 127.5f); // remap -1..1 to 0..255
-
-                                row[x] = pixel;
-                            }
-                        }
-                    });
-                }
-                else
-                {
-                    logger.LogWarning("Normal map {ImageFullPath} is not RGBA32 - {Type}", imageFullPath, image.GetType());
-                }
-            }
-            
-            await image.SaveAsWebpAsync(ms, new WebpEncoder
-            {
-                Method = WebpEncodingMethod.Fastest,
-                TransparentColorMode = WebpTransparentColorMode.Preserve // preserve 0 alpha color often used for specularity on textures
-            },
-                cancellationToken);
-            data = ms.ToArray();
+            data = await OptimizeImageAsync(image, textureName, imageFullPath, cancellationToken);
         }
 
         await using var scope = serviceScopeFactory.CreateAsyncScope();
         var scopedDb = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var texture = await scopedDb.Textures.FirstOrDefaultAsync(x =>
-            x.GameVersion == gameVersion && x.Path == textureRelativePath, cancellationToken);
+        var imagePath = Path.GetRelativePath(gamePath, imageFullPath);
+
+        await CreateOrUpdateTextureAsync(scopedDb, imagePath, gameVersion, textureRelativePath, data, cancellationToken);
+
+        await scopedDb.SaveChangesAsync(cancellationToken);
+    }
+
+    public static async Task CreateOrUpdateTextureAsync(AppDbContext db, string imagePath, GameVersion gameVersion, string textureRelativePath, byte[] data, CancellationToken cancellationToken)
+    {
+        var texture = await db.Textures
+            .FirstOrDefaultAsync(x => x.GameVersion == gameVersion && x.Path == textureRelativePath, cancellationToken);
 
         var hash =
             $"GbxTools3D|Texture|{gameVersion}|{textureRelativePath}|PeopleOnTheBusLikeDMCA".Hash();
@@ -351,14 +321,94 @@ internal sealed class MaterialService
                 GameVersion = gameVersion,
                 Path = textureRelativePath
             };
-            await scopedDb.Textures.AddAsync(texture, cancellationToken);
+            await db.Textures.AddAsync(texture, cancellationToken);
         }
 
         texture.Hash = hash;
         texture.Data = data;
-        texture.ImagePath = Path.GetRelativePath(gamePath, imageFullPath);
+        texture.ImagePath = imagePath;
         texture.UpdatedAt = DateTime.UtcNow;
+    }
 
-        await scopedDb.SaveChangesAsync(cancellationToken);
+    public async Task<byte[]> OptimizeImageAsync(Image image, string textureName, string imageFileName, CancellationToken cancellationToken)
+    {
+        using var ms = new MemoryStream();
+        
+        if (image.Width > 512 || image.Height > 512)
+        {
+            var newWidth = image.Width / 2;
+            var newHeight = image.Height / 2;
+
+            if (newWidth >= 2048 || newHeight >= 2048)
+            {
+                newWidth /= 2;
+                newHeight /= 2;
+            }
+
+            // some textures have 0 alpha colors, PremultiplyAlpha has to be set to false to preserve this color
+            var resizeOptions = new ResizeOptions
+            {
+                PremultiplyAlpha = false,
+                Size = new Size(newWidth, newHeight)
+            };
+
+            image.Mutate(x => x.Resize(resizeOptions));
+        }
+
+        if (textureName == "Normal")
+        {
+            if (image is Image<Bgra32> imageRgba)
+            {
+                imageRgba.ProcessPixelRows(accessor =>
+                {
+                    for (var y = 0; y < accessor.Height; y++)
+                    {
+                        var row = accessor.GetRowSpan(y);
+                        for (var x = 0; x < row.Length; x++)
+                        {
+                            var pixel = row[x];
+                            pixel.R = pixel.A;
+                            pixel.A = 255;
+                            row[x] = pixel;
+                        }
+                    }
+                });
+            }
+            else if (image is Image<Bgr24> imageRgb)
+            {
+                imageRgb.ProcessPixelRows(accessor =>
+                {
+                    for (var y = 0; y < accessor.Height; y++)
+                    {
+                        var row = accessor.GetRowSpan(y);
+                        for (var x = 0; x < row.Length; x++)
+                        {
+                            var pixel = row[x];
+
+                            var r = pixel.R / 255f * 2 - 1;// remap 0..1 to -1..1
+                            var g = pixel.G / 255f * 2 - 1;
+                            var b = MathF.Sqrt(MathF.Max(0, 1 - r * r - g * g));
+
+                            (pixel.R, pixel.G) = (pixel.G, pixel.R);
+                            pixel.B = (byte)((b + 1) * 127.5f); // remap -1..1 to 0..255
+
+                            row[x] = pixel;
+                        }
+                    }
+                });
+            }
+            else
+            {
+                logger.LogWarning("Normal map {ImageFileName} is not RGBA32 - {Type}", imageFileName, image.GetType());
+            }
+        }
+
+        await image.SaveAsWebpAsync(ms, new WebpEncoder
+        {
+            Method = WebpEncodingMethod.Fastest,
+            TransparentColorMode = WebpTransparentColorMode.Preserve // preserve 0 alpha color often used for specularity on textures
+        }, cancellationToken);
+
+        return ms.ToArray();
     }
 }

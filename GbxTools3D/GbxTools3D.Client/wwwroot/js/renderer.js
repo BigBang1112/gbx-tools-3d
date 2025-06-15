@@ -101,7 +101,7 @@ function update() {
                     if (INTERSECTED.material.emissive) {
                         INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
                         INTERSECTED.material.emissive.setHex(0x666666);
-                        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.name, INTERSECTED.material.name, INTERSECTED.material.userData);
+                        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.parent.name, INTERSECTED.material.name, INTERSECTED.material.userData);
                     }
                 }
             } else {

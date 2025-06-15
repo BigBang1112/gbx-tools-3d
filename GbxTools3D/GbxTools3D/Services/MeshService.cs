@@ -54,19 +54,20 @@ internal sealed class MeshService
         CPlugSolid solid, 
         CPlugVehicleVisModelShared? vehicle, 
         bool isDeco = false, 
+        IDictionary<string, string>? materialSpecialMapping = null,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
 
         var mesh = await MeshFirstOrDefaultAsync(db, hash);
 
-        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle, isDeco: isDeco);
-        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle, isDeco: isDeco);
+        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
+        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
         var dataELq = default(byte[]);
 
         if (vehicle?.VisualVehicles.Length > 2)
         {
-            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle, isDeco: isDeco);
+            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
         }
 
         if (mesh is null)

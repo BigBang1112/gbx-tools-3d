@@ -8,7 +8,13 @@ public static class DdsUtils
 {
     public static Image ToImageSharp(string path)
     {
-        using var image = Pfimage.FromFile(path);
+        using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 32768);
+        return ToImageSharp(stream);
+    }
+
+    public static Image ToImageSharp(Stream stream)
+    {
+        using var image = Pfimage.FromStream(stream);
 
         byte[] newData;
 

@@ -12,6 +12,7 @@ using GbxTools3D.Extensions;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
 using SixLabors.ImageSharp.Formats.Webp;
+using System.Collections.Immutable;
 using System.IO.Compression;
 
 namespace GbxTools3D.Services;
@@ -64,15 +65,21 @@ internal sealed class VehicleService
             _ => throw new NotSupportedException($"Game version {gameVersion} is not supported.")
         };
 
+        var fakeShadShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "FakeShad", null, shader: null, cancellationToken);
+        var detailsShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "Details", null, shader: null, cancellationToken);
+        var skinShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "Skin", null, shader: null, cancellationToken);
+        var wheelsShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "Wheels", null, shader: null, cancellationToken);
+
         foreach (var vehicleFilePath in vehicleFilePaths)
         {
             var modelNode = Gbx.ParseNode<CGameItemModel>(vehicleFilePath);
+            var vehicleName = modelNode.Ident.Id;
 
             if (gameVersion < GameVersion.MP3)
             {
                 if (modelNode.Vehicle is null)
                 {
-                    logger.LogWarning("Vehicle {Vehicle} has no vehicle data, skipping", modelNode.Ident.Id);
+                    logger.LogWarning("Vehicle {Vehicle} has no vehicle data, skipping", vehicleName);
                     continue;
                 }
 
@@ -80,13 +87,13 @@ internal sealed class VehicleService
 
                 if (solid is null)
                 {
-                    logger.LogWarning("Vehicle {Vehicle} has no solid or is corrupted, no mesh will be added", modelNode.Ident.Id);
+                    logger.LogWarning("Vehicle {Vehicle} has no solid or is corrupted, no mesh will be added", vehicleName);
                 }
                 else
                 {
                     solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
-                    var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
+                    var hash = $"GbxTools3D|Vehicle|{gameFolder}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
 
                     var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid,
                         (modelNode.Vehicle as CSceneVehicleCar)?.VehicleStruct, cancellationToken: cancellationToken);
@@ -117,33 +124,58 @@ internal sealed class VehicleService
 
                 using var zip = ZipFile.OpenRead(skinPath);
 
-                var entry = zip.GetEntry("MainBodyHigh.Solid.Gbx") ?? zip.GetEntry("MainBody.Solid.Gbx")
+                var solidEntry = zip.GetEntry("MainBodyHigh.Solid.Gbx") ?? zip.GetEntry("MainBody.Solid.Gbx")
                     ?? zip.GetEntry("MainBodyHigh.solid.gbx") ?? zip.GetEntry("MainBody.solid.gbx")
                     ?? zip.GetEntry("MainBody.Mesh.gbx");
 
-                if (entry is null)
+                if (solidEntry is null)
                 {
                     logger.LogWarning("Vehicle {Vehicle} has no MainBody.Mesh.gbx or MainBodyHigh.Solid.Gbx in default skin file, cannot create any solid, skipping", modelNode.Ident.Id);
                     continue;
                 }
 
-                await using var entryStream = entry.Open();
-                await using var ms = new MemoryStream((int)entry.Length);
-                await entryStream.CopyToAsync(ms, cancellationToken);
+                var fakeShadMat = await CreateCustomMaterialAsync(gameVersion, "FakeShad", zip.GetEntry("FakeShad.dds") ?? zip.GetEntry("ProjShad.dds"), vehicleName, fakeShadShader, cancellationToken);
+                var detailsMat = await CreateCustomMaterialAsync(gameVersion, "Details", zip.GetEntry("DetailsDiffuse.dds") ?? zip.GetEntry("Details.dds"), vehicleName, detailsShader, cancellationToken);
+                //await CreateCustomMaterialAsync(gameVersion, zip, "Icon.dds", vehicleName, cancellationToken); should fall into Icons than Textures
+                var skinMat = await CreateCustomMaterialAsync(gameVersion, "Skin", zip.GetEntry("SkinDiffuse.dds") ?? zip.GetEntry("Diffuse.dds"), vehicleName, skinShader, cancellationToken);
+                var wheelsMat = await CreateCustomMaterialAsync(gameVersion, "Wheels", zip.GetEntry("WheelsDiffuse.dds") ?? zip.GetEntry("Wheels.dds"), vehicleName, wheelsShader, cancellationToken);
+
+                var materialMapping = new Dictionary<string, string>();
+
+                if (fakeShadMat is not null)
+                {
+                    materialMapping["FakeShad"] = fakeShadMat.Name;
+                }
+
+                if (detailsMat is not null)
+                {
+                    materialMapping["dBody"] = detailsMat.Name;
+                }
+
+                if (skinMat is not null)
+                {
+                    materialMapping["sBody"] = skinMat.Name;
+                    materialMapping["gBody"] = skinMat.Name;
+                }
+
+
+                await using var solidEntryStream = solidEntry.Open();
+                await using var ms = new MemoryStream((int)solidEntry.Length);
+                await solidEntryStream.CopyToAsync(ms, cancellationToken);
                 ms.Position = 0;
 
                 try
                 {
                     var node = await Gbx.ParseNodeAsync(ms, cancellationToken: cancellationToken);
 
-                    var hash = $"GbxTools3D|Vehicle|{gameFolder}|{modelNode.Ident.Id}|WhyDidYouNotHelpMe?".Hash();
+                    var hash = $"GbxTools3D|Vehicle|{gameFolder}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
 
                     if (node is CPlugSolid solid)
                     {
-                        solid.PopulateUsedMaterials(usedMaterials, gamePath);
+                        // solid.PopulateUsedMaterials(usedMaterials, gamePath); not needed because the materials are not defined by ref table file in the zip skins
 
                         var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path: null, solid,
-                            vehicle: null, cancellationToken: cancellationToken);
+                            vehicle: null, materialSpecialMapping: materialMapping, cancellationToken: cancellationToken);
                     }
                     else if (node is CPlugSolid2Model solid2)
                     {
@@ -160,12 +192,10 @@ internal sealed class VehicleService
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(ex, "Failed to process solid for vehicle {Vehicle}", modelNode.Ident.Id);
+                    logger.LogError(ex, "Failed to process solid for vehicle {Vehicle}", vehicleName);
                     continue;
                 }
             }
-
-            var vehicleName = modelNode.Ident.Id;
 
             var vehicle = await db.Vehicles
                 .Include(x => x.Icon)
@@ -199,6 +229,7 @@ internal sealed class VehicleService
             }
             else
             {
+                // default values for majority of unresolved cases
                 vehicle.CameraFar = 4.5f;
                 vehicle.CameraUp = 2.2f;
                 vehicle.CameraLookAtFactor = 0.88f;
@@ -229,5 +260,45 @@ internal sealed class VehicleService
         await outputCache.EvictByTagAsync("mesh", cancellationToken);
         
         await materialService.CreateOrUpdateMaterialsAsync(gamePath, gameVersion, usedMaterials, null, cancellationToken);
+    }
+
+    private async Task<Material?> CreateCustomMaterialAsync(
+        GameVersion gameVersion,
+        string materialName,
+        ZipArchiveEntry? diffuseEntry,
+        string vehicleName, 
+        Material shader,
+        CancellationToken cancellationToken)
+    {
+        if (diffuseEntry is null)
+        {
+            logger.LogWarning("Vehicle {Vehicle} has no diffuse texture for material {MaterialName}, skipping", vehicleName, materialName);
+            return null;
+        }
+
+        var diffuseFileName = diffuseEntry.Name;
+
+        using var diffuseStream = diffuseEntry.Open();
+
+        byte[] data;
+
+        using (var image = DdsUtils.ToImageSharp(diffuseStream))
+        {
+            data = await materialService.OptimizeImageAsync(image, "Diffuse", diffuseFileName, cancellationToken);
+        }
+
+        var diffuseTextureName = $":{vehicleName}_{diffuseFileName}";
+
+        logger.LogInformation("Creating diffuse texture {DiffuseTextureName}...", diffuseTextureName);
+        await MaterialService.CreateOrUpdateTextureAsync(db, diffuseFileName, gameVersion, diffuseTextureName, data, cancellationToken);
+
+        var actualMaterialName = $":{vehicleName}_{materialName}";
+
+        logger.LogInformation("Creating material {MaterialName}...", actualMaterialName);
+
+        var textures = ImmutableDictionary.CreateBuilder<string, string>();
+        textures.Add("Diffuse", diffuseTextureName);
+
+        return await materialService.AddOrUpdateMaterialAsync(gameVersion, actualMaterialName, textures.ToImmutable(), shader, cancellationToken);
     }
 }

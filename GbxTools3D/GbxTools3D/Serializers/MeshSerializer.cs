@@ -13,14 +13,15 @@ public class MeshSerializer
     private readonly bool collision;
     private readonly CPlugVehicleVisModelShared? vehicle;
     private readonly bool isDeco;
+    private readonly IDictionary<string, string>? materialSpecialMapping;
 
-    private MeshSerializer(CPlugSolid solid, byte? lod, bool collision, CPlugVehicleVisModelShared? vehicle, bool isDeco)
+    private MeshSerializer(CPlugSolid solid, byte? lod, bool collision, CPlugVehicleVisModelShared? vehicle, bool isDeco, IDictionary<string, string>? materialSpecialMapping)
     {
         this.solid = solid;
         this.collision = collision;
         this.vehicle = vehicle;
         this.isDeco = isDeco;
-
+        this.materialSpecialMapping = materialSpecialMapping;
         this.lod = vehicle is not null && lod >= vehicle.VisualVehicles.Length
             ? (byte)(vehicle.VisualVehicles.Length - 1) : lod;
     }
@@ -32,16 +33,31 @@ public class MeshSerializer
         this.vehicle = vehicle;
     }
 
-    public static void Serialize(Stream stream, CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null, bool isDeco = false)
+    public static void Serialize(
+        Stream stream, 
+        CPlugSolid solid, 
+        string gamePath, 
+        byte? lod = null, 
+        bool collision = false, 
+        CPlugVehicleVisModelShared? vehicle = null, 
+        bool isDeco = false,
+        IDictionary<string, string>? materialSpecialMapping = null)
     {
-        var serializer = new MeshSerializer(solid, lod, collision, vehicle, isDeco);
+        var serializer = new MeshSerializer(solid, lod, collision, vehicle, isDeco, materialSpecialMapping);
         serializer.Serialize(stream, gamePath);
     }
 
-    public static byte[] Serialize(CPlugSolid solid, string gamePath, byte? lod = null, bool collision = false, CPlugVehicleVisModelShared? vehicle = null, bool isDeco = false)
+    public static byte[] Serialize(
+        CPlugSolid solid, 
+        string gamePath, 
+        byte? lod = null, 
+        bool collision = false, 
+        CPlugVehicleVisModelShared? vehicle = null, 
+        bool isDeco = false,
+        IDictionary<string, string>? materialSpecialMapping = null)
     {
         using var ms = new MemoryStream();
-        Serialize(ms, solid, gamePath, lod, collision, vehicle, isDeco);
+        Serialize(ms, solid, gamePath, lod, collision, vehicle, isDeco, materialSpecialMapping);
         return ms.ToArray();
     }
 
@@ -155,7 +171,14 @@ public class MeshSerializer
 
         if (hasVisual)
         {
-            WriteMaterial(w, tree.Shader as CPlugMaterial, tree.ShaderFile, tree.Shader as CPlugShaderApply, gamePath);
+            if (materialSpecialMapping?.TryGetValue(tree.Name, out var specialMaterial) == true)
+            {
+                WriteMaterial(w, specialMaterial);
+            }
+            else
+            {
+                WriteMaterial(w, tree.Shader as CPlugMaterial, tree.ShaderFile, tree.Shader as CPlugShaderApply, gamePath);
+            }
         }
 
         if (vehicle is not null && isRoot && lod is null)
@@ -406,7 +429,7 @@ public class MeshSerializer
 
         if (shader is not null)
         {
-            materialName = $"Shader_{Guid.NewGuid()}";
+            materialName = $"Shader_{Guid.NewGuid()}"; // should be probably removed
         }
 
         w.Write(materialName);
@@ -422,6 +445,12 @@ public class MeshSerializer
         {
             w.Write(false); // additionalMaterialProperties
         }
+    }
+
+    private static void WriteMaterial(AdjustedBinaryWriter w, string materialName)
+    {
+        w.Write(materialName);
+        w.Write(false); // additionalMaterialProperties
     }
 
     private void WriteSurface(AdjustedBinaryWriter w, CPlugSurface? surface)

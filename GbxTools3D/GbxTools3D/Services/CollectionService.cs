@@ -274,7 +274,7 @@ internal sealed class CollectionService
                             continue;
                         }
 
-                        await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, isDeco: true, cancellationToken);
+                        await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, isDeco: true, cancellationToken: cancellationToken);
                     }
 
                     var lights = decorationNode.DecoSize.Scene.Lights ?? [];
