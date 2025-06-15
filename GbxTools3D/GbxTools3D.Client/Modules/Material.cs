@@ -18,7 +18,9 @@ internal sealed partial class Material
         double Opacity = 0,
         bool Add = false,
         bool NightOnly = false,
-        bool Invisible = false)
+        bool Invisible = false,
+        bool Water = false,
+        bool NoWrap = false)
     {
         public static readonly Properties Default = new();
     }
@@ -34,7 +36,7 @@ internal sealed partial class Material
         ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass"] = new(WorldUV: true),
         ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass NoLightV"] = new(WorldUV: true),
         ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft"] = new(Transparent: true),
-        ["Techno/Media/Material/TDiff PX2 Trans"] = new(Transparent: true),
+        ["Techno/Media/Material/TDiff PX2 Trans"] = new(Transparent: true, DoubleSided: true),
         ["Techno/Media/Material/TDiff PX2 Trans 2Sided"] = new Properties(DoubleSided: true, Transparent: true),
         ["Techno/Media/Material/TDiffG PX2 CSpec FCOut Trans"] = new(Transparent: true),
         ["Techno/Media/Material/TDiffG PX2 CSpecL Trans"] = new(Transparent: true),
@@ -60,6 +62,15 @@ internal sealed partial class Material
         ["Island/Media/Material/ModelAlpha2SidedNoLight"] = new(Transparent: true, DoubleSided: true),
         ["Techno2/Media/Material/SoilGen21"] = new(WorldUV: true),
         ["Techno2/Media/Material/TDiff_Spec_Nrm TOcc CSpecSoft Trans"] = new(Transparent: true),
+        ["Techno3/Media/Material/Tech3 Block TDiffA_Spec_Norm"] = new(Transparent: true),
+        ["Techno3/Media/Material/Tech3 Block PDiff_Spec_Norm"] = new(WorldUV: true),
+        ["Techno3/Media/Material/Tech3 Block PDiff_Spec_Norm GrassX2"] = new(WorldUV: true),
+        //["Techno3/Media/Material/Tech3 Block PTDiff_Spec_Norm PGrassX2"] = new(WorldUV: true)
+        ["Techno/Media/Material/Sea"] = new(Water: true),
+        ["Techno/Media/Material/SeaMultiY"] = new(Water: true),
+        ["Techno3/Media/Material/Tech3 Sea"] = new(Water: true),
+        ["Techno3/Media/Material/Tech3_Block_TDiffABlend_SpecNorm_CubeOut"] = new(Transparent: true),
+        ["Island/Media/Material/IslandBeachFoam"] = new(Add: true, NoWrap: true),
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];
@@ -93,12 +104,13 @@ internal sealed partial class Material
         double opacity,
         bool add,
         bool nightOnly,
-        bool invisible);
+        bool invisible,
+        bool water);
 
     [JSImport("createTexture", nameof(Material))]
-    private static partial JSObject CreateTexture(string path, string urlPath);
+    private static partial JSObject CreateTexture(string path, string urlPath, bool noWrap);
     
-    private static JSObject? GetOrCreateTexture(string? path, GameVersion gameVersion)
+    private static JSObject? GetOrCreateTexture(string? path, GameVersion gameVersion, bool noWrap)
     {
         if (path is null)
         {
@@ -111,7 +123,7 @@ internal sealed partial class Material
         }
         
         var hash = $"GbxTools3D|Texture|{gameVersion}|{path}|PeopleOnTheBusLikeDMCA".Hash();
-        texture = CreateTexture(path, $"api/texture/{hash}");
+        texture = CreateTexture(path, $"api/texture/{hash}", noWrap);
         textures.Add((path, gameVersion), texture);
         
         return texture;
@@ -166,20 +178,25 @@ internal sealed partial class Material
             properties = Properties.Default;
         }
 
-        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend1"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Panorama"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Advert"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Glow"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Soil"), gameVersion)
-            ?? GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Grass"), gameVersion);
-        var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal"), gameVersion);
-        var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular"), gameVersion);
-        var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"), gameVersion);
-        var blendIntensityTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("BlendI"), gameVersion);
+        var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse")
+            ?? materialDto.Textures.GetValueOrDefault("Blend1")
+            ?? materialDto.Textures.GetValueOrDefault("Panorama")
+            ?? materialDto.Textures.GetValueOrDefault("Advert")
+            ?? materialDto.Textures.GetValueOrDefault("Glow")
+            ?? materialDto.Textures.GetValueOrDefault("Soil")
+            ?? materialDto.Textures.GetValueOrDefault("Grass")
+            ?? materialDto.Textures.GetValueOrDefault("Foam 1")
+            ?? materialDto.Textures.GetValueOrDefault("PxzDiffuse"), gameVersion, properties.NoWrap);
+        var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal")
+            ?? materialDto.Textures.GetValueOrDefault("PxzNormal"), gameVersion, properties.NoWrap);
+        var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular")
+            ?? materialDto.Textures.GetValueOrDefault("PxzSpecular"), gameVersion, properties.NoWrap);
+        var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"), gameVersion, properties.NoWrap);
+        var blendIntensityTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("BlendI"), gameVersion, properties.NoWrap);
         var blend3Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend3")
             ?? materialDto.Textures.GetValueOrDefault("Borders")
-            ?? materialDto.Textures.GetValueOrDefault("SoilFix"), gameVersion);
+            ?? materialDto.Textures.GetValueOrDefault("SoilFix")
+            ?? materialDto.Textures.GetValueOrDefault("DiffuseBlendA"), gameVersion, properties.NoWrap);
         var aoTexture = default(JSObject);//GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Occlusion"), gameVersion);
 
         material = CreateMaterial(
@@ -200,7 +217,8 @@ internal sealed partial class Material
             properties.Opacity,
             properties.Add,
             properties.NightOnly,
-            properties.Invisible);
+            properties.Invisible,
+            properties.Water);
         materials.Add(uniqueMaterial, material);
         return material;
     }

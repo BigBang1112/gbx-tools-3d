@@ -35,7 +35,8 @@ export function createMaterial(
     opacity,
     add,
     nightOnly,
-    invisible) {
+    invisible,
+    water) {
     let material;
     if (basic) {
         material = new THREE.MeshBasicMaterial({
@@ -43,6 +44,14 @@ export function createMaterial(
             transparent: transparent,
             alphaToCoverage: transparent,
             side: doubleSided ? THREE.DoubleSide : THREE.FrontSide
+        });
+    }
+    else if (water) {
+        material = new THREE.MeshPhysicalMaterial({
+            transmission: 0.7,
+            roughness: 0.1,
+            thickness: 0.1,
+            color: 0xddeeff
         });
     }
     else if (specularAlpha || specularTexture)
@@ -163,10 +172,12 @@ export function createMaterial(
     return material;
 }
 
-export function createTexture(path, urlPath) {
+export function createTexture(path, urlPath, noWrap) {
     const texture = textureLoader.load(urlPath);
-    texture.wrapS = THREE.RepeatWrapping;
-    texture.wrapT = THREE.RepeatWrapping;
+    if (!noWrap) {
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+    }
     texture.name = path;
     return texture;
 }
