@@ -315,75 +315,73 @@ public partial class ViewReplay : ComponentBase
         {
             // Ensure checkpoints are sorted by Time
             var checkpoints = CurrentGhost.Checkpoints ?? [];
-            if (checkpoints.Length == 0)
+            if (checkpoints.Length > 0)
             {
-                return;
-            }
+                int left = 0, right = checkpoints.Length - 1, mid = -1;
+                TimeInt32? checkpointPassedTime = null;
 
-            int left = 0, right = checkpoints.Length - 1, mid = -1;
-            TimeInt32? checkpointPassedTime = null;
-
-            // Binary search for the first checkpoint within the range
-            while (left <= right)
-            {
-                mid = (left + right) / 2;
-                var cp = checkpoints[mid];
-                if (cp.Time is null)
+                // Binary search for the first checkpoint within the range
+                while (left <= right)
                 {
-                    continue;
-                }
-
-                var cpTime = cp.Time.Value.TotalSeconds;
-                var nextCpTime = (mid + 1 < checkpoints.Length && checkpoints[mid + 1].Time.HasValue)
-                    ? checkpoints[mid + 1].Time!.Value.TotalSeconds
-                    : double.MaxValue; // Handle last checkpoint case
-
-                if (time >= cpTime - 0.001 && time < nextCpTime)
-                {
-                    if (mid != prevCheckpointPassedIndex)
+                    mid = (left + right) / 2;
+                    var cp = checkpoints[mid];
+                    if (cp.Time is null)
                     {
-                        checkpointList?.SetCurrentCheckpoint(cp.Time);
-                        checkpointList?.SetCurrentCheckpointIndex(nextCpTime == double.MaxValue ? (mid - 1) : mid);
-                        prevCheckpointPassedIndex = mid;
+                        continue;
                     }
 
-                    if (time < cpTime + 3)
-                    {
-                        checkpointPassedTime = cp.Time;
+                    var cpTime = cp.Time.Value.TotalSeconds;
+                    var nextCpTime = (mid + 1 < checkpoints.Length && checkpoints[mid + 1].Time.HasValue)
+                        ? checkpoints[mid + 1].Time!.Value.TotalSeconds
+                        : double.MaxValue; // Handle last checkpoint case
 
-                        if (checkpointPassedTime != prevCheckpointPassedTime)
+                    if (time >= cpTime - 0.001 && time < nextCpTime)
+                    {
+                        if (mid != prevCheckpointPassedIndex)
                         {
-                            checkpoint?.Set(cp.Time);
-                            prevCheckpointPassedTime = checkpointPassedTime;
+                            checkpointList?.SetCurrentCheckpoint(cp.Time);
+                            checkpointList?.SetCurrentCheckpointIndex(nextCpTime == double.MaxValue ? (mid - 1) : mid);
+                            prevCheckpointPassedIndex = mid;
+                        }
+
+                        if (time < cpTime + 3)
+                        {
+                            checkpointPassedTime = cp.Time;
+
+                            if (checkpointPassedTime != prevCheckpointPassedTime)
+                            {
+                                checkpoint?.Set(cp.Time);
+                                prevCheckpointPassedTime = checkpointPassedTime;
+                            }
+                        }
+                        break;
+                    }
+                    else if (time < cpTime - 0.001)
+                    {
+                        right = mid - 1;
+
+                        if (right == -1)
+                        {
+                            // No checkpoint found before this time, reset
+                            prevCheckpointPassedIndex = -1;
+                            checkpointList?.SetCurrentCheckpoint(null);
+                            checkpointList?.SetCurrentCheckpointIndex(-1);
+                            checkpoint?.Set(null);
+                            prevCheckpointPassedTime = null;
                         }
                     }
-                    break;
-                }
-                else if (time < cpTime - 0.001)
-                {
-                    right = mid - 1;
-
-                    if (right == -1)
+                    else
                     {
-                        // No checkpoint found before this time, reset
-                        prevCheckpointPassedIndex = -1;
-                        checkpointList?.SetCurrentCheckpoint(null);
-                        checkpointList?.SetCurrentCheckpointIndex(-1);
-                        checkpoint?.Set(null);
-                        prevCheckpointPassedTime = null;
+                        left = mid + 1;
                     }
                 }
-                else
-                {
-                    left = mid + 1;
-                }
-            }
 
-            // Handle case where no checkpoint is passed
-            if (checkpointPassedTime is null && prevCheckpointPassedTime is not null)
-            {
-                checkpoint?.Set(null);
-                prevCheckpointPassedTime = null;
+                // Handle case where no checkpoint is passed
+                if (checkpointPassedTime is null && prevCheckpointPassedTime is not null)
+                {
+                    checkpoint?.Set(null);
+                    prevCheckpointPassedTime = null;
+                }
             }
 
             if (CurrentGhost.SampleData is not null)
