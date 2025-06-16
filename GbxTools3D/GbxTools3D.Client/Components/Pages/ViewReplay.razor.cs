@@ -33,6 +33,8 @@ public partial class ViewReplay : ComponentBase
     private readonly string[] wheelNames = ["FLWheel", "FRWheel", "RLWheel", "RRWheel"];
     private readonly string[] guardNames = ["FLGuard", "FRGuard", "RLHub", "RRHub"];
 
+    private readonly string[] objectPrefixes = ["1", "d", "p", "s", "w"];
+
     private readonly string[] extensions = ["Replay.Gbx"];
 
     [SupplyParameterFromQuery(Name = "tmx")]
@@ -243,41 +245,51 @@ public partial class ViewReplay : ComponentBase
 
         foreach (var wheel in wheelNames)
         {
-            var node = ghostSolid.GetObjectByName("1" + wheel);
-            if (node is null) continue;
+            foreach (var prefix in objectPrefixes)
+            {
+                var wheelObject = prefix + wheel;
 
-            Solid.ReorderEuler(node);
+                var node = ghostSolid.GetObjectByName(wheelObject);
+                if (node is null) continue;
 
-            // Rotation
-            var rotTrack = Animation.CreateRotationXTrack(times, partData[$"{wheel}_rot"]);
-            actions[$"{wheel}Rotation"] = Animation.CreateAction(
-                Animation.CreateClip($"{wheel}Rotation", duration, [rotTrack]), node);
+                Solid.ReorderEuler(node);
 
-            // Steer
-            var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"]);
-            actions[$"{wheel}Steer"] = Animation.CreateAction(
-                Animation.CreateClip($"{wheel}Steer", duration, [steerTrack]), node);
+                // Rotation
+                var rotTrack = Animation.CreateRotationXTrack(times, partData[$"{wheel}_rot"]);
+                actions[$"{wheelObject}Rotation"] = Animation.CreateAction(
+                    Animation.CreateClip($"{wheelObject}Rotation", duration, [rotTrack]), node);
 
-            // Dampen (as relative position)
-            var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
-            actions[$"{wheel}Dampen"] = Animation.CreateAction(
-                Animation.CreateClip($"{wheel}Dampen", duration, [dampenTrack]), node);
+                // Steer
+                var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"]);
+                actions[$"{wheelObject}Steer"] = Animation.CreateAction(
+                    Animation.CreateClip($"{wheelObject}Steer", duration, [steerTrack]), node);
+
+                // Dampen (as relative position)
+                var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
+                actions[$"{wheelObject}Dampen"] = Animation.CreateAction(
+                    Animation.CreateClip($"{wheelObject}Dampen", duration, [dampenTrack]), node);
+            }
         }
 
         foreach (var guard in guardNames)
         {
-            var node = ghostSolid.GetObjectByName("1" + guard);
-            if (node is null) continue;
+            foreach (var prefix in objectPrefixes)
+            {
+                var guardObject = prefix + guard;
 
-            Solid.ReorderEuler(node);
+                var node = ghostSolid.GetObjectByName(guardObject);
+                if (node is null) continue;
 
-            var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{guard}_steer"]);
-            actions[$"{guard}Steer"] = Animation.CreateAction(
-                Animation.CreateClip($"{guard}Steer", duration, [steerTrack]), node);
+                Solid.ReorderEuler(node);
 
-            var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{guard}_dampen"], node);
-            actions[$"{guard}Dampen"] = Animation.CreateAction(
-                Animation.CreateClip($"{guard}Dampen", duration, [dampenTrack]), node);
+                var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{guard}_steer"]);
+                actions[$"{guardObject}Steer"] = Animation.CreateAction(
+                    Animation.CreateClip($"{guardObject}Steer", duration, [steerTrack]), node);
+
+                var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{guard}_dampen"], node);
+                actions[$"{guardObject}Dampen"] = Animation.CreateAction(
+                    Animation.CreateClip($"{guardObject}Dampen", duration, [dampenTrack]), node);
+            }
         }
 
         var checkpoints = ghost.Checkpoints ?? [];
@@ -384,7 +396,7 @@ public partial class ViewReplay : ComponentBase
                 }
             }
 
-            if (CurrentGhost.SampleData is not null)
+            if (CurrentGhost.SampleData?.Samples.Count > 0)
             {
                 var sampleIndex = (int)(time / CurrentGhost.SampleData.SamplePeriod.TotalSeconds);
                 var nextSampleIndex = sampleIndex + 1;

@@ -61,14 +61,18 @@ internal sealed class VehicleService
                 .Concat(Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "LagoonCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx"))
                 .Concat(Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "StadiumCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx")),
             GameVersion.MP4 => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Trackmania", "Items", "Vehicles"), "*.ObjectInfo.Gbx"),
-            GameVersion.TMF or GameVersion.TMSX or GameVersion.TMNESWC => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles"), "*.Gbx"),
+            GameVersion.TMF or GameVersion.TMSX or GameVersion.TMNESWC => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles", "TrackManiaVehicle"), "*.Gbx"),
             _ => throw new NotSupportedException($"Game version {gameVersion} is not supported.")
         };
 
-        var fakeShadShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "FakeShad", null, shader: null, cancellationToken);
-        var detailsShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "Details", null, shader: null, cancellationToken);
-        var skinShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "Skin", null, shader: null, cancellationToken);
-        var wheelsShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, "Wheels", null, shader: null, cancellationToken);
+        // TODO: not needed run on all game versions
+        var fakeShadShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":FakeShad", null, shader: null, cancellationToken);
+        var detailsShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":Details", null, shader: null, cancellationToken);
+        var skinShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":Skin", null, shader: null, cancellationToken);
+        var wheelsShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":Wheels", null, shader: null, cancellationToken);
+        var glassShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":Glass", null, shader: null, cancellationToken);
+        var lightShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":Light", null, shader: null, cancellationToken);
+        var pilotShader = await materialService.AddOrUpdateMaterialAsync(gameVersion, ":Pilot", null, shader: null, cancellationToken);
 
         foreach (var vehicleFilePath in vehicleFilePaths)
         {
@@ -139,6 +143,7 @@ internal sealed class VehicleService
                 //await CreateCustomMaterialAsync(gameVersion, zip, "Icon.dds", vehicleName, cancellationToken); should fall into Icons than Textures
                 var skinMat = await CreateCustomMaterialAsync(gameVersion, "Skin", zip.GetEntry("SkinDiffuse.dds") ?? zip.GetEntry("Diffuse.dds"), vehicleName, skinShader, cancellationToken);
                 var wheelsMat = await CreateCustomMaterialAsync(gameVersion, "Wheels", zip.GetEntry("WheelsDiffuse.dds") ?? zip.GetEntry("Wheels.dds"), vehicleName, wheelsShader, cancellationToken);
+                var pilotMat = await CreateCustomMaterialAsync(gameVersion, "Pilot", zip.GetEntry("Pilot.dds"), vehicleName, pilotShader, cancellationToken);
 
                 var materialMapping = new Dictionary<string, string>();
 
@@ -149,15 +154,144 @@ internal sealed class VehicleService
 
                 if (detailsMat is not null)
                 {
+                    materialMapping["dFLGuard"] = detailsMat.Name;
+                    materialMapping["dFRGuard"] = detailsMat.Name;
+                    materialMapping["dRRGuard"] = detailsMat.Name;
+                    materialMapping["dRLGuard"] = detailsMat.Name;
+                    materialMapping["dRLWheel"] = detailsMat.Name;
+                    materialMapping["dRRWheel"] = detailsMat.Name;
+                    materialMapping["dRDoor"] = detailsMat.Name;
+                    materialMapping["dLDoor"] = detailsMat.Name;
+                    materialMapping["dHood"] = detailsMat.Name;
+                    materialMapping["dTrunk"] = detailsMat.Name;
                     materialMapping["dBody"] = detailsMat.Name;
+                    materialMapping["dFRWheel"] = detailsMat.Name;
+                    materialMapping["dFLWheel"] = detailsMat.Name;
+                    materialMapping["dRRArmTop"] = detailsMat.Name;
+                    materialMapping["dRRCardan"] = detailsMat.Name;
+                    materialMapping["dRRArmBot"] = detailsMat.Name;
+                    materialMapping["dRRHub"] = detailsMat.Name;
+                    materialMapping["dRLArmTop"] = detailsMat.Name;
+                    materialMapping["dRLCardan"] = detailsMat.Name;
+                    materialMapping["dRLArmBot"] = detailsMat.Name;
+                    materialMapping["dRLHub"] = detailsMat.Name;
+                    materialMapping["dRLSusp"] = detailsMat.Name;
+                    materialMapping["dFRArmTop"] = detailsMat.Name;
+                    materialMapping["dFRArmDir"] = detailsMat.Name;
+                    materialMapping["dFRArmBot"] = detailsMat.Name;
+                    materialMapping["dFRHub"] = detailsMat.Name;
+                    materialMapping["dFRSusp"] = detailsMat.Name;
+                    materialMapping["dFLSusp"] = detailsMat.Name;
+                    materialMapping["dFLArmTop"] = detailsMat.Name;
+                    materialMapping["dFLArmDir"] = detailsMat.Name;
+                    materialMapping["dFLArmBot"] = detailsMat.Name;
+                    materialMapping["dFLHub"] = detailsMat.Name;
+                    materialMapping["dEngines"] = detailsMat.Name;
+                    materialMapping["dSupportM"] = detailsMat.Name;
+                    materialMapping["dRLSusp"] = detailsMat.Name;
+                    materialMapping["dRRSusp"] = detailsMat.Name;
+                    materialMapping["dExhaust"] = detailsMat.Name;
+                    materialMapping["dExhaustF"] = detailsMat.Name;
+                    materialMapping["dFront"] = detailsMat.Name;
+                    materialMapping["dGasDoor"] = detailsMat.Name;
+                    materialMapping["dRearA"] = detailsMat.Name;
+                    materialMapping["dNos"] = detailsMat.Name;
+                    materialMapping["dSeat"] = detailsMat.Name;
+                    materialMapping["dGaz"] = detailsMat.Name;
+                    materialMapping["dSpeedC"] = detailsMat.Name;
+                    materialMapping["dCacheM"] = detailsMat.Name;
+                    materialMapping["dFRCardan"] = detailsMat.Name;
+                    materialMapping["dFLCardan"] = detailsMat.Name;
+                    materialMapping["dFrontligh"] = detailsMat.Name;
+                    materialMapping["dNitrous"] = detailsMat.Name;
+                    materialMapping["dElecEng"] = detailsMat.Name;
+                    materialMapping["dBodyS"] = detailsMat.Name;
                 }
 
                 if (skinMat is not null)
                 {
+                    materialMapping["sRDoor"] = skinMat.Name;
+                    materialMapping["sFLWheel"] = skinMat.Name;
+                    materialMapping["sTrunk"] = skinMat.Name;
+                    materialMapping["sFRWheel"] = skinMat.Name;
+                    materialMapping["sHood"] = skinMat.Name;
+                    materialMapping["sLDoor"] = skinMat.Name;
+                    materialMapping["sRRWheel"] = skinMat.Name;
+                    materialMapping["sRLWheel"] = skinMat.Name;
                     materialMapping["sBody"] = skinMat.Name;
-                    materialMapping["gBody"] = skinMat.Name;
+                    materialMapping["sPilHead"] = skinMat.Name;
+                    materialMapping["sFLHub"] = skinMat.Name;
+                    materialMapping["sFRHub"] = skinMat.Name;
+                    materialMapping["sRLHub"] = skinMat.Name;
+                    materialMapping["sRRHub"] = skinMat.Name;
+                    materialMapping["sFLGuard"] = skinMat.Name;
+                    materialMapping["sFRGuard"] = skinMat.Name;
+                    materialMapping["sAileronF"] = skinMat.Name;
+                    materialMapping["sAileronB"] = skinMat.Name;
+                    materialMapping["sSecure"] = skinMat.Name;
+                    materialMapping["sAirvent"] = skinMat.Name;
+                    materialMapping["sFLArmTop"] = skinMat.Name;
+                    materialMapping["sFLArmBot"] = skinMat.Name;
+                    materialMapping["sRLArmTop"] = skinMat.Name;
+                    materialMapping["sRLArmBot"] = skinMat.Name;
+                    materialMapping["sFRArmTop"] = skinMat.Name;
+                    materialMapping["sFRArmBot"] = skinMat.Name;
+                    materialMapping["sRRArmTop"] = skinMat.Name;
+                    materialMapping["sRRArmBot"] = skinMat.Name;
+                    materialMapping["sFLArmDir"] = skinMat.Name;
+                    materialMapping["sFRArmDir"] = skinMat.Name;
+                    materialMapping["sBodyF"] = skinMat.Name;
+                    materialMapping["sBodyAir"] = skinMat.Name;
+                    materialMapping["sTrunkFx"] = skinMat.Name;
+                    materialMapping["sFAileron"] = skinMat.Name;
+                    materialMapping["sBodyS"] = skinMat.Name;
                 }
 
+                if (wheelsMat is not null)
+                {
+                    materialMapping["wFLWheel"] = wheelsMat.Name;
+                    materialMapping["wFRWheel"] = wheelsMat.Name;
+                    materialMapping["wRRWheel"] = wheelsMat.Name;
+                    materialMapping["wRLWheel"] = wheelsMat.Name;
+                    materialMapping["wPilot"] = wheelsMat.Name;
+                    materialMapping["wpilot"] = wheelsMat.Name;
+                    materialMapping["wBodyS"] = wheelsMat.Name;
+                }
+
+                if (glassShader is not null)
+                {
+                    materialMapping["gTrunk"] = glassShader.Name;
+                    materialMapping["gLDoor"] = glassShader.Name;
+                    materialMapping["gRDoor"] = glassShader.Name;
+                    materialMapping["gBody"] = glassShader.Name;
+                    materialMapping["gFWShield"] = glassShader.Name;
+                    materialMapping["gRWShield"] = glassShader.Name;
+                    materialMapping["gFront"] = glassShader.Name;
+                    materialMapping["gRearA"] = glassShader.Name;
+                    materialMapping["gFrontligh"] = glassShader.Name;
+                }
+
+                if (lightShader is not null)
+                {
+                    materialMapping["FLLight"] = lightShader.Name;
+                    materialMapping["FRLight"] = lightShader.Name;
+                    materialMapping["RLLight"] = lightShader.Name;
+                    materialMapping["RRLight"] = lightShader.Name;
+                    materialMapping["LightFProj"] = lightShader.Name;
+                    materialMapping["Exhaust1"] = lightShader.Name;
+                    materialMapping["Exhaust2"] = lightShader.Name;
+                    materialMapping["Exhaust3"] = lightShader.Name;
+                    materialMapping["Exhaust4"] = lightShader.Name;
+                }
+
+                if (pilotMat is not null)
+                {
+                    materialMapping["pBody"] = pilotMat.Name;
+                    materialMapping["pFLWheel"] = pilotMat.Name;
+                    materialMapping["pFRWheel"] = pilotMat.Name;
+                    materialMapping["pRLWheel"] = pilotMat.Name;
+                    materialMapping["pRRWheel"] = pilotMat.Name;
+                }
 
                 await using var solidEntryStream = solidEntry.Open();
                 await using var ms = new MemoryStream((int)solidEntry.Length);

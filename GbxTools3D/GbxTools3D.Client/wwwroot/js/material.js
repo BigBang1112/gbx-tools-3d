@@ -17,6 +17,19 @@ export function createInvisibleMaterial() {
     return new THREE.MeshBasicMaterial({ visible: false });
 }
 
+export function createGlassMaterial() {
+    return new THREE.MeshPhysicalMaterial({
+        color: 0xFFFFFF,
+        metalness: 0.1,
+        roughness: 0,
+        transmission: 0.8,
+        thickness: 0.1,
+        transparent: true,
+        alphaToCoverage: true,
+        depthWrite: false
+    });
+}
+
 export function createMaterial(
     materialName,
     shaderName,
@@ -36,7 +49,8 @@ export function createMaterial(
     add,
     nightOnly,
     invisible,
-    water) {
+    water,
+    substract) {
     let material;
     if (basic) {
         material = new THREE.MeshBasicMaterial({
@@ -74,7 +88,7 @@ export function createMaterial(
             transparent: transparent,
             alphaToCoverage: transparent,
             side: doubleSided ? THREE.DoubleSide : THREE.FrontSide,
-            blending: add ? THREE.AdditiveBlending : THREE.NormalBlending,
+            blending: add ? THREE.AdditiveBlending : (substract ? THREE.SubtractiveBlending : THREE.NormalBlending),
             depthWrite: !add, // some stadium transparency sorting problems
             visible: !invisible,
         });

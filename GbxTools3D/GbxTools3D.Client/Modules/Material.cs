@@ -20,7 +20,8 @@ internal sealed partial class Material
         bool NightOnly = false,
         bool Invisible = false,
         bool Water = false,
-        bool NoWrap = false)
+        bool NoWrap = false,
+        bool Substract = false)
     {
         public static readonly Properties Default = new();
     }
@@ -71,6 +72,8 @@ internal sealed partial class Material
         ["Techno3/Media/Material/Tech3 Sea"] = new(Water: true),
         ["Techno3/Media/Material/Tech3_Block_TDiffABlend_SpecNorm_CubeOut"] = new(Transparent: true),
         ["Island/Media/Material/IslandBeachFoam"] = new(Add: true, NoWrap: true),
+        [":Glass"] = new(Transparent: true, Opacity: 0.89),
+        [":FakeShad"] = new(Invisible: true)
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];
@@ -84,6 +87,9 @@ internal sealed partial class Material
 
     [JSImport("createInvisibleMaterial", nameof(Material))]
     private static partial JSObject CreateInvisibleMaterial();
+
+    [JSImport("createGlassMaterial", nameof(Material))]
+    private static partial JSObject CreateGlassMaterial();
 
     [JSImport("createMaterial", nameof(Material))]
     private static partial JSObject CreateMaterial(
@@ -105,7 +111,8 @@ internal sealed partial class Material
         bool add,
         bool nightOnly,
         bool invisible,
-        bool water);
+        bool water,
+        bool substract);
 
     [JSImport("createTexture", nameof(Material))]
     private static partial JSObject CreateTexture(string path, string urlPath, bool noWrap);
@@ -152,7 +159,14 @@ internal sealed partial class Material
 
         if (materialDto.IsShader && materialDto.Textures is null or { Count: 0 }) // BayCollision for example
         {
-            material = CreateInvisibleMaterial();
+            if (name == ":Glass")
+            {
+                material = CreateGlassMaterial();
+            }
+            else
+            {
+                material = CreateInvisibleMaterial();
+            }
             materials.Add(uniqueMaterial, material);
             return material;
         }
@@ -218,7 +232,8 @@ internal sealed partial class Material
             properties.Add,
             properties.NightOnly,
             properties.Invisible,
-            properties.Water);
+            properties.Water,
+            properties.Substract);
         materials.Add(uniqueMaterial, material);
         return material;
     }
