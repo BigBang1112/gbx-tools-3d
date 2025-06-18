@@ -416,7 +416,7 @@ internal sealed partial class Solid(JSObject obj)
                 var vertex = vertices[i];
                 vertices[i] = new Vec3(
                     vertex.X * rot.XX + vertex.Y * rot.XY + vertex.Z * rot.XZ + pos.X,
-                    vertex.X * rot.YZ + vertex.Y * rot.YY + vertex.Z * rot.YZ + pos.Y,
+                    vertex.X * rot.YX + vertex.Y * rot.YY + vertex.Z * rot.YZ + pos.Y,
                     vertex.X * rot.ZX + vertex.Y * rot.ZY + vertex.Z * rot.ZZ + pos.Z
                 );
             }
