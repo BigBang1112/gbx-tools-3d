@@ -37,6 +37,9 @@ public partial class Catalog : ComponentBase
     [SupplyParameterFromQuery(Name = "selected")]
     private string? AssetName { get; set; }
 
+    [SupplyParameterFromQuery(Name = "scene")]
+    private string? SceneName { get; set; }
+
     [SupplyParameterFromQuery(Name = "nocatalog")]
     private bool NoCatalog { get; set; }
 

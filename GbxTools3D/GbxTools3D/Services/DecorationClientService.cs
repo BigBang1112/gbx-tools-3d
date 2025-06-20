@@ -37,10 +37,10 @@ internal sealed class DecorationClientService : IDecorationClientService
     }
 
     private static IEnumerable<DecorationSizeDto> MapDecorations(IEnumerable<Decoration> decos) =>
-        decos.GroupBy(x => new Int3(x.DecorationSize.SizeX, x.DecorationSize.SizeY, x.DecorationSize.SizeZ))
+        decos.GroupBy(x => new { Size = new Int3(x.DecorationSize.SizeX, x.DecorationSize.SizeY, x.DecorationSize.SizeZ), x.DecorationSize.SceneName })
             .Select(decoGroup => new DecorationSizeDto
             {
-                Size = decoGroup.Key,
+                Size = decoGroup.Key.Size,
                 BaseHeight = decoGroup.First().DecorationSize.BaseHeight,
                 OffsetBlockY = decoGroup.First().DecorationSize.OffsetBlockY,
                 Decorations = decoGroup.Select(x => new DecorationDto
@@ -51,6 +51,7 @@ internal sealed class DecorationClientService : IDecorationClientService
                     Remap = x.Remap,
                     TerrainModifierCovered = x.TerrainModifierCovered?.Name,
                 }).ToImmutableList(),
+                SceneName = decoGroup.Key.SceneName,
                 Scene = decoGroup.First().DecorationSize.Scene
             });
 }

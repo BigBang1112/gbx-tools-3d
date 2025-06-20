@@ -27,6 +27,7 @@
                 CollectionName="@CollectionName" 
                 BlockName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Block ? AssetName : null)"
                 DecorationName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Decoration ? AssetName : null)"
+                SceneName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Decoration ? SceneName : null)"
                 VehicleName="@(ContentTypeEnum == Enums.ContentType.Vehicle ? AssetName : null)"
                 OnFocusedSolidsChange="() => {}"
                 @ref="view3d"></View3D>
@@ -116,9 +117,22 @@
 
                             @if (AssetTypeEnum == Enums.AssetType.Decoration)
                             {
-                                @foreach (var decoration in DecorationClientService.DecorationSizes)
+                                @foreach (var decorationGroup in DecorationClientService.DecorationSizes.GroupBy(x => x.Size))
                                 {
-                                    <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}")">@decoration.Size</NavLink>
+                                    var hasSingle = decorationGroup.Count() == 1;
+
+                                    foreach (var decoration in decorationGroup)
+                                    {
+                                        var sceneName = decoration.SceneName.Substring(decoration.SceneName.LastIndexOf('\\') + 1);
+
+                                        <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}{(hasSingle ? "" : $"&scene={sceneName}")}")">
+                                            <span>@decoration.Size</span>
+                                            @if (!hasSingle)
+                                {
+                                                <span>(@sceneName)</span>
+                                            }
+                                        </NavLink>
+                                    }
                                 }
                             }
                         </div>

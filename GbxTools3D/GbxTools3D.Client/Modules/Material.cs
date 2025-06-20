@@ -73,7 +73,10 @@ internal sealed partial class Material
         ["Techno3/Media/Material/Tech3_Block_TDiffABlend_SpecNorm_CubeOut"] = new(Transparent: true),
         ["Island/Media/Material/IslandBeachFoam"] = new(Add: true, NoWrap: true),
         [":Glass"] = new(Transparent: true, Opacity: 0.89),
-        [":FakeShad"] = new(Invisible: true)
+        [":FakeShad"] = new(Invisible: true),
+        ["Techno3/Media/Material/Sky/Tech3 Sky"] = new Properties(Invisible: true),
+        ["Techno3/Media/Material/Tech3 Warp PyaPxzDiff"] = new(WorldUV: true),
+        ["Techno3/Media/Material/Tech3 Warp_PyaDiff_To_PDiffPGrassX2"] = new(WorldUV: true),
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];
@@ -200,6 +203,8 @@ internal sealed partial class Material
             ?? materialDto.Textures.GetValueOrDefault("Soil")
             ?? materialDto.Textures.GetValueOrDefault("Grass")
             ?? materialDto.Textures.GetValueOrDefault("Foam 1")
+            ?? materialDto.Textures.GetValueOrDefault("GDiffuse")
+            ?? materialDto.Textures.GetValueOrDefault("PyDiffuse")
             ?? materialDto.Textures.GetValueOrDefault("PxzDiffuse"), gameVersion, properties.NoWrap);
         var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal")
             ?? materialDto.Textures.GetValueOrDefault("PxzNormal"), gameVersion, properties.NoWrap);

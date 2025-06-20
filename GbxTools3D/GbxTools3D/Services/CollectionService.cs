@@ -187,7 +187,7 @@ internal sealed class CollectionService
             var folderDecoration = collectionNode.FolderDecoration ?? $"{collectionNode.Collection}\\ConstructionDecoration\\";
 
             foreach (var decorationFilePath in Directory.EnumerateFiles(
-                Path.Combine(datasetPath, gameFolder, folderDecoration.NormalizePath()), "*.Gbx"))
+                Path.Combine(datasetPath, gameFolder, folderDecoration.NormalizePath()), "*.*Decoration.Gbx", SearchOption.AllDirectories))
             {
                 var decorationNode =
                     (CGameCtnDecoration?)await Gbx.ParseNodeAsync(decorationFilePath,
@@ -204,10 +204,15 @@ internal sealed class CollectionService
                 {
                     throw new Exception("Decoration size is null");
                 }
-                
+
+                var sceneName = decorationNode.DecoSize.SceneFile is null
+                    ? string.Empty
+                    : GbxPath.ChangeExtension(Path.GetRelativePath(gamePath, decorationNode.DecoSize.SceneFile.GetFullPath()), null);
+
                 var decorationSize = await db.DecorationSizes.FirstOrDefaultAsync(x =>
-                    x.CollectionId == collection.Id && // not verified enough if it makes sense
-                    x.SizeX == decorationNode.DecoSize.Size.X && x.SizeY == decorationNode.DecoSize.Size.Y && x.SizeZ == decorationNode.DecoSize.Size.Z,
+                    x.CollectionId == collection.Id // not verified enough if it makes sense
+                    && x.SizeX == decorationNode.DecoSize.Size.X && x.SizeY == decorationNode.DecoSize.Size.Y && x.SizeZ == decorationNode.DecoSize.Size.Z
+                    && x.SceneName == sceneName,
                     cancellationToken);
 
                 if (decorationSize is null)
@@ -217,7 +222,8 @@ internal sealed class CollectionService
                         SizeX = decorationNode.DecoSize.Size.X,
                         SizeY = decorationNode.DecoSize.Size.Y,
                         SizeZ = decorationNode.DecoSize.Size.Z,
-                        Collection = collection
+                        Collection = collection,
+                        SceneName = sceneName
                     };
                     await db.DecorationSizes.AddAsync(decorationSize, cancellationToken);
                 }
@@ -267,7 +273,7 @@ internal sealed class CollectionService
                             Location = location
                         });
 
-                        var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{size}|{path}|Je te hais".Hash();
+                        var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{path}|Je te hais".Hash();
 
                         if (!addedMeshHashes.Add(solidHash))
                         {
@@ -314,6 +320,76 @@ internal sealed class CollectionService
                             },
                             Location = location
                         });
+                    }
+
+                    var objects = decorationNode.DecoSize.Scene.Objects ?? [];
+                    for (var i = 0; i < objects.Length; i++)
+                    {
+                        var sceneObject = objects[i];
+                        var location = decorationNode.DecoSize.Scene.ObjectLocations?[i] ?? new Iso4();
+
+                        if (sceneObject is CSceneMobil mobil)
+                        {
+                            var solid = mobil.GetSolid(gamePath, out var path);
+
+                            if (solid is null)
+                            {
+                                continue;
+                            }
+
+                            solid.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                            if (path is null)
+                            {
+                                throw new Exception("Decoration object path is null");
+                            }
+
+                            path = GbxPath.ChangeExtension(path, null);
+
+                            scene.Add(new SceneObject
+                            {
+                                Solid = path,
+                                Location = location
+                            });
+
+                            var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{path}|Je te hais".Hash();
+
+                            if (!addedMeshHashes.Add(solidHash))
+                            {
+                                continue;
+                            }
+
+                            await meshService.GetOrCreateMeshAsync(gamePath, solidHash, path, solid, vehicle: null, isDeco: true, cancellationToken: cancellationToken);
+                        }
+                        else if (sceneObject is CSceneLight light)
+                        {
+                            var type = light.Light?.MainGxLight switch
+                            {
+                                GxLightAmbient => "Ambient",
+                                GxLightDirectional => "Directional",
+                                null => throw new Exception("Light is null"),
+                                _ => throw new Exception($"Unknown light type ({light.Light.MainGxLight.GetType()})")
+                            };
+
+                            var gxLight = light.Light.MainGxLight;
+                            var gxLightAmbient = gxLight as GxLightAmbient;
+
+                            scene.Add(new SceneObject
+                            {
+                                Light = new Light
+                                {
+                                    Type = type,
+                                    IsActive = light.IsActive,
+                                    Color = gxLight.Color,
+                                    Intensity = gxLight.Intensity,
+                                    FlareIntensity = gxLight.FlareIntensity,
+                                    ShadowIntensity = gxLight.ShadowIntensity,
+                                    ShadeMinY = gxLightAmbient?.ShadeMinY,
+                                    ShadeMaxY = gxLightAmbient?.ShadeMaxY,
+                                },
+                                Location = location
+                            });
+                        }
                     }
 
                     decorationSize.Scene = scene.ToImmutableArray();

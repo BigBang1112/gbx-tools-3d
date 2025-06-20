@@ -1,6 +1,7 @@
 ﻿using GbxTools3D.Client.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Collections.Immutable;
+using System.ComponentModel.DataAnnotations;
 
 namespace GbxTools3D.Data.Entities;
 
@@ -8,11 +9,15 @@ namespace GbxTools3D.Data.Entities;
 public sealed class DecorationSize
 {
     public int Id { get; set; }
-    public int SizeX { get; set; }
-    public int SizeY { get; set; }
-    public int SizeZ { get; set; }
+    public required int SizeX { get; set; }
+    public required int SizeY { get; set; }
+    public required int SizeZ { get; set; }
     public int BaseHeight { get; set; }
     public bool OffsetBlockY { get; set; }
+
+    [StringLength(64)]
+    public required string SceneName { get; set; }
+
     public ImmutableArray<SceneObject> Scene { get; set; } = [];
     
     public int CollectionId { get; set; }

@@ -9,6 +9,7 @@ public sealed class DecorationSizeDto
     public required Int3 Size { get; set; }
     public int BaseHeight { get; set; }
     public bool OffsetBlockY { get; set; }
+    public required string SceneName { get; set; }
     public required ImmutableArray<SceneObject> Scene { get; set; }
     public required ImmutableList<DecorationDto> Decorations { get; set; } = [];
 }

@@ -422,12 +422,27 @@ internal sealed partial class Solid(JSObject obj)
             }
         }
 
-        Span<byte> normals = [];
+        Span<byte> normalData = [];
 
         if (hasNormals)
         {
             // Parse normals
-            normals = r.ReadBytes(vertexCount * 3 * sizeof(float));
+            normalData = r.ReadBytes(vertexCount * 3 * sizeof(float));
+
+            if (rot != Mat3.Identity || pos != Vector3.Zero)
+            {
+                var normals = MemoryMarshal.Cast<byte, Vec3>(normalData);
+
+                for (var i = 0; i < normals.Length; i++)
+                {
+                    var normal = normals[i];
+                    normals[i] = new Vec3(
+                        normal.X * rot.XX + normal.Y * rot.XY + normal.Z * rot.XZ,
+                        normal.X * rot.YX + normal.Y * rot.YY + normal.Z * rot.YZ,
+                        normal.X * rot.ZX + normal.Y * rot.ZY + normal.Z * rot.ZZ
+                    ).GetNormalized();
+                }
+            }
         }
 
         // Parse indices
@@ -460,7 +475,7 @@ internal sealed partial class Solid(JSObject obj)
         
         indexCounter += indexCount;
 
-        return CreateGeometry(vertexData, normals, indices, uvData);
+        return CreateGeometry(vertexData, normalData, indices, uvData);
     }
 
     private static JSObject? ReadSurface(AdjustedBinaryReader r)

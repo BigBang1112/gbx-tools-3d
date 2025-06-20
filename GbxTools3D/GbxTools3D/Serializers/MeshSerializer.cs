@@ -163,6 +163,7 @@ public class MeshSerializer
         ArgumentNullException.ThrowIfNull(tree);
 
         var isSpecialDeco = isDeco && lod is null && tree.Children.Count == 2 && tree.Children[0].Name == "High" && tree.Children[1].Name == "Low";
+        var isSpecialDeco2 = isDeco && lod is null && tree.Children.Count == 3 && tree.Children[0].Name == "Low" && tree.Children[1].Name == "High";
 
         w.Write7BitEncodedInt(tree.Children.Count(x => ShouldIncludeTree(x, isRoot) && !isSpecialDeco));
 
@@ -203,6 +204,19 @@ public class MeshSerializer
         {
             var high = tree.Children[0];
             var low = tree.Children[1];
+
+            WriteVisualMip(w, new CPlugTreeVisualMip
+            {
+                Levels = [
+                    new CPlugTreeVisualMip.Level(0, high),
+                    new CPlugTreeVisualMip.Level(4096, low)
+                ]
+            }, gamePath);
+        }
+        else if (isSpecialDeco2)
+        {
+            var low = tree.Children[0];
+            var high = tree.Children[1];
 
             WriteVisualMip(w, new CPlugTreeVisualMip
             {

@@ -8,7 +8,7 @@ let controls, followTarget, targetFar, targetUp, targetLookAtFactor;
 //let bothPressed = false;
 
 export function create(fov) {
-    const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 1024*64);
+    const camera = new THREE.PerspectiveCamera(fov, window.innerWidth / window.innerHeight, 0.1, 80000);
     camera.position.y = 2;
     camera.position.z = 5;
     camera.lookAt(0, 0, 0);
