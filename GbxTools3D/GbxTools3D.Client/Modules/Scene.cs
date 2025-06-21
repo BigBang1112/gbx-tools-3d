@@ -6,10 +6,10 @@ namespace GbxTools3D.Client.Modules;
 [SupportedOSPlatform("browser")]
 internal partial class Scene
 {
-    public JSObject Object { get; } = Create();
+    public JSObject Object { get; }
 
     [JSImport("create", nameof(Scene))]
-    private static partial JSObject Create();
+    private static partial JSObject Create(bool isCatalog);
 
     [JSImport("add", nameof(Scene))]
     private static partial void Add(JSObject scene, JSObject obj);
@@ -22,6 +22,11 @@ internal partial class Scene
 
     [JSImport("test", nameof(Scene))]
     private static partial void Test(JSObject scene);
+
+    public Scene(bool isCatalog)
+    {
+        Object = Create(isCatalog);
+    }
 
     public void Add(JSObject obj)
     {

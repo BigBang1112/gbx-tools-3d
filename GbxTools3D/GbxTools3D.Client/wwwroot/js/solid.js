@@ -50,6 +50,7 @@ export function updateMatrixWorld(tree) {
 
 export function createLod() {
     var lod = new THREE.LOD();
+    lod.name = "LOD";
     return lod;
 }
 
@@ -155,6 +156,10 @@ export function instantiate(tree, instanceInfos) {
     }
 
     tree.instanceMatrix.needsUpdate = true;
+}
+
+export function getChildren(tree) {
+    return tree.children;
 }
 
 export function getAllChildren(tree) {

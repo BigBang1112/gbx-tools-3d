@@ -24,12 +24,13 @@
     @if (AssetName is not null)
     {
         <View3D GameVersion="GameVersionEnum"
-                CollectionName="@CollectionName" 
+                CollectionName="@CollectionName"
                 BlockName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Block ? AssetName : null)"
                 DecorationName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Decoration ? AssetName : null)"
                 SceneName="@(ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Decoration ? SceneName : null)"
                 VehicleName="@(ContentTypeEnum == Enums.ContentType.Vehicle ? AssetName : null)"
                 OnFocusedSolidsChange="() => {}"
+                IsCatalog="true"
                 @ref="view3d"></View3D>
     }
 
@@ -50,12 +51,12 @@
                 }
             </div>
             <div class="games">
-                <NavLink href="/catalog/TMSX"><img src="icons/game/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
-                <NavLink href="/catalog/TMNESWC"><img src="icons/game/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
-                <NavLink href="/catalog/TMF"><img src="icons/game/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
-                <NavLink href="/catalog/TMT"><img src="icons/game/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
-                <NavLink href="/catalog/MP4"><img src="icons/game/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
-                <NavLink href="/catalog/TM2020"><img src="icons/game/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
+                <NavLink href="@($"/catalog/TMSX{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
+                <NavLink href="@($"/catalog/TMNESWC{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
+                <NavLink href="@($"/catalog/TMF{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
+                <NavLink href="@($"/catalog/TMT{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
+                <NavLink href="@($"/catalog/MP4{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
+                <NavLink href="@($"/catalog/TM2020{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
             </div>
 
             @if (GameVersionEnum != GBX.NET.GameVersion.Unspecified)
@@ -128,7 +129,7 @@
                                         <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}{(hasSingle ? "" : $"&scene={sceneName}")}")">
                                             <span>@decoration.Size</span>
                                             @if (!hasSingle)
-                                {
+                                            {
                                                 <span>(@sceneName)</span>
                                             }
                                         </NavLink>
@@ -177,29 +178,112 @@
                     <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
                 }
             </div>
-            <div>
-                @BlockClientService.Blocks.FirstOrDefault(x => x.Name == AssetName)?.Name
-
-                @foreach (var solid in view3d?.FocusedSolids ?? [])
+            <div style="display: flex; flex-direction: column; gap: 10px">
+                @if (block is not null)
                 {
-                    <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">Wireframe</div>
-                    @if (view3d?.Scene is not null)
+                    <div style="display: flex;">
+                        <div style="flex: 1; text-align: center; padding-bottom: 5px;">
+                            @if (block.Name.Length > 60)
+                            {
+                                <div style="font-weight: bold;font-size: 70%">@block.Name</div>
+                            }
+                            else if (block.Name.Length > 45)
+                            {
+                                <div style="font-weight: bold;font-size: 90%">@block.Name</div>
+                            }
+                            else if (block.Name.Length > 30)
+                            {
+                                <div style="font-weight: bold;">@block.Name</div>
+                            }
+                            else
+                            {
+                                <div style="font-weight: bold;font-size: 150%">@block.Name</div>
+                            }
+                        </div>
+                    </div>
+                    <div class="minimenu">
+                        <div class="button-generic @(!blockIsGround ? "active" : "") @(block.AirVariants.Count > 0 ? "" : "disabled")" @onclick="() => ChangeBlockVariantAsync(isGround: block.AirVariants.Count == 0)">Air</div>
+                        <div class="button-generic @(blockIsGround ? "active" : "") @(block.GroundVariants.Count > 0 ? "" : "disabled")" @onclick="() => ChangeBlockVariantAsync(isGround: block.GroundVariants.Count > 0)">Ground</div>
+                    </div>
+
+                    var variants = blockIsGround ? block.GroundVariants : block.AirVariants;
+
+                    @if (variants.Count > 1)
                     {
-                        <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">Vertex normals</div>
+                        <div class="minimenu">
+                            @foreach (var variant in variants.GroupBy(x => x.Variant))
+                            {
+                                <div class="button-generic @(blockVariant == variant.Key ? "active" : "")" @onclick="() => ChangeBlockVariantAsync(variant.First())" title="Variant #@variant.Key">@variant.Key</div>
+                            }
+                        </div>
                     }
 
-                    @foreach (var (matName, shadName) in solid.GetAllMaterials())
+                    @if (variants.Count > 0 && variants.Where(x => x.Variant == blockVariant).Count() > 1)
                     {
-                        <ul>
-                            <li>
-                                @matName
-                                <ul>
-                                    <li>@shadName</li>
-                                </ul>
-                            </li>
-                        </ul>
+                        <div class="minimenu">
+                            @foreach (var variant in variants.Where(x => x.Variant == blockVariant))
+                            {
+                                <div class="button-generic @(blockSubVariant == variant.SubVariant ? "active" : "")" @onclick="() => ChangeBlockVariantAsync(variant)" title="Sub-variant #@variant.SubVariant">@variant.SubVariant</div>
+                            }
+                        </div>
                     }
+
+                    var currentVariant = variants.FirstOrDefault(x => x.Variant == blockVariant && x.SubVariant == blockSubVariant);
+
+                    @if (currentVariant is not null)
+                    {
+                        <div style="display: grid; grid-template-columns: auto 1fr;align-items:center;gap: 10px;">
+                            @if (currentVariant.MobilPath is not null)
+                            {
+                                <div style="padding: 5px">Mobil:</div>
+                                <InputText class="text" @bind-Value="currentVariant.MobilPath" style="font-size: 80%;" disabled />
+                            }
+                            <div style="padding: 5px">Mesh:</div>
+                            <InputText class="text" @bind-Value="currentVariant.MeshPath" style="font-size: 80%;" disabled />
+                        </div>
+                    }
+
+                    @*
+                    @if (block.HasIcon && SelectedCollection is not null)
+                    {
+                        <img src="@($"api/icon/{GameVersionEnum}/collection/{SelectedCollection.Name}/block/{block.Name}")" width="64" height="64" />
+                    }
+                    *@
                 }
+
+                <ul>
+                    @foreach (var solid in view3d?.FocusedSolids ?? [])
+                    {
+                        <ObjectTreeElement Object="solid.Object"></ObjectTreeElement>
+                        @*
+                        <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">
+                            <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
+                        </div>
+                        <div class="button-generic">
+                            <img src="icons/ui/ads_click.svg" alt="Select Mode" class="icon" width="32" height="32" />
+                        </div>
+                        @if (view3d?.Scene is not null)
+                        {
+                            <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">Vertex normals</div>
+                        }
+
+                        @foreach (var (matName, shadName) in solid.GetAllMaterials())
+                        {
+                            <ul>
+                                <li>
+                                    @matName
+                                    <ul>
+                                        <li>@shadName</li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        }
+                        *@
+                    }
+                </ul>
+
+                <small>@materialName</small>
+                <small>@shaderName?.Replace('\\', '/')</small>
             </div>
         </div>
     </div>

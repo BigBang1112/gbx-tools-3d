@@ -450,7 +450,8 @@ public class MeshSerializer
 
         var shaderName = material?.ShaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(material.ShaderFile.GetFullPath(), null));
 
-        if (shaderName == Path.Combine("Techno", "Media", "Material", "TDiff PX2 Trans NormY PC3only"))
+        if (shaderName == Path.Combine("Techno", "Media", "Material", "TDiff PX2 Trans NormY PC3only")
+            || shaderName == Path.Combine("Techno", "Media", "Material", "TAdd Night"))
         {
             w.Write(true); // additionalMaterialProperties
             w.Write(false); // cast shadows

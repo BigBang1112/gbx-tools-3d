@@ -1,9 +1,9 @@
 ﻿import * as THREE from 'three';
 
-export function create() {
+export function create(isCatalog) {
     const scene = new THREE.Scene();
     add(scene, new THREE.AmbientLight(0x888888));
-    add(scene, createDirectionalLight());
+    add(scene, createDirectionalLight(isCatalog));
 
     const gridHelper = new THREE.GridHelper(128, 128, 0x880000);
     gridHelper.name = "helper";
@@ -66,7 +66,7 @@ export function clear(scene) {
     }
 }
 
-function createDirectionalLight() {
+function createDirectionalLight(isCatalog) {
     const light = new THREE.DirectionalLight(0xffffff, 2);
     light.matrixAutoUpdate = true;
     light.matrixWorldAutoUpdate = true;
@@ -88,15 +88,24 @@ function createDirectionalLight() {
     light.shadow.mapSize.width = 4096;
     light.shadow.mapSize.height = 4096;
 
-    // Set shadow camera parameters to cover the 1024x1024 scene
-    light.shadow.camera.left = -2048;
-    light.shadow.camera.right = 2048;
-    light.shadow.camera.top = 2048;
-    light.shadow.camera.bottom = -2048;
-    light.shadow.camera.near = 512;
-    light.shadow.camera.far = 5120;
-    //light.shadow.autoUpdate = false;
-    //light.shadow.needsUpdate = true;
+    // Set shadow camera parameters to cover the scene
+    if (isCatalog) {
+        // Adjust for 256x256 scene
+        light.shadow.camera.left = -128;
+        light.shadow.camera.right = 128;
+        light.shadow.camera.top = 128;
+        light.shadow.camera.bottom = -128;
+        light.shadow.camera.near = 128;
+        light.shadow.camera.far = 5120;
+    } else {
+        // Adjust for the 1024x1024 scene
+        light.shadow.camera.left = -2048;
+        light.shadow.camera.right = 2048;
+        light.shadow.camera.top = 2048;
+        light.shadow.camera.bottom = -2048;
+        light.shadow.camera.near = 512;
+        light.shadow.camera.far = 5120;
+    }
 
     return light;
 }

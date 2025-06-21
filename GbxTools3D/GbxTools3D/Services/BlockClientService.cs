@@ -32,21 +32,29 @@ public sealed class BlockClientService : IBlockClientService
                     .ThenInclude(x => x.ObjectLinks)
                         .ThenInclude(x => x.Sound)
                 .Where(x => x.Collection.GameVersion == gameVersion && x.Collection.Name == collectionName)
-                .AsNoTracking()
+                .Select(x => MapBlockInfo(x, false))
                 .ToListAsync(token);
-            return blockInfos.Select(MapBlockInfo).ToList();
+            return blockInfos;
         }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }, cancellationToken: cancellationToken);
     }
 
     public async Task<BlockInfoDto?> GetAsync(GameVersion gameVersion, string collectionName, string blockName, CancellationToken cancellationToken)
     {
-        var blockInfo = await db.BlockInfos
-            .Include(x => x.TerrainModifier)
-            .Include(x => x.Variants)
-            .AsNoTracking()
-            .FirstOrDefaultAsync(
-                x => x.Collection.GameVersion == gameVersion && x.Collection.Name == collectionName && x.Name == blockName, cancellationToken);
-        return blockInfo is null ? null : MapBlockInfo(blockInfo);
+        return await cache.GetOrCreateAsync($"block:{gameVersion}:{collectionName}:{blockName}", async (token) =>
+        {
+            var blockInfo = await db.BlockInfos
+                .Include(x => x.TerrainModifier)
+                .Include(x => x.Variants)
+                    .ThenInclude(x => x.Mesh)
+                .Include(x => x.Variants)
+                    .ThenInclude(x => x.ObjectLinks)
+                        .ThenInclude(x => x.Sound)
+                .Include(x => x.Collection)
+                .Where(x => x.Collection.GameVersion == gameVersion && x.Collection.Name == collectionName && x.Name == blockName)
+                .Select(x => MapBlockInfo(x, true))
+                .FirstOrDefaultAsync(cancellationToken);
+            return blockInfo;
+        }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }, cancellationToken: cancellationToken);
     }
 
     public async Task FetchAllAsync(GameVersion gameVersion, string collectionName, CancellationToken cancellationToken = default)
@@ -54,7 +62,7 @@ public sealed class BlockClientService : IBlockClientService
         Blocks = await GetAllAsync(gameVersion, collectionName, cancellationToken);
     }
 
-    private static BlockInfoDto MapBlockInfo(BlockInfo blockInfo) => new()
+    private static BlockInfoDto MapBlockInfo(BlockInfo blockInfo, bool detailed) => new()
     {
         Name = blockInfo.Name,
         AirUnits = blockInfo.AirUnits,
@@ -62,8 +70,8 @@ public sealed class BlockClientService : IBlockClientService
         HasAirHelper = blockInfo.HasAirHelper,
         HasGroundHelper = blockInfo.HasGroundHelper,
         HasConstructionModeHelper = blockInfo.HasConstructionModeHelper,
-        AirVariants = blockInfo.Variants.Where(x => !x.Ground).Select(MapVariant).ToList(),
-        GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(MapVariant).ToList(),
+        AirVariants = blockInfo.Variants.Where(x => !x.Ground).Select(x => MapVariant(x, detailed)).ToList(),
+        GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(x => MapVariant(x, detailed)).ToList(),
         Height = blockInfo.Height,
         IsDefaultZone = blockInfo.Collection.DefaultZoneBlock == blockInfo.Name,
         HasIcon = blockInfo.IconId.HasValue,
@@ -72,14 +80,16 @@ public sealed class BlockClientService : IBlockClientService
         TerrainModifier = blockInfo.TerrainModifier?.Name,
     };
 
-    private static BlockVariantDto MapVariant(BlockVariant variant) => new()
+    private static BlockVariantDto MapVariant(BlockVariant variant, bool detailed) => new()
     {
         Variant = variant.Variant,
         SubVariant = variant.SubVariant,
+        MobilPath = detailed ? variant.Path : null,
+        MeshPath = detailed ? variant.Mesh?.Path : null,
         ObjectLinks = variant.ObjectLinks.Count == 0 ? null : variant.ObjectLinks.Select(x => new ObjectLinkDto
         {
             Location = x.Loc,
             SoundPath = x.Sound?.Path
-        }).ToList()
+        }).ToList(),
     };
 }

@@ -1,0 +1,35 @@
+﻿@using System.Runtime.InteropServices.JavaScript
+
+<li>
+    @if (Object is null)
+    {
+        <span>null</span>
+    }
+    else
+    {
+        <span @onclick="() => IsOpen = !IsOpen">@Object.GetPropertyAsString("name")</span>
+
+        @if (IsOpen)
+        {
+            <ul>
+                @foreach (var child in Solid.GetChildren(Object))
+                {
+                    if (child.GetPropertyAsBoolean("isMesh"))
+                    {
+                        continue;
+                    }
+
+                    <ObjectTreeElement Object="child" />
+                }
+            </ul>
+        }
+    }
+</li>
+
+@code {
+    [Parameter]
+    public JSObject? Object { get; set; }
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+}

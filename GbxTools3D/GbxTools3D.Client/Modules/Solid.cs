@@ -139,6 +139,9 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("instantiate", nameof(Solid))]
     private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);
 
+    [JSImport("getChildren", nameof(Solid))]
+    public static partial JSObject[] GetChildren(JSObject tree);
+
     [JSImport("getAllChildren", nameof(Solid))]
     private static partial JSObject[] GetAllChildren(JSObject tree);
 

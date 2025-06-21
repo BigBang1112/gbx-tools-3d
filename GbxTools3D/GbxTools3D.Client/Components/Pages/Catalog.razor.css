@@ -6,6 +6,15 @@
     z-index: 20;
 }
 
+.minimenu {
+    display: flex;
+    gap: 5px;
+}
+
+    .minimenu div {
+        flex: 1;
+    }
+
 .properties {
     position: fixed;
     padding: 20px;

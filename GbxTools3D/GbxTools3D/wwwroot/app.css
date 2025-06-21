@@ -110,7 +110,7 @@ footer {
     border-radius: 4px;
     text-decoration: none;
     transition: background-color 0.05s ease;
-    padding: 10px 15px;
+    padding: 10px 5px;
     cursor: pointer;
 }
 
@@ -122,6 +122,16 @@ footer {
 
     .button-generic.active {
         background-color: #333C;
+    }
+
+    .button-generic.disabled {
+        background-color: #3334;
+        color: #888;
+        cursor: not-allowed;
+    }
+
+    .button-generic.spaced {
+        padding: 10px 15px;
     }
 
 .navbar-fake-margin {

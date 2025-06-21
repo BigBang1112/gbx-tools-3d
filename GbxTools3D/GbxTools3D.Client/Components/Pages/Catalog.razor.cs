@@ -22,6 +22,11 @@ public partial class Catalog : ComponentBase
     private bool showCatalog = true;
     private bool showProperties = true;
 
+    private BlockInfoDto? block;
+    private bool blockIsGround;
+    private int blockVariant;
+    private int blockSubVariant;
+
     [Parameter]
     public string? GameVersion { get; set; }
 
@@ -138,6 +143,8 @@ public partial class Catalog : ComponentBase
 
     private async Task FetchInfoAsync(CancellationToken cancellationToken = default)
     {
+        block = null;
+
         if (GameVersionEnum == GBX.NET.GameVersion.Unspecified)
         {
             return;
@@ -155,10 +162,23 @@ public partial class Catalog : ComponentBase
             switch (AssetTypeEnum)
             {
                 case Enums.AssetType.Block:
-                    await BlockClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
+                    var allBlocksTask = BlockClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
+                    var blockTask = AssetName is null || !RendererInfo.IsInteractive ? null : BlockClientService.GetAsync(GameVersionEnum, CollectionName, AssetName, cancellationToken);
+
                     if (blocksVirtualize is not null)
                     {
                         await blocksVirtualize.RefreshDataAsync();
+                    }
+
+                    await allBlocksTask;
+                    block = BlockClientService.Blocks.FirstOrDefault(x => x.Name == AssetName);
+                    blockIsGround = block?.AirVariants.Count == 0;
+                    blockVariant = 0;
+                    blockSubVariant = 0;
+
+                    if (blockTask is not null)
+                    {
+                        block = await blockTask;
                     }
                     break;
                 case Enums.AssetType.Decoration:
@@ -191,7 +211,7 @@ public partial class Catalog : ComponentBase
 
     private void OnFocusedSolidHover(IntersectionInfo intersection)
     {
-        materialName = intersection.MaterialName;
+        materialName = intersection.ObjectName;
 
         if (intersection.MaterialUserData?.RootElement.TryGetProperty("shaderName", out var shaderJson) == true)
         {
@@ -214,6 +234,36 @@ public partial class Catalog : ComponentBase
         }
 
         return $"GbxTools3D|Sound|{GameVersionEnum}|{firstSoundPath}|ItsChallengeNotAltered".Hash();
+    }
+
+    private async Task ChangeBlockVariantAsync(bool isGround)
+    {
+        if (block is null || blockIsGround == isGround)
+        {
+            return;
+        }
+
+        blockIsGround = isGround;
+
+        var variant = blockIsGround
+            ? block.GroundVariants.First(x => x.Variant == blockVariant && x.SubVariant == blockSubVariant)
+            : block.AirVariants.First(x => x.Variant == blockVariant && x.SubVariant == blockSubVariant);
+
+        if (view3d is not null)
+        {
+            await view3d.ChangeBlockVariantAsync(blockIsGround, variant.Variant, variant.SubVariant);
+        }
+    }
+
+    private async Task ChangeBlockVariantAsync(BlockVariantDto variant)
+    {
+        blockVariant = variant.Variant;
+        blockSubVariant = variant.SubVariant;
+
+        if (view3d is not null)
+        {
+            await view3d.ChangeBlockVariantAsync(blockIsGround, blockVariant, blockSubVariant);
+        }
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()

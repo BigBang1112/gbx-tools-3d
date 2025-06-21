@@ -57,6 +57,9 @@ public partial class View3D : ComponentBase
     public string? DecorationName { get; set; }
 
     [Parameter]
+    public string? SceneName { get; set; }
+
+    [Parameter]
     public EventCallback BeforeMapLoad { get; set; }
 
     [Parameter]
@@ -64,6 +67,9 @@ public partial class View3D : ComponentBase
 
     [Parameter]
     public EventCallback OnFocusedSolidsChange { get; set; }
+
+    [Parameter]
+    public bool IsCatalog { get; set; }
 
     public event Action<IntersectionInfo>? OnIntersect;
 
@@ -73,7 +79,8 @@ public partial class View3D : ComponentBase
 
     private Dictionary<string, CollectionDto> collectionInfos = [];
     private Dictionary<string, BlockInfoDto> blockInfos = [];
-    private Dictionary<Int3, DecorationSizeDto> decorations = [];
+    private ILookup<Int3, DecorationSizeDto> decorations = new Dictionary<Int3, DecorationSizeDto>()
+        .ToLookup(x => x.Key, x => x.Value);
     private Dictionary<string, MaterialDto> materials = [];
     private Dictionary<string, VehicleDto> vehicles = [];
 
@@ -144,7 +151,7 @@ public partial class View3D : ComponentBase
         await rendererModuleInterop.InvokeVoidAsync("passDotNet", objRef);
 
         renderer = Renderer.Create();
-        Scene = new Scene();
+        Scene = new Scene(IsCatalog);
         mapCamera = new Camera();
 
         Renderer.Camera = mapCamera;
@@ -187,32 +194,32 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        await foreach (var task in Task.WhenEach(tasks).WithCancellation(cts.Token))
+        await foreach (var task in Task.WhenEach(tasks).WithCancellation(cancellationToken))
         {
             task.Result.EnsureSuccessStatusCode(); // show note message that user has to wait, if the block list isnt available yet
 
             if (task == collectionsTask)
             {
-                collectionInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListCollectionDto, cts.Token))?
+                collectionInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListCollectionDto, cancellationToken))?
                     .ToDictionary(x => x.Name) ?? [];
             }
             else if (task == blockInfosTask)
             {
-                blockInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cts.Token))?
+                blockInfos = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListBlockInfoDto, cancellationToken))?
                     .ToDictionary(x => x.Name) ?? [];
             }
             else if (task == decorationTask)
             {
-                decorations = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListDecorationSizeDto, cts.Token))?
-                    .ToDictionary(x => x.Size) ?? [];
+                decorations = ((await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListDecorationSizeDto, cancellationToken)) ?? [])
+                    .ToLookup(x => x.Size);
             }
             else if (task == materialTask)
             {
-                materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cts.Token) ?? [];
+                materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken) ?? [];
             }
             else if (task == vehicleTask)
             {
-                vehicles = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListVehicleDto, cts.Token))?
+                vehicles = (await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ListVehicleDto, cancellationToken))?
                     .ToDictionary(x => x.Name) ?? [];
             }
         }
@@ -226,15 +233,6 @@ public partial class View3D : ComponentBase
         {
             return false;
         }
-
-        foreach (var solid in FocusedSolids)
-        {
-            solid.Remove(Scene);
-            //solid.Dispose();
-        }
-
-        FocusedSolids.Clear();
-        await OnFocusedSolidsChange.InvokeAsync();
 
         // initial camera position
         var center = new Vec3(16, 4, 16);
@@ -261,11 +259,6 @@ public partial class View3D : ComponentBase
         var collectionInfo = CollectionName is null ? null : collectionInfos.GetValueOrDefault(CollectionName);
 
         var isGround = blockInfo.AirVariants.Count == 0;
-        var variant = isGround
-            ? blockInfo.GroundVariants.Select(x => x.Variant).FirstOrDefault()
-            : blockInfo.AirVariants.Select(x => x.Variant).FirstOrDefault();
-        var subVariant = 0;
-
         var units = isGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
 
         var blockSize = collectionInfo?.GetSquareSize() ?? (32, 8, 32);
@@ -280,25 +273,61 @@ public partial class View3D : ComponentBase
         mapCamera.CreateOrbitControls(renderer, center);
         //
 
+        var meshFound = await ChangeBlockVariantAsync(isGround, variant: 0, subVariant: 0, cancellationToken);
+
+        if (!meshFound)
+        {
+            return false;
+        }
+
+        CurrentBlockInfo = blockInfo;
+
+        Renderer.EnableRaycaster();
+
+        return true;
+    }
+
+    public async Task<bool> ChangeBlockVariantAsync(bool isGround, int variant, int subVariant, CancellationToken cancellationToken = default)
+    {
+        if (BlockName is null)
+        {
+            throw new InvalidOperationException("Not in block view mode, cannot change variant.");
+        }
+
+        if (renderer is null)
+        {
+            throw new InvalidOperationException("Renderer is not initialized.");
+        }
+
+        if (mapCamera is null)
+        {
+            throw new InvalidOperationException("Map camera is not initialized.");
+        }
+
+        foreach (var solid in FocusedSolids)
+        {
+            solid.Remove(Scene);
+            //solid.Dispose();
+        }
+
+        FocusedSolids.Clear();
+        await OnFocusedSolidsChange.InvokeAsync();
+
         var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
-
+        
         using var meshResponse = await http.GetAsync($"/api/mesh/{hash}", cancellationToken);
-
+        
         if (!meshResponse.IsSuccessStatusCode)
         {
             return false;
         }
 
-        await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+        using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
         var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
         Scene?.Add(focusedSolid);
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
-
-        CurrentBlockInfo = blockInfo;
-
-        Renderer.EnableRaycaster();
 
         return true;
     }
@@ -401,10 +430,15 @@ public partial class View3D : ComponentBase
 
         var decoSize = new Int3(decoSizeX, decoSizeY, decoSizeZ);
 
-        if (!decorations.TryGetValue(decoSize, out var decoInfo))
+        if (!decorations.Contains(decoSize))
         {
             return false;
         }
+
+        var decoInfos = decorations[decoSize];
+        var decoInfo = decoInfos.Count() == 1
+            ? decoInfos.First()
+            : decoInfos.First(x => x.SceneName.Substring(x.SceneName.LastIndexOf('\\') + 1) == SceneName); // where SceneName matches
 
         var blockSize = collectionInfos[CollectionName].GetSquareSize();
         var center = new Vec3(decoSize.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, decoSize.Z * blockSize.Z / 2f - decoSize.Z * blockSize.Z * 0.15f);
@@ -413,7 +447,7 @@ public partial class View3D : ComponentBase
         mapCamera.Position = new Vec3(center.X, decoSize.Z * blockSize.Z, -decoSize.Z * blockSize.Z);
         mapCamera.CreateMapControls(renderer, center);
 
-        await foreach (var solid in CreateDecorationAsync(CollectionName, decoInfo, DecorationName, cancellationToken))
+        await foreach (var solid in CreateDecorationAsync(CollectionName, decoInfo, cancellationToken))
         {
             FocusedSolids.Add(solid);
         }
@@ -438,6 +472,11 @@ public partial class View3D : ComponentBase
         if (GameVersion == (GameVersion.MP3 | GameVersion.TMT))
         {
             GameVersion = Map.TitleId == "TMCE@nadeolabs" ? GameVersion.TMT : GameVersion.MP3;
+        }
+
+        if (GameVersion == GameVersion.TMU)
+        {
+            GameVersion = GameVersion.TMF;
         }
 
         if (GameVersion == GameVersion.MP3) // temporary
@@ -481,23 +520,25 @@ public partial class View3D : ComponentBase
     {
         var baseHeight = 5;
 
-        if (!decorations.TryGetValue(map.Size, out var decoSize))
+        if (!decorations.Contains(map.Size))
         {
             return baseHeight;
         }
+
+        var decoSize = decorations[map.Size].First(x => x.Decorations.Any(x => x.Name == map.Decoration.Id));
 
         baseHeight = decoSize.BaseHeight + (decoSize.OffsetBlockY ? 1 : 0);
 
         var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == map.Decoration.Id);
 
-        var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
+        //var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
 
-        await foreach (var _ in CreateDecorationAsync(map.Collection ?? throw new Exception("Collection is null"), decoSize, size, cancellationToken)) { }
+        await foreach (var _ in CreateDecorationAsync(map.Collection ?? throw new Exception("Collection is null"), decoSize, cancellationToken)) { }
 
         return baseHeight;
     }
 
-    private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, string size, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
 
@@ -508,7 +549,7 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            var hash = $"GbxTools3D|Decoration|{GameVersion}|{collectionName}|{size}|{sceneObject.Solid}|Je te hais".Hash();
+            var hash = $"GbxTools3D|Decoration|{GameVersion}|{collectionName}|{sceneObject.Solid}|Je te hais".Hash();
 
             tasks.Add(http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
         }

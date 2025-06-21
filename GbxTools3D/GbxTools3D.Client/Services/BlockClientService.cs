@@ -55,7 +55,7 @@ internal sealed class BlockClientService : IBlockClientService
     {
         using var response = await http.GetAsync($"/api/blocks/{gameVersion}/{collectionName}/{blockName}", cancellationToken);
 
-        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync<BlockInfoDto>(cancellationToken) : null;
+        return response.IsSuccessStatusCode ? await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.BlockInfoDto, cancellationToken) : null;
     }
 
     public async Task FetchAllAsync(GameVersion gameVersion, string collectionName, CancellationToken cancellationToken = default)
