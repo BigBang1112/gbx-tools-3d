@@ -94,20 +94,7 @@ function update() {
 
         if (raycasterEnabled) {
             const intersects = raycaster.intersectObjects(scene.children.filter(item => item.name !== "helper"), true);
-            if (intersects.length > 0) {
-                if (INTERSECTED != intersects[0].object) {
-                    if (INTERSECTED && INTERSECTED.material.emissive) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
-                    INTERSECTED = intersects[0].object;
-                    if (INTERSECTED.material.emissive) {
-                        INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-                        INTERSECTED.material.emissive.setHex(0x666666);
-                        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.parent.name, INTERSECTED.material.name, INTERSECTED.material.userData);
-                    }
-                }
-            } else {
-                if (INTERSECTED && INTERSECTED.material.emissive) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
-                INTERSECTED = null;
-            }
+            processIntersections(intersects);
         }
 
         renderer.render(scene, camera);
@@ -115,6 +102,31 @@ function update() {
 
     if (stats) {
         stats.end();
+    }
+}
+
+function processIntersections(intersects) {
+    const newIntersect = intersects.length > 0 ? intersects[0].object : null;
+
+    if (newIntersect === INTERSECTED) return;
+
+    if (INTERSECTED?.storedMaterial) {
+        INTERSECTED.material = INTERSECTED.storedMaterial;
+    }
+
+    INTERSECTED = newIntersect;
+
+    if (!INTERSECTED) return;
+
+    if (INTERSECTED.material) {
+        INTERSECTED.storedMaterial = INTERSECTED.material;
+
+        INTERSECTED.material = INTERSECTED.material.clone();
+        if (INTERSECTED.material.emissive) {
+            INTERSECTED.material.emissive.setHex(0x666666);
+        }
+
+        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.parent.name, INTERSECTED.material.name, INTERSECTED.material.userData);
     }
 }
 
