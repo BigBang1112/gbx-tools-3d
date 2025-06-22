@@ -1,5 +1,6 @@
 ﻿using GBX.NET;
 using GBX.NET.Components;
+using GBX.NET.Engines.Graphic;
 using GBX.NET.Engines.Plug;
 using System.IO.Compression;
 
@@ -35,7 +36,8 @@ public class MeshSerializer
 
     public static void Serialize(
         Stream stream, 
-        CPlugSolid solid, 
+        CPlugSolid solid,
+        string? filePath,
         string gamePath, 
         byte? lod = null, 
         bool collision = false, 
@@ -44,11 +46,12 @@ public class MeshSerializer
         IDictionary<string, string>? materialSpecialMapping = null)
     {
         var serializer = new MeshSerializer(solid, lod, collision, vehicle, isDeco, materialSpecialMapping);
-        serializer.Serialize(stream, gamePath);
+        serializer.Serialize(stream, filePath, gamePath);
     }
 
     public static byte[] Serialize(
-        CPlugSolid solid, 
+        CPlugSolid solid,
+        string? filePath,
         string gamePath, 
         byte? lod = null, 
         bool collision = false, 
@@ -57,24 +60,24 @@ public class MeshSerializer
         IDictionary<string, string>? materialSpecialMapping = null)
     {
         using var ms = new MemoryStream();
-        Serialize(ms, solid, gamePath, lod, collision, vehicle, isDeco, materialSpecialMapping);
+        Serialize(ms, solid, filePath, gamePath, lod, collision, vehicle, isDeco, materialSpecialMapping);
         return ms.ToArray();
     }
 
-    public static void Serialize(Stream stream, CPlugSolid2Model solid, string gamePath, byte? lod = null, CPlugVehicleVisModelShared? vehicle = null)
+    public static void Serialize(Stream stream, CPlugSolid2Model solid, string? filePath, string gamePath, byte? lod = null, CPlugVehicleVisModelShared? vehicle = null)
     {
         var serializer = new MeshSerializer(solid, lod, vehicle);
-        serializer.Serialize(stream, gamePath);
+        serializer.Serialize(stream, filePath, gamePath);
     }
 
-    public static byte[] Serialize(CPlugSolid2Model solid, string gamePath, byte? lod = null, CPlugVehicleVisModelShared? vehicle = null)
+    public static byte[] Serialize(CPlugSolid2Model solid, string? filePath, string gamePath, byte? lod = null, CPlugVehicleVisModelShared? vehicle = null)
     {
         using var ms = new MemoryStream();
-        Serialize(ms, solid, gamePath, lod, vehicle);
+        Serialize(ms, solid, filePath, gamePath, lod, vehicle);
         return ms.ToArray();
     }
 
-    private void Serialize(Stream stream, string gamePath)
+    private void Serialize(Stream stream, string? filePath, string gamePath)
     {
         if (solid is null && solid2 is null)
         {
@@ -84,7 +87,7 @@ public class MeshSerializer
         using var wd = new AdjustedBinaryWriter(stream);
 
         wd.Write([0xD4, 0x54, 0x35, 0x84, 0x03, 0xCD]);
-        wd.Write7BitEncodedInt(0); // version
+        wd.Write7BitEncodedInt(2); // version
 
         wd.Write(lod ?? 255);
 
@@ -98,6 +101,8 @@ public class MeshSerializer
         {
             w.Write(fileWriteTime.Value.ToFileTimeUtc());
         }
+
+        w.Write(filePath ?? "");
 
         if (solid?.Tree is CPlugTree tree)
         {
@@ -232,6 +237,8 @@ public class MeshSerializer
         }
 
         WriteSurface(w, tree.Surface as CPlugSurface);
+
+        WriteLight(w, tree as CPlugTreeLight);
 
         w.Write(tree.Name ?? "");
 
@@ -550,6 +557,41 @@ public class MeshSerializer
                     }
                 }
                 break;
+        }
+    }
+
+    private static void WriteLight(AdjustedBinaryWriter w, CPlugTreeLight? treeLight)
+    {
+        if (treeLight?.PlugLight?.Light is not GxLight light)
+        {
+            w.Write(false);
+            return;
+        }
+
+        var plugLight = treeLight.PlugLight;
+
+        w.Write(true);
+        w.Write(plugLight.NightOnly);
+        w.Write(light.Color.X);
+        w.Write(light.Color.Y);
+        w.Write(light.Color.Z);
+        w.Write(light.Intensity);
+
+        if (light is GxLightSpot spot)
+        {
+            w.Write7BitEncodedInt(2);
+            w.Write(spot.Radius);
+            w.Write(spot.AngleInner);
+            w.Write(spot.AngleOuter);
+        }
+        else if (light is GxLightBall lightBall)
+        {
+            w.Write7BitEncodedInt(1);
+            w.Write(lightBall.Radius);
+        }
+        else
+        {
+            w.Write7BitEncodedInt(0);
         }
     }
 }

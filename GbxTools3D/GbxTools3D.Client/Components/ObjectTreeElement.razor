@@ -3,23 +3,50 @@
 <li>
     @if (Object is null)
     {
-        <span>null</span>
+        <div class="item">null</div>
     }
     else
     {
-        <span @onclick="() => IsOpen = !IsOpen">@Object.GetPropertyAsString("name")</span>
+        <div class="item @(SelectedObject == Object ? "active" : "")" @onclick="ToggleOpenAsync">
+            @if (GetChildren().Any())
+            {
+                <img src="icons/ui/keyboard_arrow_right.svg" width="24" height="24" class="@(IsOpen ? "open" : "")" />
+            }
+            else
+            {
+                <img src="icons/ui/keyboard_arrow_right.svg" width="24" height="24" class="no-children" />
+            }
+            @Object.GetPropertyAsString("name")
+
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <span class="description">(@Description)</span>
+            }
+
+            @foreach (var child in Solid.GetChildren(Object))
+            {
+                @if (child.GetPropertyAsBoolean("isSpotLight"))
+                {
+                    <img src="icons/ui/wb_incandescent.svg" title="Spotlight" width="20" height="20" />
+                }
+                else if (child.GetPropertyAsBoolean("isLight"))
+                {
+                    <img src="icons/ui/emoji_objects.svg" title="Light" width="20" height="20" />
+                }
+
+                @if (child.GetPropertyAsBoolean("isMesh"))
+                {
+                    <img src="icons/ui/shapes.svg" width="20" height="20" />
+                }
+            }
+        </div>
 
         @if (IsOpen)
         {
-            <ul>
-                @foreach (var child in Solid.GetChildren(Object))
+            <ul class="no-bullet">
+                @foreach (var child in GetChildren())
                 {
-                    if (child.GetPropertyAsBoolean("isMesh"))
-                    {
-                        continue;
-                    }
-
-                    <ObjectTreeElement Object="child" />
+                    <ObjectTreeElement Object="child" SelectedObject="SelectedObject" OnSelected="OnSelected" />
                 }
             </ul>
         }
@@ -32,4 +59,34 @@
 
     [Parameter]
     public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<JSObject> OnSelected { get; set; }
+
+    [Parameter]
+    public JSObject? SelectedObject { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    private IEnumerable<JSObject> GetChildren()
+    {
+        if (Object is null)
+        {
+            return [];
+        }
+
+        return Solid.GetChildren(Object).Where(x => !x.GetPropertyAsBoolean("isMesh") && !x.GetPropertyAsBoolean("isLight"));
+    }
+
+    private async Task ToggleOpenAsync()
+    {
+        SelectedObject = Object;
+        await OnSelected.InvokeAsync(Object);
+
+        if (GetChildren().Any())
+        {
+            IsOpen = !IsOpen;
+        }
+    }
 }

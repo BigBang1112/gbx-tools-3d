@@ -265,15 +265,15 @@ internal sealed class CollectionService
                             throw new Exception("Decoration object path is null");
                         }
 
-                        path = GbxPath.ChangeExtension(path, null);
+                        var pathNoExt = GbxPath.ChangeExtension(path, null);
 
                         scene.Add(new SceneObject
                         {
-                            Solid = path,
+                            Solid = pathNoExt,
                             Location = location
                         });
 
-                        var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{path}|Je te hais".Hash();
+                        var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{pathNoExt}|Je te hais".Hash();
 
                         if (!addedMeshHashes.Add(solidHash))
                         {
@@ -344,15 +344,15 @@ internal sealed class CollectionService
                                 throw new Exception("Decoration object path is null");
                             }
 
-                            path = GbxPath.ChangeExtension(path, null);
+                            var pathNoExt = GbxPath.ChangeExtension(path, null);
 
                             scene.Add(new SceneObject
                             {
-                                Solid = path,
+                                Solid = pathNoExt,
                                 Location = location
                             });
 
-                            var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{path}|Je te hais".Hash();
+                            var solidHash = $"GbxTools3D|Decoration|{gameFolder}|{collection.Name}|{pathNoExt}|Je te hais".Hash();
 
                             if (!addedMeshHashes.Add(solidHash))
                             {
@@ -686,7 +686,7 @@ internal sealed class CollectionService
         }
 
         var materials = terrainModifier.Remapping.CustomizableFids?.Select(x => x.Name).ToHashSet() ?? [];
-        var remapFolder = terrainModifier.RemapFolder?.NormalizePath() ?? throw new Exception("Terrain modifier remap folder is null");
+        var remapFolder = terrainModifier.RemapFolder ?? throw new Exception("Terrain modifier remap folder is null");
 
         var terrainModifierModel = await db.TerrainModifiers
             .FirstOrDefaultAsync(x => x.Name == terrainModifier.IdName

@@ -447,7 +447,7 @@ public partial class View3D : ComponentBase
         mapCamera.Position = new Vec3(center.X, decoSize.Z * blockSize.Z, -decoSize.Z * blockSize.Z);
         mapCamera.CreateMapControls(renderer, center);
 
-        await foreach (var solid in CreateDecorationAsync(CollectionName, decoInfo, cancellationToken))
+        await foreach (var solid in CreateDecorationAsync(CollectionName, decoInfo, optimized: false, cancellationToken))
         {
             FocusedSolids.Add(solid);
         }
@@ -533,12 +533,12 @@ public partial class View3D : ComponentBase
 
         //var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
 
-        await foreach (var _ in CreateDecorationAsync(map.Collection ?? throw new Exception("Collection is null"), decoSize, cancellationToken)) { }
+        await foreach (var _ in CreateDecorationAsync(map.Collection ?? throw new Exception("Collection is null"), decoSize, optimized: true, cancellationToken)) { }
 
         return baseHeight;
     }
 
-    private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, [EnumeratorCancellation] CancellationToken cancellationToken)
+    private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, bool optimized, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
 
@@ -564,7 +564,7 @@ public partial class View3D : ComponentBase
             }
 
             await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
-            var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, receiveShadow: false, castShadow: false);
+            var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: optimized, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             Scene?.Add(solid);
 
@@ -643,7 +643,7 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false);
+        var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
         Scene?.Add(vehicle);
 
         var camera = new Camera(vehicleInfo.CameraFov);
@@ -1346,5 +1346,34 @@ public partial class View3D : ComponentBase
         }
 
         objRef?.Dispose();
+    }
+
+    private JSObject? lightHelper;
+
+    internal void SetLightHelper(JSObject? child, Func<JSObject, JSObject> createHelper)
+    {
+        if (Scene is null)
+        {
+            lightHelper = null;
+            return;
+        }
+
+        if (child is null)
+        {
+            ResetLightHelper();
+            return;
+        }
+
+        lightHelper = createHelper(child);
+        Scene.Add(lightHelper);
+    }
+
+    internal void ResetLightHelper()
+    {
+        if (lightHelper is not null)
+        {
+            Scene?.Remove(lightHelper);
+            lightHelper = null;
+        }
     }
 }

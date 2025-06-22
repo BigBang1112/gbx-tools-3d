@@ -3,9 +3,11 @@ using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Enums;
 using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
+using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
 using Microsoft.JSInterop;
+using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 
 namespace GbxTools3D.Client.Components.Pages;
@@ -26,6 +28,8 @@ public partial class Catalog : ComponentBase
     private bool blockIsGround;
     private int blockVariant;
     private int blockSubVariant;
+
+    private DecorationSizeDto? decoSize;
 
     [Parameter]
     public string? GameVersion { get; set; }
@@ -57,6 +61,7 @@ public partial class Catalog : ComponentBase
 
     private string? materialName;
     private string? shaderName;
+    private JSObject? selectedTreeObject;
 
     private string assetSearchValue = "";
 
@@ -165,12 +170,12 @@ public partial class Catalog : ComponentBase
                     var allBlocksTask = BlockClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
                     var blockTask = AssetName is null || !RendererInfo.IsInteractive ? null : BlockClientService.GetAsync(GameVersionEnum, CollectionName, AssetName, cancellationToken);
 
+                    await allBlocksTask;
                     if (blocksVirtualize is not null)
                     {
                         await blocksVirtualize.RefreshDataAsync();
                     }
 
-                    await allBlocksTask;
                     block = BlockClientService.Blocks.FirstOrDefault(x => x.Name == AssetName);
                     blockIsGround = block?.AirVariants.Count == 0;
                     blockVariant = 0;
@@ -183,6 +188,33 @@ public partial class Catalog : ComponentBase
                     break;
                 case Enums.AssetType.Decoration:
                     await DecorationClientService.FetchAllAsync(GameVersionEnum, CollectionName, cancellationToken);
+
+                    var decoSizeArray = AssetName is null ? [] : AssetName.Split('x');
+
+                    if (decoSizeArray.Length == 3 && int.TryParse(decoSizeArray[0], out var decoSizeX)
+                        && int.TryParse(decoSizeArray[1], out var decoSizeY)
+                        && int.TryParse(decoSizeArray[2], out var decoSizeZ))
+                    {
+                        var size = new Int3(decoSizeX, decoSizeY, decoSizeZ);
+
+                        var decoSizes = DecorationClientService.DecorationSizes
+                            .Where(x => x.Size == size)
+                            .ToLookup(x => x.Size);
+                        
+                        if (decoSizes.Count > 1)
+                        {
+                            decoSize = decoSizes[size].FirstOrDefault(x => x.SceneName == SceneName)
+                                ?? decoSizes[size].FirstOrDefault();
+                        }
+                        else if (decoSizes.Count == 1)
+                        {
+                            decoSize = decoSizes[size].FirstOrDefault();
+                        }
+                        else
+                        {
+                            decoSize = null;
+                        }
+                    }
                     break;
             }
         }
@@ -263,6 +295,25 @@ public partial class Catalog : ComponentBase
         if (view3d is not null)
         {
             await view3d.ChangeBlockVariantAsync(blockIsGround, blockVariant, blockSubVariant);
+        }
+    }
+
+    private void OnSelectedTreeObjectChanged(JSObject treeObject)
+    {
+        selectedTreeObject = treeObject;
+
+        view3d?.ResetLightHelper();
+
+        foreach (var child in Solid.GetChildren(treeObject))
+        {
+            if (child.GetPropertyAsBoolean("isSpotLight"))
+            {
+                view3d?.SetLightHelper(child, Solid.CreateSpotLightHelper);
+            }
+            else if (child.GetPropertyAsBoolean("isLight"))
+            {
+                view3d?.SetLightHelper(child, Solid.CreatePointLightHelper);
+            }
         }
     }
 

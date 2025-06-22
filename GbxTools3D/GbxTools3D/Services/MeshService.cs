@@ -61,13 +61,13 @@ internal sealed class MeshService
 
         var mesh = await MeshFirstOrDefaultAsync(db, hash);
 
-        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
-        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
+        var data = MeshSerializer.Serialize(solid, path, gamePath, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
+        var dataLq = MeshSerializer.Serialize(solid, path, gamePath, lod: 1, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
         var dataELq = default(byte[]);
 
         if (vehicle?.VisualVehicles.Length > 2)
         {
-            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
+            dataELq = MeshSerializer.Serialize(solid, path, gamePath, lod: 2, vehicle: vehicle, isDeco: isDeco, materialSpecialMapping: materialSpecialMapping);
         }
 
         if (mesh is null)
@@ -86,7 +86,7 @@ internal sealed class MeshService
         mesh.Data = data;
         mesh.DataLQ = data.Length == dataLq.Length ? null : dataLq;
         mesh.DataVLQ = dataELq is null || dataLq.Length == dataELq.Length ? null : dataELq;
-        mesh.DataSurf = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle, collision: true);
+        mesh.DataSurf = MeshSerializer.Serialize(solid, path, gamePath, vehicle: vehicle, collision: true);
         mesh.UpdatedAt = DateTime.UtcNow;
 
         return mesh;
@@ -104,13 +104,13 @@ internal sealed class MeshService
 
         var mesh = await MeshFirstOrDefaultAsync(db, hash);
 
-        var data = MeshSerializer.Serialize(solid, gamePath, vehicle: vehicle);
-        var dataLq = MeshSerializer.Serialize(solid, gamePath, lod: 1, vehicle: vehicle);
+        var data = MeshSerializer.Serialize(solid, path, gamePath, vehicle: vehicle);
+        var dataLq = MeshSerializer.Serialize(solid, path, gamePath, lod: 1, vehicle: vehicle);
         var dataELq = default(byte[]);
 
         if (vehicle?.VisualVehicles.Length > 2)
         {
-            dataELq = MeshSerializer.Serialize(solid, gamePath, lod: 2, vehicle: vehicle);
+            dataELq = MeshSerializer.Serialize(solid, path, gamePath, lod: 2, vehicle: vehicle);
         }
 
         if (mesh is null)

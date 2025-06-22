@@ -188,7 +188,7 @@ internal sealed class MaterialService
 
         foreach (var modifier in modifiers)
         {
-            var modifierMaterialFilePath = Path.Combine(gamePath, modifier.RemapFolder, Path.GetFileName(path));
+            var modifierMaterialFilePath = Path.Combine(gamePath, modifier.RemapFolder.NormalizePath(), Path.GetFileName(path));
 
             if (!File.Exists(modifierMaterialFilePath))
             {

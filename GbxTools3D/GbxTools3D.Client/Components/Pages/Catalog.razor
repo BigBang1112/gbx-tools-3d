@@ -181,25 +181,23 @@
             <div style="display: flex; flex-direction: column; gap: 10px">
                 @if (block is not null)
                 {
-                    <div style="display: flex;">
-                        <div style="flex: 1; text-align: center; padding-bottom: 5px;">
-                            @if (block.Name.Length > 60)
-                            {
-                                <div style="font-weight: bold;font-size: 70%">@block.Name</div>
-                            }
-                            else if (block.Name.Length > 45)
-                            {
-                                <div style="font-weight: bold;font-size: 90%">@block.Name</div>
-                            }
-                            else if (block.Name.Length > 30)
-                            {
-                                <div style="font-weight: bold;">@block.Name</div>
-                            }
-                            else
-                            {
-                                <div style="font-weight: bold;font-size: 150%">@block.Name</div>
-                            }
-                        </div>
+                    <div style="text-align: center; padding-bottom: 5px;">
+                        @if (block.Name.Length > 60)
+                        {
+                            <div style="font-weight: bold;font-size: 70%">@block.Name</div>
+                        }
+                        else if (block.Name.Length > 45)
+                        {
+                            <div style="font-weight: bold;font-size: 90%">@block.Name</div>
+                        }
+                        else if (block.Name.Length > 30)
+                        {
+                            <div style="font-weight: bold;">@block.Name</div>
+                        }
+                        else
+                        {
+                            <div style="font-weight: bold;font-size: 150%">@block.Name</div>
+                        }
                     </div>
                     <div class="minimenu">
                         <div class="button-generic @(!blockIsGround ? "active" : "") @(block.AirVariants.Count > 0 ? "" : "disabled")" @onclick="() => ChangeBlockVariantAsync(isGround: block.AirVariants.Count == 0)">Air</div>
@@ -250,37 +248,53 @@
                     }
                     *@
                 }
+                else if (decoSize is not null)
+                {
+                    <div style="text-align: center; padding-bottom: 5px;">
+                        <div style="font-weight: bold;font-size: 150%;">@decoSize.Size</div>
+                    </div>
+                }
 
-                <ul>
-                    @foreach (var solid in view3d?.FocusedSolids ?? [])
-                    {
-                        <ObjectTreeElement Object="solid.Object"></ObjectTreeElement>
-                        @*
-                        <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">
-                            <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
-                        </div>
-                        <div class="button-generic">
-                            <img src="icons/ui/ads_click.svg" alt="Select Mode" class="icon" width="32" height="32" />
-                        </div>
-                        @if (view3d?.Scene is not null)
-                        {
-                            <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">Vertex normals</div>
-                        }
+                @{
+                    var focusedSolids = view3d?.FocusedSolids ?? [];
+                }
 
-                        @foreach (var (matName, shadName) in solid.GetAllMaterials())
+                @if (focusedSolids.Count > 0)
+                {
+                    <ul class="no-bullet tree">
+                        @foreach (var solid in focusedSolids)
                         {
-                            <ul>
-                                <li>
-                                    @matName
-                                    <ul>
-                                        <li>@shadName</li>
-                                    </ul>
-                                </li>
-                            </ul>
+                            <ObjectTreeElement Object="solid.Object"
+                                               SelectedObject="selectedTreeObject"
+                                               OnSelected="OnSelectedTreeObjectChanged"
+                                               Description="@Path.GetFileName(solid.Object.GetPropertyAsJSObject("userData")?.GetPropertyAsString("filePath"))"></ObjectTreeElement>
+                            @*
+                            <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">
+                                <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
+                            </div>
+                            <div class="button-generic">
+                                <img src="icons/ui/ads_click.svg" alt="Select Mode" class="icon" width="32" height="32" />
+                            </div>
+                            @if (view3d?.Scene is not null)
+                            {
+                                <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">Vertex normals</div>
+                            }
+
+                            @foreach (var (matName, shadName) in solid.GetAllMaterials())
+                            {
+                                <ul>
+                                    <li>
+                                        @matName
+                                        <ul>
+                                            <li>@shadName</li>
+                                        </ul>
+                                    </li>
+                                </ul>
+                            }
+                            *@
                         }
-                        *@
-                    }
-                </ul>
+                    </ul>
+                }
 
                 <small>@materialName</small>
                 <small>@shaderName?.Replace('\\', '/')</small>

@@ -16,6 +16,10 @@ export function setName(tree, name) {
     tree.name = name;
 }
 
+export function setUserData(tree, filePath) {
+    tree.userData.filePath = filePath;
+}
+
 export function getObjectByName(tree, name) {
     return tree.getObjectByName(name);
 }
@@ -179,6 +183,44 @@ export function createVertexNormalHelper(mesh) {
     const helper = new VertexNormalsHelper(mesh, 1, 0x00ffff);
     helper.name = "helper";
     return helper;
+}
+
+export function createPointLight(r, g, b, intensity, distance, nightOnly) {
+    const light = new THREE.PointLight(new THREE.Color(r, g, b), intensity, distance);
+    light.userData.nightOnly = nightOnly;
+    return light;
+}
+
+export function createSpotLight(parent, r, g, b, intensity, distance, angleInner, angleOuter, nightOnly) {
+
+    const halfAngleRad = Math.min(THREE.MathUtils.degToRad(angleOuter / 2), Math.PI / 2);
+    const penumbra = (angleOuter - angleInner) / angleOuter;
+    // const decay = FalloffExponent;
+
+    const light = new THREE.SpotLight(new THREE.Color(r, g, b), intensity * 100, distance /*, halfAngleRad, penumbra*/);
+    light.castShadow = true;
+    light.userData.nightOnly = nightOnly;
+
+    const worldPos = new THREE.Vector3();
+    parent.getWorldPosition(worldPos);
+
+    const worldDir = new THREE.Vector3();
+    parent.getWorldDirection(worldDir);
+
+    const targetWorldPos = worldPos.clone().add(worldDir.multiplyScalar(distance));
+
+    light.target.position.copy(targetWorldPos);
+    light.target.updateMatrixWorld();
+
+    return light;
+}
+
+export function createSpotLightHelper(spotLight) {
+    return new THREE.SpotLightHelper(spotLight);
+}
+
+export function createPointLightHelper(pointLight) {
+    return new THREE.PointLightHelper(pointLight);
 }
 
 export function log(tree) {

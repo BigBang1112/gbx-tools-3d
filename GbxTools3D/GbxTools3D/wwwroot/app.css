@@ -62,6 +62,10 @@ ul {
     list-style-type: "\1F44D";
 }
 
+    ul.no-bullet {
+        list-style-type: none;
+    }
+
 button {
     all: unset;
 }

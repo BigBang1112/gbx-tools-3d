@@ -1,12 +1,13 @@
-﻿using System.IO.Compression;
+﻿using GBX.NET;
+using GbxTools3D.Client.Deserializers;
+using GbxTools3D.Client.Dtos;
+using GbxTools3D.Client.Enums;
+using GbxTools3D.Client.Extensions;
+using System.IO.Compression;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
-using GBX.NET;
-using GbxTools3D.Client.Deserializers;
-using GbxTools3D.Client.Dtos;
-using GbxTools3D.Client.Enums;
 
 namespace GbxTools3D.Client.Modules;
 
@@ -16,7 +17,7 @@ internal sealed partial class Solid(JSObject obj)
     private static int indexCounter;
 
     private static readonly byte[] MAGIC = [0xD4, 0x54, 0x35, 0x84, 0x03, 0xCD];
-    private const int VERSION = 0;
+    private const int VERSION = 2;
 
     private JSObject[] vertexNormalHelpers = [];
     public bool VertexNormalHelperEnabled => vertexNormalHelpers.Length > 0;
@@ -77,6 +78,9 @@ internal sealed partial class Solid(JSObject obj)
 
     [JSImport("setName", nameof(Solid))]
     private static partial JSObject SetName(JSObject tree, string name);
+
+    [JSImport("setUserData", nameof(Solid))]
+    private static partial JSObject SetUserData(JSObject tree, string filePath);
 
     [JSImport("getObjectByName", nameof(Solid))]
     private static partial JSObject? GetObjectByName(JSObject tree, string name);
@@ -139,6 +143,24 @@ internal sealed partial class Solid(JSObject obj)
     [JSImport("instantiate", nameof(Solid))]
     private static partial JSObject Instantiate(JSObject tree, JSObject[] instanceInfos);
 
+    [JSImport("createPointLight", nameof(Solid))]
+    private static partial JSObject CreatePointLight(float r, float g, float b, float intensity, float distance, bool nightOnly);
+
+    private static JSObject CreatePointLight(Vector3 color, float intensity, float distance, bool nightOnly)
+        => CreatePointLight(color.X, color.Y, color.Z, intensity, distance, nightOnly);
+
+    [JSImport("createSpotLight", nameof(Solid))]
+    private static partial JSObject CreateSpotLight(JSObject tree, float r, float g, float b, float intensity, float distance, float angleInner, float angleOuter, bool nightOnly);
+    
+    private static JSObject CreateSpotLight(JSObject tree, Vector3 color, float intensity, float distance, float angleInner, float angleOuter, bool nightOnly)
+        => CreateSpotLight(tree, color.X, color.Y, color.Z, intensity, distance, angleInner, angleOuter, nightOnly);
+
+    [JSImport("createSpotLightHelper", nameof(Solid))]
+    public static partial JSObject CreateSpotLightHelper(JSObject spotLight);
+
+    [JSImport("createPointLightHelper", nameof(Solid))]
+    public static partial JSObject CreatePointLightHelper(JSObject pointLight);
+
     [JSImport("getChildren", nameof(Solid))]
     public static partial JSObject[] GetChildren(JSObject tree);
 
@@ -159,7 +181,8 @@ internal sealed partial class Solid(JSObject obj)
         int? expectedMeshCount = null, 
         bool optimized = true, 
         bool receiveShadow = true,
-        bool castShadow = true)
+        bool castShadow = true,
+        bool noLights = false)
     {
         using var rd = new AdjustedBinaryReader(stream);
 
@@ -185,12 +208,14 @@ internal sealed partial class Solid(JSObject obj)
 
         var fileWriteTime = r.ReadBoolean() ? DateTime.FromFileTime(r.ReadInt64()) : default(DateTime?);
 
+        var filePath = version >= 1 ? r.ReadString() : null;
+
         JSObject tree;
         if (optimized)
         {
             var geometries = new List<JSObject>();
             var materials = new List<JSObject>();
-            await ReadTreeAsSingleGeometryAsync(r, gameVersion, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials, terrainModifier);
+            await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials, terrainModifier, noLights);
             
             switch (geometries.Count)
             {
@@ -214,8 +239,13 @@ internal sealed partial class Solid(JSObject obj)
         }
         else
         {
-            tree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier);
-            Log(tree); // temporary
+            tree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights);
+            Log(tree); // TODO: temporary
+        }
+
+        if (!string.IsNullOrEmpty(filePath))
+        {
+            SetUserData(tree, filePath.NormalizePath());
         }
 
         return new Solid(tree);
@@ -229,12 +259,14 @@ internal sealed partial class Solid(JSObject obj)
     private static async Task ReadTreeAsSingleGeometryAsync(
         AdjustedBinaryReader r, 
         GameVersion gameVersion,
+        int version,
         Mat3 rot, 
         Vector3 pos,
         List<JSObject> geometries,
         List<JSObject> materials,
         Dictionary<string, MaterialDto>? availableMaterials,
-        string? terrainModifier)
+        string? terrainModifier,
+        bool noLights)
     {
         var childrenCount = r.Read7BitEncodedInt();
 
@@ -294,7 +326,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                await ReadTreeAsSingleGeometryAsync(r, gameVersion, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials, terrainModifier);
+                await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials, terrainModifier, noLights);
 
                 //AddLod(lod, lodTree, distance);
             }
@@ -304,22 +336,29 @@ internal sealed partial class Solid(JSObject obj)
 
         var surface = ReadSurface(r);
 
+        if (version >= 2)
+        {
+            var light = ReadLight(r, null, noLights);
+        }
+
         var name = r.ReadString();
 
         for (var i = 0; i < childrenCount; i++)
         {
-            await ReadTreeAsSingleGeometryAsync(r, gameVersion, rot, pos, geometries, materials, availableMaterials, terrainModifier);
+            await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot, pos, geometries, materials, availableMaterials, terrainModifier, noLights);
         }
     }
 
     private static async Task<JSObject> ReadTreeAsNestedObjectsAsync(
-        AdjustedBinaryReader r, 
+        AdjustedBinaryReader r,
         GameVersion gameVersion,
+        int version,
         int? expectedMeshCount, 
         bool receiveShadow, 
         bool castShadow,
-        Dictionary<string, MaterialDto>? availableMaterials = null,
-        string? terrainModifier = null)
+        Dictionary<string, MaterialDto>? availableMaterials,
+        string? terrainModifier,
+        bool noLights)
     {
         var tree = Create(matrixAutoUpdate: true);
 
@@ -370,7 +409,7 @@ internal sealed partial class Solid(JSObject obj)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier);
+                var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights);
 
                 AddLod(lod, lodTree, distance * 8);
             }
@@ -380,13 +419,23 @@ internal sealed partial class Solid(JSObject obj)
 
         var surface = ReadSurface(r);
 
+        if (version >= 2)
+        {
+            var light = ReadLight(r, tree, noLights);
+
+            if (light is not null)
+            {
+                Add(tree, light);
+            }
+        }
+
         var name = r.ReadString();
 
         SetName(tree, name);
 
         for (var i = 0; i < childrenCount; i++)
         {
-            Add(tree, await ReadTreeAsNestedObjectsAsync(r, gameVersion, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier));
+            Add(tree, await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights));
         }
 
         return tree;
@@ -544,6 +593,34 @@ internal sealed partial class Solid(JSObject obj)
         }
 
         return null;
+    }
+
+    private static JSObject? ReadLight(AdjustedBinaryReader r, JSObject? tree, bool noLights)
+    {
+        if (!r.ReadBoolean())
+        {
+            return null;
+        }
+
+        var nightOnly = r.ReadBoolean();
+        var color = ReadVector3(r);
+        var intensity = r.ReadSingle();
+
+        switch (r.Read7BitEncodedInt())
+        {
+            case 0:
+                return CreatePointLight(color, intensity, distance: 64, nightOnly);
+            case 1: // light ball (point)
+                var radius = r.ReadSingle();
+                return tree is null || noLights ? null : CreatePointLight(color, intensity, radius, nightOnly);
+            case 2: // light spot
+                radius = r.ReadSingle();
+                var angleInner = r.ReadSingle();
+                var angleOuter = r.ReadSingle();
+                return tree is null || noLights ? null : CreateSpotLight(tree, color, intensity, radius, angleInner, angleOuter, nightOnly);
+            default:
+                throw new InvalidDataException("Unknown light type");
+        }
     }
 
     private static Mat3 ReadMatrix3(AdjustedBinaryReader reader)

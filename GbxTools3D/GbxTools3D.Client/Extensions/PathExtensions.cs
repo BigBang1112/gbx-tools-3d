@@ -1,4 +1,4 @@
-﻿namespace GbxTools3D.Extensions;
+﻿namespace GbxTools3D.Client.Extensions;
 
 public static class PathExtensions
 {

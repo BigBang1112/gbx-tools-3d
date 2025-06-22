@@ -31,6 +31,19 @@
         transform: translateX(500px);
     }
 
+.tree {
+    display: flex;
+    flex-direction: column;
+    background-color: #1A1A1A;
+    border: 1px solid #333;
+    border-radius: 5px;
+    overflow: auto;
+    font-size: 90%;
+    margin: 0;
+    padding: 0;
+    height: 200px;
+}
+
 .catalog {
     position: fixed;
     padding: 20px;
