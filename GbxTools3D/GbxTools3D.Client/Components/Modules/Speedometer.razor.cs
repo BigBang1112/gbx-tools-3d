@@ -6,40 +6,49 @@ public partial class Speedometer : ComponentBase
 {
     private bool show = true;
 
-    private int? Gear { get; set; }
-    private float Speed { get; set; }
-    private float RPM { get; set; }
+    private int? gear;
+    private float speed;
+    private float rpm;
 
-    public void SetSpeed(float speed)
+    public int? Gear
     {
-        if (Speed == speed)
+        get => gear;
+        set 
         {
-            return;
+            if (gear == value)
+            {
+                return;
+            }
+            gear = value;
+            StateHasChanged();
         }
-
-        Speed = speed;
-        StateHasChanged();
     }
 
-    public void SetGear(int gear)
+    public float Speed
     {
-        if (Gear == gear)
+        get => speed;
+        set
         {
-            return;
+            if (speed == value)
+            {
+                return;
+            }
+            speed = value;
+            StateHasChanged();
         }
-
-        Gear = gear;
-        StateHasChanged();
     }
 
-    public void SetRPM(float rpm)
+    public float RPM
     {
-        if (RPM == rpm)
+        get => rpm;
+        set
         {
-            return;
+            if (rpm == value)
+            {
+                return;
+            }
+            rpm = value;
+            StateHasChanged();
         }
-
-        RPM = rpm;
-        StateHasChanged();
     }
 }

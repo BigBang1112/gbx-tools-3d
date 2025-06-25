@@ -10,6 +10,9 @@ public partial class CheckpointList : ComponentBase
 
     private bool show = true;
 
+    private TimeInt32? currentCheckpoint;
+    private int currentCheckpointIndex = -1;
+
     [Parameter, EditorRequired]
     public CGameCtnGhost? Ghost { get; set; }
 
@@ -21,9 +24,26 @@ public partial class CheckpointList : ComponentBase
 
     public int CheckpointsPerLap => Ghost?.Checkpoints?.Length / NumLaps ?? 0;
 
-    public TimeInt32? CurrentCheckpoint { get; private set; }
+    public TimeInt32? CurrentCheckpoint
+    {
+        get => currentCheckpoint;
+        set
+        {
+            currentCheckpoint = value;
+            StateHasChanged();
+        }
+    }
 
-    public int CurrentCheckpointIndex { get; private set; } = -1;
+    public int CurrentCheckpointIndex
+    {
+        get => currentCheckpointIndex;
+        set
+        {
+            currentCheckpointIndex = value;
+            StateHasChanged();
+        }
+    }
+
     public int CurrentLapIndex => (CurrentCheckpointIndex + 1) / CheckpointsPerLap;
 
     private CheckpointInfo[] Checkpoints => GetCheckpoints().ToArray();
@@ -49,17 +69,5 @@ public partial class CheckpointList : ComponentBase
 
             yield return new CheckpointInfo(i, checkpoint, i / CheckpointsPerLap, isFinish, hasBonusChanged);
         }
-    }
-
-    public void SetCurrentCheckpoint(TimeInt32? time)
-    {
-        CurrentCheckpoint = time;
-        StateHasChanged();
-    }
-
-    public void SetCurrentCheckpointIndex(int index)
-    {
-        CurrentCheckpointIndex = index;
-        StateHasChanged();
     }
 }

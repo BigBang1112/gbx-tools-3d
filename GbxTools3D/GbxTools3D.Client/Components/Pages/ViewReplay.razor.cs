@@ -14,6 +14,7 @@ using GbxTools3D.Client.Components.Modules;
 using GbxTools3D.Client.Extensions;
 using TmEssentials;
 using System.Text;
+using GBX.NET.Inputs;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -25,6 +26,7 @@ public partial class ViewReplay : ComponentBase
     private RenderInfo? renderInfo;
     private Checkpoint? checkpoint;
     private CheckpointList? checkpointList;
+    private InputList? inputList;
     private Speedometer? speedometer;
     private GhostInfo? ghostInfo;
 
@@ -295,6 +297,8 @@ public partial class ViewReplay : ComponentBase
         var checkpoints = ghost.Checkpoints ?? [];
         var numLaps = ghost.GetNumberOfLaps(Replay?.Challenge) ?? 1;
         var perLap = checkpoints.Length / numLaps;
+        var respawns = (Replay?.Inputs ?? ghost.Inputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs ?? [])
+            .Where(x => x is Respawn { Pressed: true } or RespawnTM2020);
 
         playback?.SetMarkers(checkpoints.Where(c => c.Time.HasValue).Select((c, i) =>
             new PlaybackMarker
@@ -305,7 +309,13 @@ public partial class ViewReplay : ComponentBase
                     : (((i + 1) % perLap == 0)
                         ? PlaybackMarkerType.Multilap
                         : PlaybackMarkerType.Checkpoint)
-            }).ToList());
+            })
+                .Concat(respawns.Select(x => new PlaybackMarker
+                {
+                    Time = x.Time,
+                    Type = PlaybackMarkerType.Generic
+                }))
+            .ToList());
 
         StateHasChanged();
 
@@ -351,8 +361,11 @@ public partial class ViewReplay : ComponentBase
                     {
                         if (mid != prevCheckpointPassedIndex)
                         {
-                            checkpointList?.SetCurrentCheckpoint(cp.Time);
-                            checkpointList?.SetCurrentCheckpointIndex(nextCpTime == double.MaxValue ? (mid - 1) : mid);
+                            if (checkpointList is not null)
+                            {
+                                checkpointList.CurrentCheckpoint = cp.Time;
+                                checkpointList.CurrentCheckpointIndex = nextCpTime == double.MaxValue ? (mid - 1) : mid;
+                            }
                             prevCheckpointPassedIndex = mid;
                         }
 
@@ -362,7 +375,10 @@ public partial class ViewReplay : ComponentBase
 
                             if (checkpointPassedTime != prevCheckpointPassedTime)
                             {
-                                checkpoint?.Set(cp.Time);
+                                if (checkpoint is not null)
+                                {
+                                    checkpoint.Time = cp.Time;
+                                }
                                 prevCheckpointPassedTime = checkpointPassedTime;
                             }
                         }
@@ -376,9 +392,15 @@ public partial class ViewReplay : ComponentBase
                         {
                             // No checkpoint found before this time, reset
                             prevCheckpointPassedIndex = -1;
-                            checkpointList?.SetCurrentCheckpoint(null);
-                            checkpointList?.SetCurrentCheckpointIndex(-1);
-                            checkpoint?.Set(null);
+                            if (checkpointList is not null)
+                            {
+                                checkpointList.CurrentCheckpoint = null;
+                                checkpointList.CurrentCheckpointIndex = -1;
+                            }
+                            if (checkpoint is not null)
+                            {
+                                checkpoint.Time = null;
+                            }
                             prevCheckpointPassedTime = null;
                         }
                     }
@@ -391,8 +413,55 @@ public partial class ViewReplay : ComponentBase
                 // Handle case where no checkpoint is passed
                 if (checkpointPassedTime is null && prevCheckpointPassedTime is not null)
                 {
-                    checkpoint?.Set(null);
+                    if (checkpoint is not null)
+                    {
+                        checkpoint.Time = null;
+                    }
                     prevCheckpointPassedTime = null;
+                }
+            }
+
+            var inputs = Replay?.Inputs ?? CurrentGhost.Inputs ?? CurrentGhost.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
+            if (inputs.Count > 0)
+            {
+                int left = 0, right = inputs.Count - 1, mid = -1;
+
+                // Binary search for the first input within the range
+                while (left <= right)
+                {
+                    mid = (left + right) / 2;
+                    var input = inputs[mid];
+
+                    var inputTime = input.Time.TotalSeconds;
+                    var nextInputTime = (mid + 1 < inputs.Count)
+                        ? inputs[mid + 1].Time.TotalSeconds
+                        : double.MaxValue; // Handle last input case
+
+                    if (time >= inputTime && time < nextInputTime)
+                    {
+                        if (inputList is not null)
+                        {
+                            inputList.CurrentInput = input.Time;
+                        }
+                        break;
+                    }
+                    else if (time < inputTime)
+                    {
+                        right = mid - 1;
+
+                        if (right == -1)
+                        {
+                            // No input found before this time, reset
+                            if (inputList is not null)
+                            {
+                                inputList.CurrentInput = null;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        left = mid + 1;
+                    }
                 }
             }
 
@@ -412,8 +481,11 @@ public partial class ViewReplay : ComponentBase
 
                 if (currentSample is CSceneVehicleCar.Sample currentCarSampleToLerp && nextSample is CSceneVehicleCar.Sample nextCarSampleToLerp)
                 {
-                    speedometer?.SetRPM(AdditionalMath.Lerp(currentCarSampleToLerp.RPM, nextCarSampleToLerp.RPM, (float)lerpFactor));
-                    speedometer?.SetSpeed(AdditionalMath.Lerp(currentCarSampleToLerp.VelocitySpeed, nextCarSampleToLerp.VelocitySpeed, (float)lerpFactor));
+                    if (speedometer is not null)
+                    {
+                        speedometer.RPM = AdditionalMath.Lerp(currentCarSampleToLerp.RPM, nextCarSampleToLerp.RPM, (float)lerpFactor);
+                        speedometer.Speed = AdditionalMath.Lerp(currentCarSampleToLerp.VelocitySpeed, nextCarSampleToLerp.VelocitySpeed, (float)lerpFactor);
+                    }
                 }
 
                 // only per sample update, not interpolated
@@ -424,6 +496,7 @@ public partial class ViewReplay : ComponentBase
 
                     if (currentSample is CSceneVehicleCar.Sample currentCarSample)
                     {
+                        //speedometer?.SetGear(currentCarSample.U25 & 7);
                         //speedometer?.SetRPM(carSample.RPM);
                     }
 
@@ -449,6 +522,11 @@ public partial class ViewReplay : ComponentBase
         }
 
         playback?.Seek(checkpoint.Time.Value, seekPause: false);
+    }
+
+    private void OnInputListItemClick(IInput input)
+    {
+        playback?.Seek(input.Time, seekPause: false);
     }
 
     public ValueTask DisposeAsync()

@@ -69,7 +69,7 @@ else
         <Checkpoint @ref="checkpoint"></Checkpoint>
         <div class="panels left">
             <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@GetPlaybackDescription()" @ref="playback"></Playback>
-            <InputList Ghost="CurrentGhost" Replay="Replay"></InputList>
+            <InputList Ghost="CurrentGhost" Replay="Replay" OnInputClick="OnInputListItemClick" @ref="inputList"></InputList>
             <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Replay?.Challenge) ?? 1" OnCheckpointClick="OnCheckpointListItemClick" @ref="checkpointList"></CheckpointList>
             <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
             <Controls></Controls>
