@@ -1,4 +1,6 @@
 ﻿import * as THREE from 'three';
+import waterVertexShader from '../shaders/water.vert?raw';
+import waterFragmentShader from '../shaders/water.frag?raw';
 
 const textureLoader = new THREE.TextureLoader();
 
@@ -61,12 +63,39 @@ export function createMaterial(
         });
     }
     else if (water) {
-        material = new THREE.MeshPhysicalMaterial({
+        material = new THREE.ShaderMaterial({
+            vertexShader: waterVertexShader,
+            fragmentShader: waterFragmentShader,
+            uniforms: {
+                uTime: { value: 0 },
+                uOpacity: { value: 0.8 },
+                /*uEnvironmentMap: { value: options.environmentMap },*/
+                uWavesAmplitude: { value: 0.025 },
+                uWavesFrequency: { value: 1.07 },
+                uWavesPersistence: { value: 0.3 },
+                uWavesLacunarity: { value: 2.18 },
+                uWavesIterations: { value: 8 },
+                uWavesSpeed: { value: 0.4 },
+                uTroughColor: { value: new THREE.Color('#186691') },
+                uSurfaceColor: { value: new THREE.Color('#9bd8c0') },
+                uPeakColor: { value: new THREE.Color('#bbd8e0') },
+                uPeakThreshold: { value: 0.08 },
+                uPeakTransition: { value: 0.05 },
+                uTroughThreshold: { value: -0.01 },
+                uTroughTransition: { value: 0.15 },
+                uFresnelScale: { value: 0.8 },
+                uFresnelPower: { value: 0.5 }
+            },
+            transparent: true,
+            depthTest: true,
+            side: THREE.DoubleSide
+        });
+        /*material = new THREE.MeshPhysicalMaterial({
             transmission: 0.7,
             roughness: 0.1,
             thickness: 0.1,
             color: 0xddeeff
-        });
+        });*/
     }
     else if (specularAlpha || specularTexture)
     {
