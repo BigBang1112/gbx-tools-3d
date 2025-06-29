@@ -273,7 +273,11 @@ public partial class View3D : ComponentBase
         mapCamera.CreateOrbitControls(renderer, center);
         //
 
-        var meshFound = await ChangeBlockVariantAsync(isGround, variant: 0, subVariant: 0, cancellationToken);
+        var variant = isGround
+            ? blockInfo.GroundVariants.FirstOrDefault()?.Variant ?? 0
+            : blockInfo.AirVariants.FirstOrDefault()?.Variant ?? 0;
+
+        var meshFound = await ChangeBlockVariantAsync(isGround, variant, subVariant: 0, cancellationToken);
 
         if (!meshFound)
         {

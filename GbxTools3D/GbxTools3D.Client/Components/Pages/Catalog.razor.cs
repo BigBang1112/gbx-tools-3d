@@ -178,7 +178,9 @@ public partial class Catalog : ComponentBase
 
                     block = BlockClientService.Blocks.FirstOrDefault(x => x.Name == AssetName);
                     blockIsGround = block?.AirVariants.Count == 0;
-                    blockVariant = 0;
+                    blockVariant = blockIsGround
+                        ? block?.GroundVariants.FirstOrDefault()?.Variant ?? 0
+                        : block?.AirVariants.FirstOrDefault()?.Variant ?? 0;
                     blockSubVariant = 0;
 
                     if (blockTask is not null)

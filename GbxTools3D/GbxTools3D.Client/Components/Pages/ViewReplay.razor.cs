@@ -1,20 +1,21 @@
-﻿using GBX.NET.Engines.Game;
+﻿using GBX.NET;
+using GBX.NET.Engines.Game;
 using GBX.NET.Engines.Scene;
-using GBX.NET;
+using GBX.NET.Inputs;
+using GbxTools3D.Client.Components.Modules;
+using GbxTools3D.Client.Enums;
 using GbxTools3D.Client.EventArgs;
+using GbxTools3D.Client.Extensions;
+using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
-using Microsoft.JSInterop;
-using GbxTools3D.Client.Models;
-using GbxTools3D.Client.Enums;
-using GbxTools3D.Client.Components.Modules;
-using GbxTools3D.Client.Extensions;
-using TmEssentials;
 using System.Text;
-using GBX.NET.Inputs;
+using System.Threading;
+using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -29,6 +30,8 @@ public partial class ViewReplay : ComponentBase
     private InputList? inputList;
     private Speedometer? speedometer;
     private GhostInfo? ghostInfo;
+
+    private Solid? ghostSolid;
 
     private readonly Dictionary<string, JSObject> actions = [];
 
@@ -134,6 +137,8 @@ public partial class ViewReplay : ComponentBase
         var animationModule = await JS.InvokeAsync<IJSObjectReference>("import", $"./js/animation.js");
         await animationModule.InvokeVoidAsync("registerDotNet", DotNetObjectReference.Create(this));
 
+        await JSHost.ImportAsync(nameof(Slide), "../js/slide.js");
+
         await TryLoadReplayAsync();
     }
 
@@ -153,7 +158,7 @@ public partial class ViewReplay : ComponentBase
             return false;
         }
 
-        var ghostSolid = await view3d.LoadGhostAsync(ghost);
+        ghostSolid = await view3d.LoadGhostAsync(ghost);
 
         if (ghostSolid is null)
         {
@@ -270,6 +275,8 @@ public partial class ViewReplay : ComponentBase
                 var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
                 actions[$"{wheelObject}Dampen"] = Animation.CreateAction(
                     Animation.CreateClip($"{wheelObject}Dampen", duration, [dampenTrack]), node);
+
+                ghostSolid.Object.GetPropertyAsJSObject("userData")!.SetProperty(wheel, wheelObject);
             }
         }
 
@@ -486,6 +493,11 @@ public partial class ViewReplay : ComponentBase
                         speedometer.RPM = AdditionalMath.Lerp(currentCarSampleToLerp.RPM, nextCarSampleToLerp.RPM, (float)lerpFactor);
                         speedometer.Speed = AdditionalMath.Lerp(currentCarSampleToLerp.VelocitySpeed, nextCarSampleToLerp.VelocitySpeed, (float)lerpFactor);
                     }
+
+                    Drift(currentCarSampleToLerp.FLIsSliding && currentCarSampleToLerp.FLOnGround, "FL");
+                    Drift(currentCarSampleToLerp.FRIsSliding && currentCarSampleToLerp.FROnGround, "FR");
+                    Drift(currentCarSampleToLerp.RLIsSliding && currentCarSampleToLerp.RLOnGround, "RL");
+                    Drift(currentCarSampleToLerp.RRIsSliding && currentCarSampleToLerp.RROnGround, "RR");
                 }
 
                 // only per sample update, not interpolated
@@ -506,6 +518,30 @@ public partial class ViewReplay : ComponentBase
         }
 
         prevTime = time;
+    }
+
+    private void Drift(bool isSliding, string wheel)
+    {
+        if (ghostSolid is null || view3d?.Scene is null)
+        {
+            return;
+        }
+
+        var wheelObj = ghostSolid.GetObjectByName(ghostSolid.Object.GetPropertyAsJSObject("userData")!.GetPropertyAsString($"{wheel}Wheel")!);
+
+        if (wheelObj is null)
+        {
+            return;
+        }
+
+        if (isSliding)
+        {
+            Slide.Do(wheelObj, view3d.Scene.Object);
+        }
+        else
+        {
+            Slide.Stop(wheelObj);
+        }
     }
 
     private void OnRenderDetails(RenderDetails details)

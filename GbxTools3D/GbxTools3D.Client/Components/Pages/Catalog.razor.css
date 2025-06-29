@@ -31,6 +31,12 @@
         transform: translateX(500px);
     }
 
+.title {
+    text-align: center;
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+
 .tree {
     display: flex;
     flex-direction: column;

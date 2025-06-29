@@ -181,22 +181,22 @@
             <div style="display: flex; flex-direction: column; gap: 10px">
                 @if (block is not null)
                 {
-                    <div style="text-align: center; padding-bottom: 5px;">
+                    <div class="title">
                         @if (block.Name.Length > 60)
                         {
-                            <div style="font-weight: bold;font-size: 70%">@block.Name</div>
+                            <div style="font-size: 70%">@block.Name</div>
                         }
                         else if (block.Name.Length > 45)
                         {
-                            <div style="font-weight: bold;font-size: 90%">@block.Name</div>
+                            <div style="font-size: 90%">@block.Name</div>
                         }
                         else if (block.Name.Length > 30)
                         {
-                            <div style="font-weight: bold;">@block.Name</div>
+                            <div>@block.Name</div>
                         }
                         else
                         {
-                            <div style="font-weight: bold;font-size: 150%">@block.Name</div>
+                            <div style="font-size: 150%">@block.Name</div>
                         }
                     </div>
                     <div class="minimenu">
@@ -250,8 +250,14 @@
                 }
                 else if (decoSize is not null)
                 {
-                    <div style="text-align: center; padding-bottom: 5px;">
-                        <div style="font-weight: bold;font-size: 150%;">@decoSize.Size</div>
+                    <div class="title">
+                        <div style="font-size: 150%;">@decoSize.Size</div>
+                    </div>
+                }
+                else if (ContentTypeEnum == Enums.ContentType.Vehicle)
+                {
+                    <div class="title">
+                        <div style="font-size: 150%;">@AssetName</div>
                     </div>
                 }
 
