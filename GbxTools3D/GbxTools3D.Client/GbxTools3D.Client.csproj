@@ -10,7 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="GBX.NET" Version="2.2.0-nightly.20250624.c97a8d86" />
+        <PackageReference Include="GBX.NET" Version="2.2.1-nightly.20250629.cffef8fa" />
         <PackageReference Include="GBX.NET.LZO" Version="2.*" />
         <PackageReference Include="GBX.NET.ZLib" Version="1.*" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.*" />

@@ -33,6 +33,7 @@ internal sealed partial class Material
 
     private static readonly Dictionary<string, Properties> shaderProperties = new()
     {
+        ["Techno/Media/Material/PDiff PDiff PA PX2"] = new(WorldUV: true),
         ["Techno2/Media/Material/PDiff PDiff PA PX2 Grass2"] = new(WorldUV: true),
         ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass"] = new(WorldUV: true),
         ["Techno2/Media/Material/PDiff PDiff PA TOcc PX2 Grass NoLightV"] = new(WorldUV: true),
@@ -44,7 +45,7 @@ internal sealed partial class Material
         ["Techno/Media/Material/TDiff PX2 Trans NormY PC3only"] = new(DoubleSided: true, Transparent: true),
         ["Techno/Media/Material/PDiff Fresnel PX2"] = new(WorldUV: true),
         ["Techno/Media/Material/Sky"] = new Properties(Basic: true),
-        ["Techno/Media/Material/PDiff PDiff PA PX2"] = new(WorldUV: true),
+        //["Techno/Media/Material/PDiff TDiffA PX2"] = new(WorldUV: true),
         ["Techno/Media/Material/TDiffG PX2 CSpecL_Pixel"] = new Properties(SpecularAlpha: true),
         ["Vehicles/Media/Material/SportCarGlass"] = new(Transparent: true, Opacity: 0.89),
         ["Techno/Media/Material/TAdd"] = new(Transparent: true, Add: true),
@@ -77,6 +78,8 @@ internal sealed partial class Material
         ["Techno3/Media/Material/Sky/Tech3 Sky"] = new Properties(Invisible: true),
         ["Techno3/Media/Material/Tech3 Warp PyaPxzDiff"] = new(WorldUV: true),
         ["Techno3/Media/Material/Tech3 Warp_PyaDiff_To_PDiffPGrassX2"] = new(WorldUV: true),
+        ["Island/Media/Material/IslandSky"] = new(Invisible: true),
+        ["Sky/Media/Material/SkyDay"] = new(Basic: true, Invisible: true),
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];

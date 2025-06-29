@@ -506,10 +506,25 @@ public partial class View3D : ComponentBase
         mapCamera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
         mapCamera.CreateMapControls(renderer, center);
 
-        var baseHeight = await PlaceDecorationAsync(Map, cancellationToken);
+        var baseHeight = 5;
+        var decoSize = default(DecorationSizeDto);
+
+        if (decorations.Contains(Map.Size))
+        {
+            decoSize = decorations[Map.Size].First(x => x.Decorations.Any(x => x.Name == Map.Decoration.Id));
+            baseHeight = decoSize.BaseHeight + (decoSize.OffsetBlockY ? 1 : 0);
+        }
 
         await PlaceBlocksAsync(Map, baseHeight, blockSize, cancellationToken);
         await PlacePylonsAsync(Map, baseHeight, blockSize, cancellationToken);
+
+        if (decoSize is not null)
+        {
+            var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == Map.Decoration.Id);
+            // TODO with deco
+
+            await foreach (var _ in CreateDecorationAsync(Map.Collection ?? throw new Exception("Collection is null"), decoSize, optimized: true, cancellationToken)) { }
+        }
 
         return true;
     }
@@ -520,28 +535,6 @@ public partial class View3D : ComponentBase
         OnIntersect?.Invoke(new(objectName, materialName, materialUserData));
     }
 
-    private async Task<int> PlaceDecorationAsync(CGameCtnChallenge map, CancellationToken cancellationToken)
-    {
-        var baseHeight = 5;
-
-        if (!decorations.Contains(map.Size))
-        {
-            return baseHeight;
-        }
-
-        var decoSize = decorations[map.Size].First(x => x.Decorations.Any(x => x.Name == map.Decoration.Id));
-
-        baseHeight = decoSize.BaseHeight + (decoSize.OffsetBlockY ? 1 : 0);
-
-        var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == map.Decoration.Id);
-
-        //var size = $"{map.Size.X}x{map.Size.Y}x{map.Size.Z}";
-
-        await foreach (var _ in CreateDecorationAsync(map.Collection ?? throw new Exception("Collection is null"), decoSize, optimized: true, cancellationToken)) { }
-
-        return baseHeight;
-    }
-
     private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, bool optimized, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
@@ -549,6 +542,12 @@ public partial class View3D : ComponentBase
         foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
         {
             if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
+            {
+                continue;
+            }
+
+            // currently slow af to process
+            if (sceneObject.Solid is "Stadium\\Media\\Solid\\Other\\StadiumWarpFlags" or "Stadium//Media//Solid//Other//StadiumWarpFlags")
             {
                 continue;
             }
@@ -571,7 +570,7 @@ public partial class View3D : ComponentBase
             var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: optimized, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             Scene?.Add(solid);
-
+            
             yield return solid;
         }
     }
@@ -594,7 +593,12 @@ public partial class View3D : ComponentBase
             .Concat(map.GetBakedBlocks())
             .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
             .Concat(clipBlocks)
-            .ToLookup(x => new UniqueVariant(x.Name, x.IsGround, x.Variant, x.SubVariant, terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 })));
+            .ToLookup(x => new UniqueVariant(
+                x.Name, 
+                x.IsGround, 
+                x.Variant, 
+                x.Name.EndsWith("Pillar") ? 0 : x.SubVariant, // because TMF sometimes has billion subvariants for pillars and it kills performance
+                terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 })));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
 
