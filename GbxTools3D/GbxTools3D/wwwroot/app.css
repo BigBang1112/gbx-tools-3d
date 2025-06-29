@@ -7,6 +7,12 @@
 
 @import url('https://fonts.googleapis.com/css2?family=PT+Mono&display=swap');
 
+:root {
+    --blue-color: #08F;
+    --red-color: #D10;
+    --yellow-color: #CA0;
+}
+
 html, body {
     font-family: "Mona Sans";
     background-color: #111;
@@ -279,12 +285,12 @@ h2.view {
         }
 
 a {
-    color: #0089E5;
+    color: #26A8FF;
     text-decoration: none;
 }
 
     a:hover {
-        color: #0099FF;
+        color: #47B5FF;
         text-decoration: underline;
     }
 

@@ -44,4 +44,18 @@ public partial class GhostInfo : ComponentBase
         Samples,
         Details
     }
+
+    private string InterpolateDirtBlend(float t)
+    {
+        t = Math.Clamp(t, 0f, 1f);
+
+        int rStart = 255, gStart = 255, bStart = 255;      // #FFFFFF
+        int rEnd = 244, gEnd = 164, bEnd = 96;             // #F4A460
+
+        int r = (int)(rStart + (rEnd - rStart) * t);
+        int g = (int)(gStart + (gEnd - gStart) * t);
+        int b = (int)(bStart + (bEnd - bStart) * t);
+
+        return $"#{r:X2}{g:X2}{b:X2}";
+    }
 }

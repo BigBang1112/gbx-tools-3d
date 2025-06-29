@@ -97,15 +97,15 @@
     }
 
     .chevron.checkpoint {
-        background-color: #08F;
+        background-color: var(--blue-color);
     }
 
     .chevron.finish {
-        background-color: #D10;
+        background-color: var(--red-color);
     }
 
     .chevron.multilap {
-        background-color: #CA0;
+        background-color: var(--yellow-color);
     }
 
 .time-preview-mark {

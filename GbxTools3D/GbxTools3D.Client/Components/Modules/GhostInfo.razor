@@ -1,4 +1,6 @@
-﻿<div class="panel right ghost-info @(show ? "" : "closed")">
+﻿@using TmEssentials
+
+<div class="panel right ghost-info @(show ? "" : "closed")">
     <div class="opener" @onclick="() => show = !show">
         @if (show)
         {
@@ -14,9 +16,9 @@
         <div class="title">
             <FormattedText Text="@(Ghost.GhostNickname ?? Ghost.GhostLogin)"></FormattedText>
         </div>
-        <div style="display: flex; font-size: 80%;gap: 5px">
-            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" style="flex: 1" @onclick="() => mode = MenuType.Samples">Samples</div>
-            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" style="flex: 1" @onclick="() => mode = MenuType.Details">Details</div>
+        <div class="minimenu">
+            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" @onclick="() => mode = MenuType.Samples">Samples</div>
+            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" @onclick="() => mode = MenuType.Details">Details</div>
         </div>
         @if (mode == MenuType.Samples)
         {
@@ -26,7 +28,7 @@
             }
             else
             {
-                <div class="basic table">
+                <div class="table">
                     @if (Ghost.CompressedData is not null)
                     {
                         <div>Size:</div>
@@ -66,22 +68,34 @@
 
                         @if (currentSample is GBX.NET.Engines.Scene.CSceneVehicleCar.Sample carSample)
                         {
-                            <div>Gas:</div>
-                            <div class="mono">@carSample.Gas</div>
-                            <div>Brake:</div>
-                            <div class="mono">@carSample.Brake</div>
+                            <div class="@(carSample.Gas > 0 ? "gas" : "release")">Gas:</div>
+                            <div class="mono @(carSample.Gas > 0 ? "gas" : "release")">@carSample.Gas</div>
+                            <div class="@(carSample.Brake > 0 ? "brake" : "")">Brake:</div>
+                            <div class="mono @(carSample.Brake > 0 ? "brake" : "")">@carSample.Brake</div>
                             <div>Steer:</div>
                             <div class="mono">@carSample.Steer.ToString("0.000")</div>
                             <div>Steer front:</div>
                             <div class="mono">@carSample.SteerFront.ToString("0.000")</div>
-                            <div>Turbo:</div>
-                            <div class="mono">@carSample.TurboStrength</div>
-                            <div>Dirt blend:</div>
-                            <div class="mono">@carSample.DirtBlend</div>
+                            <div class="@(carSample.TurboStrength > 0 ? "turbo" : "")">Turbo:</div>
+                            <div class="mono @(carSample.TurboStrength > 0 ? "turbo" : "")">@carSample.TurboStrength</div>
+                            <div style="color: @(carSample.DirtBlend.HasValue ? InterpolateDirtBlend(carSample.DirtBlend.Value) : "inherit")">Dirt blend:</div>
+                            <div class="mono" style="color: @(carSample.DirtBlend.HasValue ? InterpolateDirtBlend(carSample.DirtBlend.Value) : "inherit")">@carSample.DirtBlend</div>
+                            <div>Horn:</div>
+                            <div class="mono" title="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
                             <div>U13:</div>
                             <div class="mono">@carSample.U13</div>
                             <div>U14:</div>
                             <div class="mono">@carSample.U14</div>
+                            <div>U25_1:</div>
+                            <div class="mono">@carSample.U25_1</div>
+                            <div>U25_3:</div>
+                            <div class="mono">@carSample.U25_3</div>
+                            <div>U25_4:</div>
+                            <div class="mono">@carSample.U25_4</div>
+                            <div>U27_7:</div>
+                            <div class="mono">@carSample.U27_7</div>
+                            <div>U27_8:</div>
+                            <div class="mono">@carSample.U27_8</div>
                         }
 
                         <div title="Size of the sample">Size:</div>
@@ -101,7 +115,7 @@
                 <div>Vehicle:</div>
                 <div class="mono">@Ghost.PlayerModel?.Id</div>
                 <div>Time:</div>
-                <div class="mono">@Ghost.RaceTime</div>
+                <div class="mono">@Ghost.RaceTime.ToTmString()</div>
                 <div>Stunt score:</div>
                 <div class="mono">@Ghost.StuntScore</div>
                 <div>Respawns:</div>

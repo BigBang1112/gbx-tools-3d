@@ -45,3 +45,29 @@
 .validation {
     overflow: auto;
 }
+
+.minimenu {
+    display: flex;
+    font-size: 80%;
+    gap: 5px;
+}
+
+    .minimenu div {
+        flex: 1;
+    }
+
+.gas {
+    color: #0C0;
+}
+
+.brake {
+    color: #F44;
+}
+
+.release {
+    color: #FA0;
+}
+
+.turbo {
+    color: #FF0;
+}
