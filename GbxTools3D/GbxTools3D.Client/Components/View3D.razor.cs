@@ -546,10 +546,21 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            // currently slow af to process
-            if (sceneObject.Solid is "Stadium\\Media\\Solid\\Other\\StadiumWarpFlags" or "Stadium//Media//Solid//Other//StadiumWarpFlags")
+            if (optimized)
             {
-                continue;
+                var normalizedPath = sceneObject.Solid?.Replace('\\', '/');
+
+                // currently slow af to process
+                if (normalizedPath == "Stadium/Media/Solid/Other/StadiumWarpFlags")
+                {
+                    continue;
+                }
+
+                // has weird texturing
+                /*if (normalizedPath == "Island/Media/Solid/Other/IslandSkyDome")
+                {
+                    
+                }*/
             }
 
             var hash = $"GbxTools3D|Decoration|{GameVersion}|{collectionName}|{sceneObject.Solid}|Je te hais".Hash();
@@ -598,7 +609,10 @@ public partial class View3D : ComponentBase
                 x.IsGround, 
                 x.Variant, 
                 x.Name.EndsWith("Pillar") ? 0 : x.SubVariant, // because TMF sometimes has billion subvariants for pillars and it kills performance
-                terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 })));
+
+                // terrain modifier with check that ensures the block is not modified by itself
+                // this may still not be perfect but it helps in a lot of cases already
+                terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is (string t, CGameCtnBlock b) && b != x ? t : null));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
 
@@ -1230,23 +1244,82 @@ public partial class View3D : ComponentBase
         }
     }
 
-    private ImmutableDictionary<Int3, string> GetTerrainModifiers()
+    private sealed record TerrainModifierInfo(string TerrainModifier, CGameCtnBlock? ModifiedBy);
+
+    private ImmutableDictionary<Int3, TerrainModifierInfo> GetTerrainModifiers()
     {
         if (Map is null || blockInfos is null)
         {
-            return ImmutableDictionary<Int3, string>.Empty;
+            return ImmutableDictionary<Int3, TerrainModifierInfo>.Empty;
         }
 
-        var terrainModifiers = ImmutableDictionary.CreateBuilder<Int3, string>();
+        var terrainModifiers = ImmutableDictionary.CreateBuilder<Int3, TerrainModifierInfo>();
 
         foreach (var block in Map.GetBlocks())
         {
-            if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.TerrainModifier is null)
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo))
             {
                 continue;
             }
 
-            terrainModifiers[block.Coord with { Y = 0 }] = blockInfo.TerrainModifier;
+            if (blockInfo.TerrainModifier is not null)
+            {
+                terrainModifiers[block.Coord with { Y = 0 }] = new TerrainModifierInfo(blockInfo.TerrainModifier, null);
+            }
+
+            var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
+
+            if (!units.Any(x => x.TerrainModifier is not null))
+            {
+                continue;
+            }
+
+            var pivotX = units.Min(u => u.Offset.X);
+            var pivotZ = units.Min(u => u.Offset.Z);
+
+            var rotated = new (Int3 Position, string? Modifier)[units.Length];
+
+            for (var i = 0; i < units.Length; i++)
+            {
+                var unit = units[i];
+
+                var relX = unit.Offset.X - pivotX;
+                var relZ = unit.Offset.Z - pivotZ;
+
+                var newPos = block.Direction switch
+                {
+                    Direction.North => new Int3(relX, unit.Offset.Y, relZ),
+                    Direction.East => new Int3(-relZ, unit.Offset.Y, relX),
+                    Direction.South => new Int3(-relX, unit.Offset.Y, -relZ),
+                    Direction.West => new Int3(relZ, unit.Offset.Y, -relX),
+                    _ => throw new ArgumentException("Invalid direction")
+                };
+
+                // New absolute position
+                var absPos = new Int3(pivotX + newPos.X, unit.Offset.Y, pivotZ + newPos.Z);
+                rotated[i] = (Position: absPos, Modifier: unit.TerrainModifier);
+            }
+
+            var normMinX = rotated.Min(t => t.Position.X);
+            var normMinY = rotated.Min(t => t.Position.Y);
+            var normMinZ = rotated.Min(t => t.Position.Z);
+
+            for (int i = 0; i < rotated.Length; i++)
+            {
+                var (pos, modifier) = rotated[i];
+                if (modifier is null)
+                {
+                    continue; // Skip if no terrain modifier present
+                }
+
+                var normalizedPos = new Int3(pos.X - normMinX, pos.Y - normMinY, pos.Z - normMinZ);
+                var unitCoord = (block.Coord + normalizedPos) with { Y = 0 };
+
+                // also stores the block with this
+                // this ensures the block is not modified by itself
+                // this may still not be perfect but it helps in a lot of cases already
+                terrainModifiers[unitCoord] = new TerrainModifierInfo(modifier, block);
+            }
         }
 
         return terrainModifiers.ToImmutable();

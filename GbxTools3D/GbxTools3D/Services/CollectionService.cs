@@ -1,8 +1,10 @@
 ﻿using GBX.NET;
+using GBX.NET.Components;
 using GBX.NET.Engines.Game;
 using GBX.NET.Engines.Graphic;
 using GBX.NET.Engines.Plug;
 using GBX.NET.Engines.Scene;
+using GBX.NET.Imaging.ImageSharp;
 using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Data;
@@ -11,11 +13,9 @@ using GbxTools3D.Enums;
 using GbxTools3D.Extensions;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.EntityFrameworkCore;
-using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp;
-using GBX.NET.Imaging.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
 using System.Collections.Immutable;
-using GBX.NET.Components;
 
 namespace GbxTools3D.Services;
 
@@ -604,14 +604,33 @@ internal sealed class CollectionService
                         $"GbxTools3D|Solid|{gameFolder}|{blockName}|False|You're not helper here >:(",
                         cancellationToken);
                 }
+                else if (blockInfoNode.VariantBaseAir?.HelperSolidFid is not null)
+                {
+                    await GetOrCreateMeshFromSolidFidAsync(
+                        blockInfoNode.VariantBaseAir.HelperSolidFid,
+                        blockInfoNode.VariantBaseAir.HelperSolidFidFile,
+                        gamePath,
+                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|False|You're not helper here >:(",
+                        cancellationToken);
+                }
 
                 if (blockInfoNode.GroundHelperMobil is not null)
                 {
                     await GetOrCreateMeshFromMobilAsync(blockInfoNode.GroundHelperMobil,
-                        gamePath, 
+                        gamePath,
                         $"GbxTools3D|Solid|{gameFolder}|{blockName}|True|You're not helper here >:(",
                         cancellationToken);
                 }
+                else if (blockInfoNode.VariantBaseGround?.HelperSolidFid is not null)
+                {
+                    await GetOrCreateMeshFromSolidFidAsync(
+                        blockInfoNode.VariantBaseGround.HelperSolidFid,
+                        blockInfoNode.VariantBaseGround.HelperSolidFidFile,
+                        gamePath,
+                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|True|You're not helper here >:(",
+                        cancellationToken);
+                }
+
 
                 if (blockInfoNode.ConstructionModeHelperMobil is not null)
                 {
@@ -945,10 +964,11 @@ internal sealed class CollectionService
                 : null,
             AcceptPylons = unit.AcceptPylons == 255 ? null : (byte)unit.AcceptPylons,
             PlacePylons = unit.PlacePylons == 0 ? null : (byte)unit.PlacePylons,
+            TerrainModifier = string.IsNullOrEmpty(unit.TerrainModifierId) ? null : unit.TerrainModifierId
         };
     }
 
-    private async Task<Mesh?> GetOrCreateMeshFromMobilAsync(CSceneMobil mobil, string relativeTo, string toHash, CancellationToken cancellationToken)
+    private async ValueTask<Mesh?> GetOrCreateMeshFromMobilAsync(CSceneMobil mobil, string relativeTo, string toHash, CancellationToken cancellationToken)
     {
         var solid = mobil.GetSolid(relativeTo, out var path);
 
@@ -957,6 +977,12 @@ internal sealed class CollectionService
             return null;
         }
         
+        return await meshService.GetOrCreateMeshAsync(relativeTo, toHash.Hash(), path, solid, vehicle: null, cancellationToken: cancellationToken);
+    }
+
+    private async ValueTask<Mesh?> GetOrCreateMeshFromSolidFidAsync(CPlugSolid solid, GbxRefTableFile? solidFile, string relativeTo, string toHash, CancellationToken cancellationToken)
+    {
+        var path = solidFile is null ? null : Path.GetRelativePath(relativeTo, solidFile.GetFullPath());
         return await meshService.GetOrCreateMeshAsync(relativeTo, toHash.Hash(), path, solid, vehicle: null, cancellationToken: cancellationToken);
     }
 

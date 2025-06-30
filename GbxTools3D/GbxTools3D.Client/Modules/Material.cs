@@ -78,8 +78,9 @@ internal sealed partial class Material
         ["Techno3/Media/Material/Sky/Tech3 Sky"] = new Properties(Invisible: true),
         ["Techno3/Media/Material/Tech3 Warp PyaPxzDiff"] = new(WorldUV: true),
         ["Techno3/Media/Material/Tech3 Warp_PyaDiff_To_PDiffPGrassX2"] = new(WorldUV: true),
-        ["Island/Media/Material/IslandSky"] = new(Invisible: true),
-        ["Sky/Media/Material/SkyDay"] = new(Basic: true, Invisible: true),
+        ["Island/Media/Material/IslandSky"] = new(Basic: true/*, Invisible: true*/),
+        ["Sky/Media/Material/SkyDay"] = new(Basic: true/*, Invisible: true*/),
+        ["Island/Media/Material/IslandWindowsMip"] = new(Transparent: true, Opacity: 0.7),
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];

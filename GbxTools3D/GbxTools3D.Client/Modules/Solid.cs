@@ -270,6 +270,8 @@ internal sealed partial class Solid(JSObject obj)
     {
         var childrenCount = r.Read7BitEncodedInt();
 
+        var rotForTrans = rot;
+
         if (r.ReadBoolean())
         {
             var a = rot;
@@ -291,7 +293,12 @@ internal sealed partial class Solid(JSObject obj)
 
         if (r.ReadBoolean())
         {
-            pos += ReadVector3(r);
+            var delta = ReadVector3(r);
+            pos += new Vector3(
+                delta.X * rotForTrans.XX + delta.Y * rotForTrans.XY + delta.Z * rotForTrans.XZ,
+                delta.X * rotForTrans.YX + delta.Y * rotForTrans.YY + delta.Z * rotForTrans.YZ,
+                delta.X * rotForTrans.ZX + delta.Y * rotForTrans.ZY + delta.Z * rotForTrans.ZZ
+            );
         }
 
         var geometry = ReadVisualAsGeometry(r, rot, pos);
