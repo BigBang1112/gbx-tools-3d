@@ -39,7 +39,7 @@
                         </div>
                     }
                     <div>Period:</div>
-                    <div class="mono">@Ghost.SampleData.SamplePeriod</div>
+                    <div class="mono">@Ghost.SampleData.SamplePeriod.ToTmString(UseHundredths)</div>
                     <div>Version:</div>
                     <div class="mono">
                         <span>@Ghost.SampleData.Version</span>
@@ -56,7 +56,7 @@
                     </div>
                     <div class="basic table">
                         <div>Time:</div>
-                        <div class="mono">@currentSample.Time</div>
+                        <div class="mono">@currentSample.Time.ToTmString(UseHundredths)</div>
                         <div>Position:</div>
                         <div class="mono"><Vec3Display Value="currentSample.Position" /></div>
                         <div>Rotation:</div>

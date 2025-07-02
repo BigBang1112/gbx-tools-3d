@@ -1,4 +1,5 @@
-﻿using GbxTools3D.Client.Models;
+﻿using GBX.NET;
+using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -32,6 +33,9 @@ public partial class Playback : ComponentBase
 
     [Parameter]
     public string? Description { get; set; }
+
+    [Parameter]
+    public bool UseHundredths { get; set; }
 
     public bool IsPlaying { get; private set; }
     public bool IsPaused { get; private set; }

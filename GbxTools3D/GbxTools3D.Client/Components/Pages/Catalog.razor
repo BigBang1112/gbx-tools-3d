@@ -275,16 +275,6 @@
                                                OnSelected="OnSelectedTreeObjectChanged"
                                                Description="@Path.GetFileName(solid.Object.GetPropertyAsJSObject("userData")?.GetPropertyAsString("filePath"))"></ObjectTreeElement>
                             @*
-                            <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">
-                                <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
-                            </div>
-                            <div class="button-generic">
-                                <img src="icons/ui/ads_click.svg" alt="Select Mode" class="icon" width="32" height="32" />
-                            </div>
-                            @if (view3d?.Scene is not null)
-                            {
-                                <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">Vertex normals</div>
-                            }
 
                             @foreach (var (matName, shadName) in solid.GetAllMaterials())
                             {
@@ -300,6 +290,27 @@
                             *@
                         }
                     </ul>
+
+                    @foreach (var solid in focusedSolids)
+                    {
+                        <div class="solid-tools">
+                            <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">
+                                <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
+                            </div>
+                            <div class="button-generic">
+                                <img src="icons/ui/ads_click.svg" alt="Select Mode" class="icon" width="32" height="32" />
+                            </div>
+                            <div class="button-generic @(solid.CollisionsEnabled ? "active" : "")" @onclick="() => ToggleCollisionsAsync(solid)">
+                                Collisions
+                            </div>
+                            @if (view3d?.Scene is not null)
+                            {
+                                <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">
+                                    Vertex normals
+                                </div>
+                            }
+                        </div>
+                    }
                 }
 
                 <small>@materialName</small>

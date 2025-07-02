@@ -29,6 +29,7 @@ public partial class View3D : ComponentBase
     private JSObject? animationModule;
     private JSObject? renderer;
     private Camera? mapCamera;
+    private Camera? vehicleCamera;
 
     private DotNetObjectReference<View3D>? objRef;
     private IJSObjectReference? rendererModuleInterop;
@@ -308,13 +309,7 @@ public partial class View3D : ComponentBase
             throw new InvalidOperationException("Map camera is not initialized.");
         }
 
-        foreach (var solid in FocusedSolids)
-        {
-            solid.Remove(Scene);
-            //solid.Dispose();
-        }
-
-        FocusedSolids.Clear();
+        ClearFocusedSolids();
         await OnFocusedSolidsChange.InvokeAsync();
 
         var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
@@ -343,13 +338,7 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        foreach (var solid in FocusedSolids)
-        {
-            solid.Remove(Scene);
-            //solid.Dispose();
-        }
-
-        FocusedSolids.Clear();
+        ClearFocusedSolids();
         await OnFocusedSolidsChange.InvokeAsync();
 
         mapCamera.Position = new Vec3(0, 5, 10);
@@ -397,13 +386,7 @@ public partial class View3D : ComponentBase
             return false;
         }
 
-        foreach (var solid in FocusedSolids)
-        {
-            solid.Remove(Scene);
-            //solid.Dispose();
-        }
-
-        FocusedSolids.Clear();
+        ClearFocusedSolids();
         await OnFocusedSolidsChange.InvokeAsync();
 
         mapCamera.Position = new Vec3(0, 5, 10);
@@ -462,6 +445,17 @@ public partial class View3D : ComponentBase
         return true;
     }
 
+    private void ClearFocusedSolids()
+    {
+        foreach (var solid in FocusedSolids)
+        {
+            solid.Remove(Scene);
+            //solid.Dispose();
+        }
+
+        FocusedSolids.Clear();
+    }
+
     private async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
     {
         if (Map is null || mapCamera is null || renderer is null || mapLoadAttempted)
@@ -471,27 +465,7 @@ public partial class View3D : ComponentBase
 
         mapLoadAttempted = true; // because map load doesnt have good cleanup process, this hack will prevent multiple map loads
 
-        GameVersion = Map.GameVersion;
-
-        if (GameVersion == (GameVersion.MP3 | GameVersion.TMT))
-        {
-            GameVersion = Map.TitleId == "TMCE@nadeolabs" ? GameVersion.TMT : GameVersion.MP3;
-        }
-
-        if (GameVersion == GameVersion.TMU)
-        {
-            GameVersion = GameVersion.TMF;
-        }
-
-        if (GameVersion == GameVersion.MP3) // temporary
-        {
-            GameVersion = GameVersion.MP4;
-        }
-
-        if (GameVersion < GameVersion.TMSX) // temporary
-        {
-            GameVersion = GameVersion.TMF;
-        }
+        GameVersion = GameVersionSupport.GetSupportedGameVersion(Map);
 
         await BeforeMapLoad.InvokeAsync();
 
@@ -502,11 +476,14 @@ public partial class View3D : ComponentBase
         var blockSize = collectionInfo?.GetSquareSize() ?? Map.Collection.GetValueOrDefault().GetBlockSize();
         var center = new Vec3(Map.Size.X * blockSize.X / 2f, /*baseHeight * blockSize.Y*/0, Map.Size.Z * blockSize.Z / 2f - Map.Size.Z * blockSize.Z * 0.15f);
 
-        // setup camera
-        mapCamera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
-        mapCamera.CreateMapControls(renderer, center);
+        if (vehicleCamera is null)
+        {
+            // setup camera
+            mapCamera.Position = new Vec3(center.X, Map.Size.Z * 0.5f * blockSize.Z, 0);
+            mapCamera.CreateMapControls(renderer, center);
+        }
 
-        var baseHeight = 5;
+            var baseHeight = 5;
         var decoSize = default(DecorationSizeDto);
 
         if (decorations.Contains(Map.Size))
@@ -611,8 +588,8 @@ public partial class View3D : ComponentBase
                 x.Name.EndsWith("Pillar") ? 0 : x.SubVariant, // because TMF sometimes has billion subvariants for pillars and it kills performance
 
                 // terrain modifier with check that ensures the block is not modified by itself
-                // this may still not be perfect but it helps in a lot of cases already
-                terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is (string t, CGameCtnBlock b) && b != x ? t : null));
+                // this is not exact, it should be checked against real block units and not just 0x0x0!!
+                terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is TerrainModifierInfo info && info.ModifiedBy != x ? info.TerrainModifier : null));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
 
@@ -668,11 +645,63 @@ public partial class View3D : ComponentBase
         var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
         Scene?.Add(vehicle);
 
-        var camera = new Camera(vehicleInfo.CameraFov);
+        vehicleCamera = new Camera(vehicleInfo.CameraFov);
         Camera.Follow(vehicle.Object, vehicleInfo.CameraFar, vehicleInfo.CameraUp, vehicleInfo.CameraLookAtFactor);
-        Renderer.Camera = camera;
+        Renderer.Camera = vehicleCamera;
 
         return vehicle;
+    }
+
+    internal async Task<Solid?> CreateVehicleCollisionsAsync(string vehicleName, CancellationToken cancellationToken = default)
+    {
+        if (vehicleName is null || !vehicles.TryGetValue(vehicleName, out var vehicleInfo))
+        {
+            return null;
+        }
+
+        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
+
+        using var meshResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
+
+        if (!meshResponse.IsSuccessStatusCode)
+        {
+            return null;
+        }
+
+        await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
+        Scene?.Add(vehicle);
+
+        return vehicle;
+    }
+
+    internal async Task ToggleBlockCollisionsAsync(bool isGround, int variant, int subVariant, Solid solid, CancellationToken cancellationToken = default)
+    {
+        if (Scene is null)
+        {
+            return;
+        }
+
+        if (solid.CollisionsEnabled)
+        {
+            solid.ToggleCollision(Scene, collision: null);
+            return;
+        }
+
+        var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
+
+        using var meshResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
+
+        if (!meshResponse.IsSuccessStatusCode)
+        {
+            return;
+        }
+
+        await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        var collisionSolid = await Solid.ParseAsync(stream, GameVersion, materials, optimized: false);
+        solid.ToggleCollision(Scene, collisionSolid);
     }
 
     public void Unfollow()
@@ -1317,7 +1346,7 @@ public partial class View3D : ComponentBase
 
                 // also stores the block with this
                 // this ensures the block is not modified by itself
-                // this may still not be perfect but it helps in a lot of cases already
+                // this is not exact, it should be checked against real block units and not just 0x0x0!!
                 terrainModifiers[unitCoord] = new TerrainModifierInfo(modifier, block);
             }
         }
@@ -1402,11 +1431,14 @@ public partial class View3D : ComponentBase
                 await timer.DisposeAsync();
             }
             Unfollow();
+            Camera.RemoveControls();
+            Animation.DisposeMixers();
             Renderer.Dispose();
         }
 
         Scene = null;
         mapCamera = null;
+        vehicleCamera = null;
 
         rendererModule?.Dispose();
         sceneModule?.Dispose();
@@ -1456,5 +1488,23 @@ public partial class View3D : ComponentBase
             Scene?.Remove(lightHelper);
             lightHelper = null;
         }
+    }
+
+    internal void SetOrbitCamera()
+    {
+        if (renderer is null || vehicleCamera is null)
+        {
+            return;
+        }
+        vehicleCamera.CreateOrbitControls(renderer, default);
+    }
+
+    internal void SetFreeCamera()
+    {
+        if (renderer is null || vehicleCamera is null)
+        {
+            return;
+        }
+        vehicleCamera.CreateFlyControls(renderer);
     }
 }

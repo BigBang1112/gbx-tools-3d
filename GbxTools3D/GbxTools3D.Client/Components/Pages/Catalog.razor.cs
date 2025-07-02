@@ -319,6 +319,14 @@ public partial class Catalog : ComponentBase
         }
     }
 
+    private async Task ToggleCollisionsAsync(Solid solid)
+    {
+        if (view3d is not null)
+        {
+            await view3d.ToggleBlockCollisionsAsync(blockIsGround, blockVariant, blockSubVariant, solid);
+        }
+    }
+
     async ValueTask IAsyncDisposable.DisposeAsync()
     {
         if (module is not null)

@@ -22,6 +22,9 @@ public partial class CheckpointList : ComponentBase
     [Parameter, EditorRequired]
     public EventCallback<CGameCtnGhost.Checkpoint> OnCheckpointClick { get; set; }
 
+    [Parameter]
+    public bool UseHundredths { get; set; }
+
     public int CheckpointsPerLap => Ghost?.Checkpoints?.Length / NumLaps ?? 0;
 
     public TimeInt32? CurrentCheckpoint

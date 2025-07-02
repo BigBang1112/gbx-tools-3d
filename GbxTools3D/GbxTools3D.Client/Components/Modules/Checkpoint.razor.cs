@@ -7,6 +7,9 @@ public partial class Checkpoint : ComponentBase
 {
     private TimeInt32? time;
 
+    [Parameter]
+    public bool UseHundredths { get; set; }
+
     public TimeInt32? Time
     {
         get => time;

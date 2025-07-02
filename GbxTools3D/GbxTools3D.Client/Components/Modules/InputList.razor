@@ -15,7 +15,7 @@
     <div class="list mono">
         <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="28" @ref="virtualizeInputList">
             <div @onclick="() => OnInputClick.InvokeAsync(input)" class="item input @(CurrentInput == input.Time ? "active" : "")">
-                <span>@input.Time</span>
+                <span>@input.Time.ToString(UseHundredths)</span>
                 <span>@input.GetType().Name</span>
                 @if (input is GBX.NET.Inputs.IInputReal inputReal)
                 {

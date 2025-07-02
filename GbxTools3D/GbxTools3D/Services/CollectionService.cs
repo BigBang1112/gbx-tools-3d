@@ -5,6 +5,7 @@ using GBX.NET.Engines.Graphic;
 using GBX.NET.Engines.Plug;
 using GBX.NET.Engines.Scene;
 using GBX.NET.Imaging.ImageSharp;
+using GbxTools3D.Client;
 using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
 using GbxTools3D.Data;

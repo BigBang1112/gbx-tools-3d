@@ -13,3 +13,23 @@
     display: flex;
     gap: 5px;
 }
+
+    .contents div {
+        flex: 1;
+    }
+
+.camera {
+    position: relative;
+}
+
+    .camera img {
+        margin: -2px 0 -2px -4px;
+    }
+
+    .camera span {
+        position: absolute;
+        right: 6px;
+        bottom: 2px;
+        font-weight: bold;
+        font-size: 80%;
+    }

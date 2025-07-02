@@ -50,6 +50,15 @@
     height: 200px;
 }
 
+.solid-tools {
+    display: flex;
+    gap: 5px;
+}
+
+    .solid-tools div {
+        flex: 1;
+    }
+
 .catalog {
     position: fixed;
     padding: 20px;

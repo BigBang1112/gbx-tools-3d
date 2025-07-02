@@ -24,6 +24,8 @@ public partial class InputList : ComponentBase
     [Parameter, EditorRequired]
     public EventCallback<IInput> OnInputClick { get; set; }
 
+    public static bool UseHundredths => false; // inputs can sometimes be millisecond-based in older TM games
+
     public TimeInt32? CurrentInput
     {
         get => currentInput;

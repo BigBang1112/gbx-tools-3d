@@ -7,10 +7,10 @@ namespace GbxTools3D.Client.Modules;
 internal static partial class Animation
 {
     [JSImport("createPositionTrack", nameof(Animation))]
-    public static partial JSObject CreatePositionTrack(double[] times, double[] values);
+    public static partial JSObject CreatePositionTrack(double[] times, double[] values, bool discrete = false);
 
     [JSImport("createQuaternionTrack", nameof(Animation))]
-    public static partial JSObject CreateQuaternionTrack(double[] times, double[] values);
+    public static partial JSObject CreateQuaternionTrack(double[] times, double[] values, bool discrete = false);
 
     [JSImport("createRotationXTrack", nameof(Animation))]
     public static partial JSObject CreateRotationXTrack(double[] times, double[] values);
@@ -25,10 +25,10 @@ internal static partial class Animation
     public static partial JSObject CreateClip(string name, double duration, JSObject[] tracks);
 
     [JSImport("createMixer", nameof(Animation))]
-    public static partial void CreateMixer(JSObject object3D);
+    public static partial JSObject CreateMixer(JSObject object3D);
 
     [JSImport("createAction", nameof(Animation))]
-    public static partial JSObject CreateAction(JSObject clip, JSObject? object3D = null);
+    public static partial JSObject CreateAction(JSObject mixer, JSObject clip, JSObject? object3D = null);
 
     [JSImport("playAction", nameof(Animation))]
     public static partial JSObject PlayAction(JSObject action);
@@ -50,4 +50,7 @@ internal static partial class Animation
 
     [JSImport("setMixerTimeScale", nameof(Animation))]
     public static partial void SetMixerTimeScale(double timeScale, bool isPaused);
+
+    [JSImport("disposeMixers", nameof(Animation))]
+    public static partial void DisposeMixers();
 }

@@ -93,7 +93,8 @@ export function createMaterial(
             transmission: 0.7,
             roughness: 0.1,
             thickness: 0.1,
-            color: 0xddeeff
+            color: 0xddeeff,
+            doubleSided: true
         });
     }
     else if (specularAlpha || specularTexture)

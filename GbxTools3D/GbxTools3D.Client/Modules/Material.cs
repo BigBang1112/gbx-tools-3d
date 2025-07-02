@@ -199,6 +199,8 @@ internal sealed partial class Material
             properties = Properties.Default;
         }
 
+        var ignoreNormal = gameVersion >= GameVersion.TMT;
+
         var diffuseTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Diffuse")
             ?? materialDto.Textures.GetValueOrDefault("Blend1")
             ?? materialDto.Textures.GetValueOrDefault("Panorama")
@@ -210,8 +212,9 @@ internal sealed partial class Material
             ?? materialDto.Textures.GetValueOrDefault("GDiffuse")
             ?? materialDto.Textures.GetValueOrDefault("PyDiffuse")
             ?? materialDto.Textures.GetValueOrDefault("PxzDiffuse"), gameVersion, properties.NoWrap);
-        var normalTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal")
-            ?? materialDto.Textures.GetValueOrDefault("PxzNormal"), gameVersion, properties.NoWrap);
+        var normalTexture = ignoreNormal ? null : GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal")
+            // ?? materialDto.Textures.GetValueOrDefault("PxzNormal")  these kinds of normals are not quite working as expected
+            , gameVersion, properties.NoWrap);
         var specularTexture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Specular")
             ?? materialDto.Textures.GetValueOrDefault("PxzSpecular"), gameVersion, properties.NoWrap);
         var blend2Texture = GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Blend2"), gameVersion, properties.NoWrap);

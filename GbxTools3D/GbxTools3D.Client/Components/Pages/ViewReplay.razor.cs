@@ -32,11 +32,13 @@ public partial class ViewReplay : ComponentBase
     private GhostInfo? ghostInfo;
 
     private Solid? ghostSolid;
+    private Solid? ghostCollisionSolid;
 
     private readonly Dictionary<string, JSObject> actions = [];
 
     private readonly string[] wheelNames = ["FLWheel", "FRWheel", "RLWheel", "RRWheel"];
     private readonly string[] guardNames = ["FLGuard", "FRGuard", "RLHub", "RRHub"];
+    private readonly string[] collisionWheelNames = ["FLSurf", "FRSurf", "RLSurf", "RRSurf"];
 
     private readonly string[] objectPrefixes = ["1", "d", "p", "s", "w"];
 
@@ -58,6 +60,8 @@ public partial class ViewReplay : ComponentBase
 
     public RenderDetails? RenderDetails { get; set; }
 
+    private bool UseHundredths => Replay?.Challenge is not null && GameVersionSupport.GetSupportedGameVersion(Replay.Challenge) <= GameVersion.TMF;
+
     private string selectedExternal = "tmx";
     private string selectedTmx = "tmnf";
     private string selectedMx = "tm2020";
@@ -73,7 +77,7 @@ public partial class ViewReplay : ComponentBase
         var sb = new StringBuilder();
         if (CurrentGhost.RaceTime is not null)
         {
-            sb.Append(CurrentGhost.RaceTime);
+            sb.Append(CurrentGhost.RaceTime.ToTmString(UseHundredths));
             sb.Append(" by ");
         }
 
@@ -165,6 +169,11 @@ public partial class ViewReplay : ComponentBase
             return false;
         }
 
+        if (ghost.PlayerModel is not null)
+        {
+            ghostCollisionSolid = await view3d.CreateVehicleCollisionsAsync(ghost.PlayerModel.Id);
+        }
+
         var isOldSampleChunk = ghost.Chunks.Get<CGameGhost.Chunk0303F003>() is not null;
         var samples = isOldSampleChunk
             ? ghost.SampleData.Samples.Skip(1).ToArray().AsSpan() // weird old tm stuff
@@ -179,6 +188,13 @@ public partial class ViewReplay : ComponentBase
         var firstSample = samples[0];
         ghostSolid.Position = firstSample.Position;
         ghostSolid.RotationQuaternion = firstSample.Rotation;
+
+        if (ghostCollisionSolid is not null)
+        {
+            ghostCollisionSolid.Position = firstSample.Position;
+            ghostCollisionSolid.RotationQuaternion = firstSample.Rotation;
+            ghostCollisionSolid.Visible = false;
+        }
 
         var count = samples.Length;
         var times = new double[count];
@@ -198,6 +214,11 @@ public partial class ViewReplay : ComponentBase
         {
             partData[$"{guard}_steer"] = new double[count];
             partData[$"{guard}_dampen"] = new double[count];
+        }
+        foreach (var wheel in collisionWheelNames)
+        {
+            partData[$"{wheel}_steer"] = new double[count];
+            partData[$"{wheel}_dampen"] = new double[count];
         }
 
         for (int i = 0; i < count; i++)
@@ -231,6 +252,14 @@ public partial class ViewReplay : ComponentBase
             partData["FRGuard_dampen"][i] = s.FRDampenLen;
             partData["RLHub_dampen"][i] = s.RLDampenLen;
             partData["RRHub_dampen"][i] = s.RRDampenLen;
+
+            partData["FLSurf_steer"][i] = s.SteerFront;
+            partData["FRSurf_steer"][i] = s.SteerFront;
+
+            partData["FLSurf_dampen"][i] = s.FLDampenLen;
+            partData["FRSurf_dampen"][i] = s.FRDampenLen;
+            partData["RLSurf_dampen"][i] = s.RLDampenLen;
+            partData["RRSurf_dampen"][i] = s.RRDampenLen;
         }
 
         var duration = samples[^1].Time.TotalSeconds - (isOldSampleChunk ? 0.1 : 0);
@@ -245,10 +274,10 @@ public partial class ViewReplay : ComponentBase
         var rotationTrack = Animation.CreateQuaternionTrack(times, rotations);
 
         // Setup mixer and playback
-        Animation.CreateMixer(ghostSolid.Object);
+        var visualMixer = Animation.CreateMixer(ghostSolid.Object);
         playback?.SetDuration(TimeSpan.FromSeconds(duration));
 
-        actions["Vehicle"] = Animation.CreateAction(Animation.CreateClip("Vehicle", duration, [positionTrack, rotationTrack]));
+        actions["Vehicle"] = Animation.CreateAction(visualMixer, Animation.CreateClip("Vehicle", duration, [positionTrack, rotationTrack]));
 
         foreach (var wheel in wheelNames)
         {
@@ -263,17 +292,17 @@ public partial class ViewReplay : ComponentBase
 
                 // Rotation
                 var rotTrack = Animation.CreateRotationXTrack(times, partData[$"{wheel}_rot"]);
-                actions[$"{wheelObject}Rotation"] = Animation.CreateAction(
+                actions[$"{wheelObject}Rotation"] = Animation.CreateAction(visualMixer,
                     Animation.CreateClip($"{wheelObject}Rotation", duration, [rotTrack]), node);
 
                 // Steer
                 var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"]);
-                actions[$"{wheelObject}Steer"] = Animation.CreateAction(
+                actions[$"{wheelObject}Steer"] = Animation.CreateAction(visualMixer,
                     Animation.CreateClip($"{wheelObject}Steer", duration, [steerTrack]), node);
 
                 // Dampen (as relative position)
                 var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
-                actions[$"{wheelObject}Dampen"] = Animation.CreateAction(
+                actions[$"{wheelObject}Dampen"] = Animation.CreateAction(visualMixer,
                     Animation.CreateClip($"{wheelObject}Dampen", duration, [dampenTrack]), node);
 
                 ghostSolid.Object.GetPropertyAsJSObject("userData")!.SetProperty(wheel, wheelObject);
@@ -292,12 +321,39 @@ public partial class ViewReplay : ComponentBase
                 Solid.ReorderEuler(node);
 
                 var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{guard}_steer"]);
-                actions[$"{guardObject}Steer"] = Animation.CreateAction(
+                actions[$"{guardObject}Steer"] = Animation.CreateAction(visualMixer,
                     Animation.CreateClip($"{guardObject}Steer", duration, [steerTrack]), node);
 
                 var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{guard}_dampen"], node);
-                actions[$"{guardObject}Dampen"] = Animation.CreateAction(
+                actions[$"{guardObject}Dampen"] = Animation.CreateAction(visualMixer,
                     Animation.CreateClip($"{guardObject}Dampen", duration, [dampenTrack]), node);
+            }
+        }
+
+        if (ghostCollisionSolid is not null)
+        {
+            var collisionMixer = Animation.CreateMixer(ghostCollisionSolid.Object);
+
+            var collisionPositionTrack = Animation.CreatePositionTrack(times, positions, discrete: true);
+            var collisionRotationTrack = Animation.CreateQuaternionTrack(times, rotations, discrete: true);
+
+            actions["VehicleCollision"] = Animation.CreateAction(collisionMixer,
+                Animation.CreateClip("VehicleCollision", duration, [collisionPositionTrack, collisionRotationTrack]), ghostCollisionSolid.Object);
+
+            foreach (var wheel in collisionWheelNames)
+            {
+                var node = ghostCollisionSolid.GetObjectByName(wheel);
+                if (node is null) continue;
+                Solid.ReorderEuler(node);
+                // Steer
+                var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"]);
+                actions[$"{wheel}SteerCollision"] = Animation.CreateAction(collisionMixer,
+                    Animation.CreateClip($"{wheel}SteerCollision", duration, [steerTrack]), node);
+                // Dampen (as relative position)
+                var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
+                actions[$"{wheel}DampenCollision"] = Animation.CreateAction(collisionMixer,
+                    Animation.CreateClip($"{wheel}DampenCollision", duration, [dampenTrack]), node);
+                ghostCollisionSolid.Object.GetPropertyAsJSObject("userData")!.SetProperty(wheel, wheel);
             }
         }
 
@@ -603,5 +659,30 @@ public partial class ViewReplay : ComponentBase
     private void SetSpeed(float speed)
     {
         Animation.SetMixerTimeScale(speed, playback?.IsPaused ?? true);
+    }
+
+    private void ToggleCollisions(bool collisions)
+    {
+        if (ghostCollisionSolid is not null)
+        {
+            ghostCollisionSolid.Visible = collisions;
+        }
+    }
+
+    private void ChangeCameraType(ReplayCameraType type)
+    {
+        switch (type)
+        {
+            case ReplayCameraType.Cam2:
+                Camera.RemoveControls();
+                break;
+            case ReplayCameraType.Orbital:
+                view3d?.SetOrbitCamera();
+                break;
+            case ReplayCameraType.Free:
+                Camera.Unfollow();
+                view3d?.SetFreeCamera();
+                break;
+        }
     }
 }

@@ -25,6 +25,9 @@ internal sealed partial class Solid(JSObject obj)
     private Dictionary<JSObject, JSObject> wireframeMemorizedMaterials = [];
     public bool WireframeEnabled => wireframeMemorizedMaterials.Count > 0;
 
+    private Solid? collision;
+    public bool CollisionsEnabled => collision is not null;
+
     public JSObject Object { get; } = obj;
 
     public Vec3 Position
@@ -66,6 +69,12 @@ internal sealed partial class Solid(JSObject obj)
             UpdateMatrix(Object);
             UpdateMatrixWorld(Object);
         }
+    }
+
+    public bool Visible
+    {
+        get => Object.GetPropertyAsBoolean("visible");
+        set => Object.SetProperty("visible", value);
     }
 
     public JSObject? GetObjectByName(string name)
@@ -169,6 +178,17 @@ internal sealed partial class Solid(JSObject obj)
 
     [JSImport("createVertexNormalHelper", nameof(Solid))]
     private static partial JSObject CreateVertexNormalHelper(JSObject mesh);
+
+    [JSImport("createSphere", nameof(Solid))]
+    private static partial JSObject CreateSphere(double radius);
+
+    [JSImport("createEllipsoid", nameof(Solid))]
+    private static partial JSObject CreateEllipsoid(double sizeX, double sizeY, double sizeZ);
+
+    [JSImport("createCollisionMesh", nameof(Solid))]
+    private static partial JSObject CreateCollisionMesh(
+        [JSMarshalAs<JSType.MemoryView>] Span<byte> vertexData,
+        [JSMarshalAs<JSType.MemoryView>] Span<int> indices);
 
     [JSImport("log", nameof(Solid))]
     private static partial void Log(JSObject tree);
@@ -426,6 +446,11 @@ internal sealed partial class Solid(JSObject obj)
 
         var surface = ReadSurface(r);
 
+        if (surface is not null)
+        {
+            Add(tree, surface);
+        }
+
         if (version >= 2)
         {
             var light = ReadLight(r, tree, noLights);
@@ -548,12 +573,12 @@ internal sealed partial class Solid(JSObject obj)
         {
             case SurfaceType.Sphere:
                 var size = r.ReadSingle();
-                break;
+                return CreateSphere(size);
             case SurfaceType.Ellipsoid:
                 var sizeX = r.ReadSingle();
                 var sizeY = r.ReadSingle();
                 var sizeZ = r.ReadSingle();
-                break;
+                return CreateEllipsoid(sizeX, sizeY, sizeZ);
             case SurfaceType.Mesh:
                 var vertexCount = r.Read7BitEncodedInt();
                 Span<byte> vertices = r.ReadBytes(vertexCount * 3 * sizeof(float));
@@ -593,13 +618,11 @@ internal sealed partial class Solid(JSObject obj)
                         }
                         break;
                 }
-                
-                break;
+
+                return CreateCollisionMesh(vertices, triBufferInts);
             default:
                 throw new InvalidDataException("Unknown surface type");
         }
-
-        return null;
     }
 
     private static JSObject? ReadLight(AdjustedBinaryReader r, JSObject? tree, bool noLights)
@@ -693,6 +716,22 @@ internal sealed partial class Solid(JSObject obj)
         }
     }
 
+    public void ToggleCollision(Scene scene, Solid? collision)
+    {
+        if (collision is null)
+        {
+            if (this.collision is not null)
+            {
+                scene.Remove(this.collision);
+                this.collision = null;
+            }
+            return;
+        }
+
+        this.collision = collision;
+        scene.Add(collision.Object);
+    }
+
     public void ToggleWireframe()
     {
         if (wireframeMemorizedMaterials.Count > 0)
@@ -756,6 +795,13 @@ internal sealed partial class Solid(JSObject obj)
         }
 
         vertexNormalHelpers = [];
+
+        if (collision is not null)
+        {
+            scene.Remove(collision);
+            collision = null;
+        }
+
         scene.Remove(Object);
     }
 

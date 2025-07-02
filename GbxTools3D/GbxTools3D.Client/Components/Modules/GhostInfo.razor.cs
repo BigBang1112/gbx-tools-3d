@@ -13,6 +13,9 @@ public partial class GhostInfo : ComponentBase
     [Parameter, EditorRequired]
     public CGameCtnGhost? Ghost { get; set; }
 
+    [Parameter]
+    public bool UseHundredths { get; set; }
+
     private (string, string)? VersionName => Ghost?.SampleData?.Version switch
     {
         1 or 2 => ("SVehicleSimpleState_ReplayAfter211003", "2003-10-21"),

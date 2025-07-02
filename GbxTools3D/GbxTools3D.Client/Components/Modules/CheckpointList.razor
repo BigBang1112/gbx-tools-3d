@@ -1,4 +1,5 @@
-﻿<div class="panel left checkpoint-list @(show ? "" : "closed")">
+﻿@using TmEssentials
+<div class="panel left checkpoint-list @(show ? "" : "closed")">
     <div class="opener" @onclick="() => show = !show">
         @if (show)
         {
@@ -26,7 +27,7 @@
                     }
                 </div>
                 <div class="time">
-                    @checkpointInfo.Checkpoint.Time
+                    @checkpointInfo.Checkpoint.Time.ToTmString(UseHundredths)
                 </div>
                 <div class="checkpoint-num">
                     (@(checkpointInfo.Index + 1))

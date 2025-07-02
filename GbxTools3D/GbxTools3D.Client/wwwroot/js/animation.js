@@ -1,14 +1,15 @@
 ﻿import * as THREE from 'three';
 
-let mixer, dotNetObjRef;
+let dotNetObjRef;
+let mixers = [];
 let mixerTimeScale = 1;
 
-export function createPositionTrack(times, values) {
-    return new THREE.VectorKeyframeTrack('.position', times, values);
+export function createPositionTrack(times, values, discrete) {
+    return new THREE.VectorKeyframeTrack('.position', times, values, discrete ? THREE.InterpolateDiscrete : THREE.InterpolateLinear);
 }
 
-export function createQuaternionTrack(times, values) {
-    return new THREE.QuaternionKeyframeTrack('.quaternion', times, values);
+export function createQuaternionTrack(times, values, discrete) {
+    return new THREE.QuaternionKeyframeTrack('.quaternion', times, values, discrete ? THREE.InterpolateDiscrete : THREE.InterpolateLinear);
 }
 
 export function createRotationXTrack(times, values) {
@@ -32,11 +33,13 @@ export function createClip(name, duration, tracks) {
 }
 
 export function createMixer(object) {
-    mixer = new THREE.AnimationMixer(object);
+    const mixer = new THREE.AnimationMixer(object);
     mixer.timeScale = 0;
+    mixers.push(mixer);
+    return mixer;
 }
 
-export function createAction(clip, obj) {
+export function createAction(mixer, clip, obj) {
     return mixer.clipAction(clip, obj);
 }
 
@@ -53,19 +56,20 @@ export function resumeAction(action) {
 }
 
 export function playMixer() {
-    if (mixer) {
-        mixer.timeScale = mixerTimeScale;
+    for (let i = 0; i < mixers.length; i++) {
+        mixers[i].timeScale = mixerTimeScale;
     }
 }
 
 export function pauseMixer() {
-    if (mixer) {
-        mixer.timeScale = 0;
+    for (let i = 0; i < mixers.length; i++) {
+        mixers[i].timeScale = 0;
     }
 }
 
 export function setMixerTime(time) {
-    if (mixer) {
+    for (let i = 0; i < mixers.length; i++) {
+        const mixer = mixers[i];
         let prevTimeScale = mixer.timeScale;
         mixer.timeScale = 1;
         mixer.setTime(time);
@@ -76,21 +80,33 @@ export function setMixerTime(time) {
 export function setMixerTimeScale(timeScale, isPaused) {
     mixerTimeScale = timeScale;
 
-    if (mixer && !isPaused) {
-        mixer.timeScale = timeScale;
+    if (!isPaused) {
+        for (let i = 0; i < mixers.length; i++) {
+            const mixer = mixers[i];
+            mixer.timeScale = timeScale;
+        }
     }
 }
 
 let prevMixerTime;
 
 export function updateMixer(delta) {
-    if (mixer) {
+    for (let i = 0; i < mixers.length; i++) {
+        const mixer = mixers[i];
         mixer.update(delta);
         if (mixer.time !== prevMixerTime) {
             dotNetObjRef.invokeMethodAsync("UpdateTimeline", mixer.time);
             prevMixerTime = mixer.time;
         }
     }
+}
+
+export function disposeMixers() {
+    for (let i = 0; i < mixers.length; i++) {
+        mixers[i].stopAllAction();
+    }
+    mixers = [];
+    prevMixerTime = null;
 }
 
 export function registerDotNet(reference) {

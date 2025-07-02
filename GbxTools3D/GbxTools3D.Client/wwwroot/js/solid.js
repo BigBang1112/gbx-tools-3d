@@ -3,7 +3,7 @@ import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js'
 import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';
 //import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
-const material = new THREE.MeshMatcapMaterial({ color: 0xAD9000 });
+const collisionMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 });
 
 export function create(matrixAutoUpdate) {
     var obj = new THREE.Object3D();
@@ -221,6 +221,34 @@ export function createSpotLightHelper(spotLight) {
 
 export function createPointLightHelper(pointLight) {
     return new THREE.PointLightHelper(pointLight);
+}
+
+export function createSphere(radius) {
+    const geometry = new THREE.SphereGeometry(radius, 32, 16);
+    return new THREE.Mesh(geometry, collisionMaterial);
+}
+
+export function createEllipsoid(radiusX, radiusY, radiusZ) {
+    const geometry = new THREE.SphereGeometry(1, 32, 16);
+    geometry.scale(radiusX, radiusY, radiusZ);
+    return new THREE.Mesh(geometry, collisionMaterial);
+}
+
+export function createCollisionMesh(vertData, indData) {
+    const verts = new Float32Array(vertData.length / 4);
+    const vertDataView = new DataView(vertData.slice().buffer);
+    for (let i = 0; i < vertData.length; i += 4) {
+        verts[i / 4] = vertDataView.getFloat32(i, true);
+    }
+
+    const inds = new Int32Array(indData.length);
+    indData.copyTo(inds);
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setIndex(new THREE.Uint32BufferAttribute(inds, 1));
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
+
+    return new THREE.Mesh(geometry, collisionMaterial);
 }
 
 export function log(tree) {
