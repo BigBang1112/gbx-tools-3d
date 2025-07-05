@@ -29,13 +29,13 @@ internal sealed class CollectionService
     private readonly IOutputCacheStore outputCache;
     private readonly ILogger<CollectionService> logger;
     
-    private static readonly Func<AppDbContext, string, int, Task<BlockInfo?>> BlockInfoFirstOrDefaultAsync =
+    /*private static readonly Func<AppDbContext, string, int, Task<BlockInfo?>> BlockInfoFirstOrDefaultAsync =
         EF.CompileAsyncQuery((AppDbContext db, string blockName, int collectionId) =>
             db.BlockInfos.Include(x => x.Icon).FirstOrDefault(x => x.Name == blockName && x.CollectionId == collectionId));
     
     private static readonly Func<AppDbContext, int, bool, int, int, Task<BlockVariant?>> BlockVariantFirstOrDefaultAsync =
         EF.CompileAsyncQuery((AppDbContext db, int blockInfoId, bool isGround, int i, int j) =>
-            db.BlockVariants.FirstOrDefault(x => x.BlockInfoId == blockInfoId && x.Ground == isGround && x.Variant == i && x.SubVariant == j));
+            db.BlockVariants.FirstOrDefault(x => x.BlockInfoId == blockInfoId && x.Ground == isGround && x.Variant == i && x.SubVariant == j));*/
 
     public CollectionService(
         AppDbContext db, 
@@ -517,6 +517,14 @@ internal sealed class CollectionService
                 .SelectMany(kvp => kvp.Value.Materials.Select(material => new { material, kvp.Value.Modifier }))
                 .ToLookup(x => x.material, x => x.Modifier);
 
+            var blockInfos = await db.BlockInfos
+                .Include(x => x.Icon)
+                .Include(x => x.Variants)
+                    .ThenInclude(x => x.Mesh)
+                .Include(x => x.TerrainModifier)
+                .Where(x => x.CollectionId == collection.Id)
+                .ToDictionaryAsync(x => x.Name, cancellationToken);
+
             // may have issue in TMO envs
             var folderBlockInfo = collectionNode.FolderBlockInfo ?? $"{collectionNode.Collection}\\ConstructionBlockInfo\\";
 
@@ -548,7 +556,8 @@ internal sealed class CollectionService
                     throw new Exception($"Block name {blockName} is too long");
                 }
 
-                var blockInfo = await BlockInfoFirstOrDefaultAsync(db, blockName, collection.Id);
+                var blockInfo = blockInfos.GetValueOrDefault(blockName);
+
                 if (blockInfo is null)
                 {
                     blockInfo = new BlockInfo
@@ -779,7 +788,7 @@ internal sealed class CollectionService
                 var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
                     cancellationToken: cancellationToken);
 
-                var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
+                var blockVariant = blockInfo.Variants.FirstOrDefault(x => x.Ground == isGround && x.Variant == i && x.SubVariant == j);
 
                 if (blockVariant is null)
                 {
@@ -887,25 +896,35 @@ internal sealed class CollectionService
                     continue;
                 }
 
-                var path = mobil.SolidFidFile is null
-                    ? null
-                    : Path.GetRelativePath(gamePath, mobil.SolidFidFile.GetFullPath());
+                var hash = $"GbxTools3D|Solid|{gameFolder}|{collectionName}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
 
-                var solid = mobil.SolidFid;
+                Mesh mesh;
+                if (mobil.SolidFid is CPlugSolid solid)
+                {
+                    var path = mobil.SolidFidFile is null
+                        ? null
+                        : Path.GetRelativePath(gamePath, mobil.SolidFidFile.GetFullPath());
 
-                if (solid is null)
+                    solid.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                    mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null, cancellationToken: cancellationToken);
+                }
+                else if (mobil.PrefabFid is CPlugPrefab prefab)
+                {
+                    var path = mobil.PrefabFidFile is null
+                        ? null
+                        : Path.GetRelativePath(gamePath, mobil.PrefabFidFile.GetFullPath());
+
+                    prefab.PopulateUsedMaterials(usedMaterials, gamePath);
+
+                    mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, prefab, cancellationToken: cancellationToken);
+                }
+                else
                 {
                     continue;
                 }
 
-                solid.PopulateUsedMaterials(usedMaterials, gamePath);
-
-                var hash = $"GbxTools3D|Solid|{gameFolder}|{collectionName}|{blockName}|{isGround}MyGuy|{i}|{j}|PleaseDontAbuseThisThankYou:*".Hash();
-
-                var mesh = await meshService.GetOrCreateMeshAsync(gamePath, hash, path, solid, vehicle: null,
-                    cancellationToken: cancellationToken);
-
-                var blockVariant = await BlockVariantFirstOrDefaultAsync(db, blockInfo.Id, isGround, i, j);
+                var blockVariant = blockInfo.Variants.FirstOrDefault(x => x.Ground == isGround && x.Variant == i && x.SubVariant == j);
 
                 if (blockVariant is null)
                 {

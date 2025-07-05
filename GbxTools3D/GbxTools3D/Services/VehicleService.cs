@@ -50,6 +50,13 @@ internal sealed class VehicleService
 
     public async Task CreateOrUpdateVehiclesAsync(string datasetPath, GameVersion gameVersion, CancellationToken cancellationToken)
     {
+        if (gameVersion == GameVersion.TM2020)
+        {
+            // TM2020 vehicles are too complicated
+            logger.LogWarning("Skipping vehicle creation for TM2020, vehicles are too complicated to handle in this version.");
+            return;
+        }
+
         var gameFolder = gameVersion.ToString();
         var gamePath = Path.Combine(datasetPath, gameFolder);
 
@@ -63,6 +70,7 @@ internal sealed class VehicleService
                 .Concat(Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "StadiumCE", "GameCtnObjectInfo", "Vehicles"), "*.ObjectInfo.Gbx")),
             GameVersion.MP4 => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Trackmania", "Items", "Vehicles"), "*.ObjectInfo.Gbx"),
             GameVersion.TMF or GameVersion.TMSX or GameVersion.TMNESWC => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles", "TrackManiaVehicle"), "*.Gbx"),
+            GameVersion.TM2020 => Directory.GetFiles(Path.Combine(datasetPath, gameFolder, "Vehicles", "Items", "Cars"), "*.Gbx"),
             _ => throw new NotSupportedException($"Game version {gameVersion} is not supported.")
         };
 

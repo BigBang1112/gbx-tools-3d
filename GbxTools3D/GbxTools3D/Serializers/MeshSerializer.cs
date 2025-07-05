@@ -10,6 +10,7 @@ public class MeshSerializer
 {
     private readonly CPlugSolid? solid;
     private readonly CPlugSolid2Model? solid2;
+    private readonly CPlugPrefab? prefab;
     private readonly byte? lod;
     private readonly bool collision;
     private readonly CPlugVehicleVisModelShared? vehicle;
@@ -32,6 +33,12 @@ public class MeshSerializer
         this.solid2 = solid2;
         this.lod = lod;
         this.vehicle = vehicle;
+    }
+
+    private MeshSerializer(CPlugPrefab prefab, byte? lod)
+    {
+        this.prefab = prefab;
+        this.lod = lod;
     }
 
     public static void Serialize(
@@ -77,11 +84,24 @@ public class MeshSerializer
         return ms.ToArray();
     }
 
+    public static void Serialize(Stream stream, CPlugPrefab prefab, string? filePath, string gamePath, byte? lod = null)
+    {
+        var serializer = new MeshSerializer(prefab, lod);
+        serializer.Serialize(stream, filePath, gamePath);
+    }
+
+    public static byte[] Serialize(CPlugPrefab prefab, string? filePath, string gamePath, byte? lod = null)
+    {
+        using var ms = new MemoryStream();
+        Serialize(ms, prefab, filePath, gamePath, lod);
+        return ms.ToArray();
+    }
+
     private void Serialize(Stream stream, string? filePath, string gamePath)
     {
-        if (solid is null && solid2 is null)
+        if (solid is null && solid2 is null && prefab is null)
         {
-            throw new Exception("Either Solid or Solid2 must be provided for serialization.");
+            throw new Exception("Either Solid or Solid2 or Prefab must be provided for serialization.");
         }
 
         using var wd = new AdjustedBinaryWriter(stream);
@@ -110,49 +130,25 @@ public class MeshSerializer
         }
         else if (solid2 is not null)
         {
+            WriteTree(w, CreateSolid2Tree(solid2), gamePath, isRoot: true);
+        }
+        else if (prefab is not null)
+        {
             var tree2 = new CPlugTree();
 
-            var shadedGeomsByLod = solid2.ShadedGeoms?.GroupBy(x => x.Lod) ?? [];
-
-            var mips = shadedGeomsByLod.Count() >= 2 ? new CPlugTreeVisualMip { Levels = [] } : null;
-
-            foreach (var shadedGeomLodGroup in shadedGeomsByLod)
+            foreach (var ent in prefab.Ents)
             {
-                var levelTree = mips is null ? null : new CPlugTree(); // only used if mips is not null
-
-                foreach (var shadedGeom in shadedGeomLodGroup)
+                if (ent.Model is CPlugStaticObjectModel { Mesh: not null } staticObject)
                 {
-                    var subTree = new CPlugTree
-                    {
-                        Visual = solid2.Visuals?[shadedGeom.VisualIndex]
-                    };
-
-                    if (levelTree is null)
-                    {
-                        tree2.Children.Add(subTree);
-                    }
-                    else
-                    {
-                        levelTree.Children.Add(subTree);
-                    }
+                    tree2.Children.Add(CreateSolid2Tree(staticObject.Mesh));
                 }
-
-                if (mips is not null && levelTree is not null)
-                {
-                    mips.Levels.Add(new CPlugTreeVisualMip.Level(shadedGeomLodGroup.Key * 64, levelTree));
-                }
-            }
-
-            if (mips is not null)
-            {
-                tree2.Children.Add(mips);
             }
 
             WriteTree(w, tree2, gamePath, isRoot: true);
         }
         else
         {
-            throw new Exception("Solid has no tree or Solid2 was not provided.");
+            throw new Exception("Solid has no tree or Solid2/Prefab was not provided.");
         }
 
         /*if (solid2 is not null)
@@ -161,6 +157,49 @@ public class MeshSerializer
             tree.Visual = solid2.Visuals[0];
             WriteTree(w, tree);
         }*/
+    }
+
+    private static CPlugTree CreateSolid2Tree(CPlugSolid2Model solid2)
+    {
+        var tree2 = new CPlugTree();
+
+        var shadedGeomsByLod = solid2.ShadedGeoms?.GroupBy(x => x.Lod) ?? [];
+
+        var mips = shadedGeomsByLod.Count() >= 2 ? new CPlugTreeVisualMip { Levels = [] } : null;
+
+        foreach (var shadedGeomLodGroup in shadedGeomsByLod)
+        {
+            var levelTree = mips is null ? null : new CPlugTree(); // only used if mips is not null
+
+            foreach (var shadedGeom in shadedGeomLodGroup)
+            {
+                var subTree = new CPlugTree
+                {
+                    Visual = solid2.Visuals?[shadedGeom.VisualIndex]
+                };
+
+                if (levelTree is null)
+                {
+                    tree2.Children.Add(subTree);
+                }
+                else
+                {
+                    levelTree.Children.Add(subTree);
+                }
+            }
+
+            if (mips is not null && levelTree is not null)
+            {
+                mips.Levels.Add(new CPlugTreeVisualMip.Level(shadedGeomLodGroup.Key * 64, levelTree));
+            }
+        }
+
+        if (mips is not null)
+        {
+            tree2.Children.Add(mips);
+        }
+
+        return tree2;
     }
 
     private void WriteTree(AdjustedBinaryWriter w, CPlugTree tree, string gamePath, bool isRoot = false)

@@ -133,4 +133,38 @@ internal sealed class MeshService
 
         return mesh;
     }
+
+    public async Task<Mesh> GetOrCreateMeshAsync(
+        string gamePath,
+        string hash,
+        string? path,
+        CPlugPrefab prefab,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var mesh = await MeshFirstOrDefaultAsync(db, hash);
+
+        var data = MeshSerializer.Serialize(prefab, path, gamePath);
+        var dataLq = MeshSerializer.Serialize(prefab, path, gamePath, lod: 1);
+
+        if (mesh is null)
+        {
+            logger.LogInformation("New mesh: {Hash} (path: {Path})", hash, path);
+
+            mesh = new Mesh
+            {
+                Hash = hash,
+                Data = data,
+                Path = path,
+            };
+            await db.Meshes.AddAsync(mesh, cancellationToken);
+        }
+
+        mesh.Data = data;
+        mesh.DataLQ = data.Length == dataLq.Length ? null : dataLq;
+        mesh.UpdatedAt = DateTime.UtcNow;
+
+        return mesh;
+    }
 }
