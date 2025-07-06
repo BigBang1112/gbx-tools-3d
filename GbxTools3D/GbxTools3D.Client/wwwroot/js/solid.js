@@ -1,6 +1,7 @@
 ﻿import * as THREE from 'three';
 import * as BufferGeometryUtils from 'three/addons/utils/BufferGeometryUtils.js';
 import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';
+import { Earcut } from 'three/src/extras/Earcut.js';
 //import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
 const collisionMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 });
@@ -62,17 +63,11 @@ export function addLod(lodTree, levelTree, distance) {
     lodTree.addLevel(levelTree, distance);
 }
 
-export function createGeometry(vertData, normData, indData, uvData) {
+export function createGeometry(vertData, normData, indData, uvData, computeNormals) {
     const verts = new Float32Array(vertData.length / 4);
     const vertDataView = new DataView(vertData.slice().buffer);
     for (let i = 0; i < vertData.length; i += 4) {
         verts[i / 4] = vertDataView.getFloat32(i, true);
-    }
-
-    const norms = new Float32Array(normData.length / 4);
-    const normDataView = new DataView(normData.slice().buffer);
-    for (let i = 0; i < normData.length; i += 4) {
-        norms[i / 4] = normDataView.getFloat32(i, true);
     }
 
     const inds = new Int32Array(indData.length);
@@ -81,7 +76,16 @@ export function createGeometry(vertData, normData, indData, uvData) {
     const geometry = new THREE.BufferGeometry();
     geometry.setIndex(new THREE.Uint32BufferAttribute(inds, 1));
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(norms, 3));
+
+    if (normData.length > 0 || !computeNormals) {
+        const norms = new Float32Array(normData.length / 4);
+        const normDataView = new DataView(normData.slice().buffer);
+        for (let i = 0; i < normData.length; i += 4) {
+            norms[i / 4] = normDataView.getFloat32(i, true);
+        }
+
+        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(norms, 3));
+    }
 
     const vertCount = verts.length / 3;
     const uvSetCount = uvData.length / 8 / vertCount;
@@ -102,6 +106,10 @@ export function createGeometry(vertData, normData, indData, uvData) {
         if (i === 0) {
             geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         }
+    }
+
+    if (computeNormals) {
+        geometry.computeVertexNormals();
     }
 
     geometry.computeTangents();
@@ -249,6 +257,10 @@ export function createCollisionMesh(vertData, indData) {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
 
     return new THREE.Mesh(geometry, collisionMaterial);
+}
+
+export function triangulate(positions3d) {
+    return Earcut.triangulate(positions3d, null, 3);
 }
 
 export function log(tree) {

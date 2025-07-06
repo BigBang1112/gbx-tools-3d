@@ -16,16 +16,16 @@ export function createRotationXTrack(times, values) {
     return new THREE.NumberKeyframeTrack('.rotation[x]', times, values);
 }
 
-export function createRotationYTrack(times, values) {
-    return new THREE.NumberKeyframeTrack('.rotation[y]', times, values);
+export function createRotationYTrack(times, values, discrete) {
+    return new THREE.NumberKeyframeTrack('.rotation[y]', times, values, discrete ? THREE.InterpolateDiscrete : THREE.InterpolateLinear);
 }
 
-export function createRelativePositionYTrack(times, values, referenceObj) {
+export function createRelativePositionYTrack(times, values, referenceObj, discrete) {
     let refY = referenceObj.position.y;
     for (let i = 0; i < values.length; i++) {
         values[i] = refY - values[i];
     }
-    return new THREE.NumberKeyframeTrack('.position[y]', times, values);
+    return new THREE.NumberKeyframeTrack('.position[y]', times, values, discrete ? THREE.InterpolateDiscrete : THREE.InterpolateLinear);
 }
 
 export function createClip(name, duration, tracks) {

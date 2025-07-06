@@ -16,10 +16,10 @@ internal static partial class Animation
     public static partial JSObject CreateRotationXTrack(double[] times, double[] values);
 
     [JSImport("createRotationYTrack", nameof(Animation))]
-    public static partial JSObject CreateRotationYTrack(double[] times, double[] values);
+    public static partial JSObject CreateRotationYTrack(double[] times, double[] values, bool discrete = false);
 
     [JSImport("createRelativePositionYTrack", nameof(Animation))]
-    public static partial JSObject CreateRelativePositionYTrack(double[] times, double[] values, JSObject referenceObj);
+    public static partial JSObject CreateRelativePositionYTrack(double[] times, double[] values, JSObject referenceObj, bool discrete = false);
 
     [JSImport("createClip", nameof(Animation))]
     public static partial JSObject CreateClip(string name, double duration, JSObject[] tracks);

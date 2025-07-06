@@ -1,5 +1,7 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
+using GBX.NET.Engines.GameData;
+using GBX.NET.Engines.Plug;
 
 namespace GbxTools3D.Client.Services;
 
@@ -9,6 +11,8 @@ public sealed class GbxService
 
     public Gbx<CGameCtnChallenge>? SelectedMap { get; private set; }
     public Gbx<CGameCtnReplayRecord>? SelectedReplay { get; private set; }
+    public Gbx? SelectedMesh { get; private set; }
+    public Gbx<CGameItemModel>? SelectedItem { get; private set; }
 
     public void Select(Gbx gbx)
     {
@@ -34,12 +38,16 @@ public sealed class GbxService
     {
         SelectedMap = null;
         SelectedReplay = null;
+        SelectedMesh = null;
+        SelectedItem = null;
     }
 
     private void SelectEnsured(Gbx gbx)
     {
         SelectedMap = null;
         SelectedReplay = null;
+        SelectedMesh = null;
+        SelectedItem = null;
 
         switch (gbx)
         {
@@ -48,6 +56,14 @@ public sealed class GbxService
                 break;
             case Gbx<CGameCtnReplayRecord> replay:
                 SelectedReplay = replay;
+                break;
+            case Gbx<CPlugSolid>:
+            case Gbx<CPlugSolid2Model>:
+            case Gbx<CPlugPrefab>:
+                SelectedMesh = gbx;
+                break;
+            case Gbx<CGameItemModel> item:
+                SelectedItem = item;
                 break;
         }
     }

@@ -143,7 +143,7 @@ internal sealed partial class Material
         return texture;
     }
     
-    public static JSObject GetOrCreateMaterial(string name, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials, string? terrainModifier)
+    public static JSObject GetOrCreateMaterial(string name, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials, string? terrainModifier, bool endsWith = false)
     {
         var uniqueMaterial = new UniqueMaterial(name, gameVersion, terrainModifier);
 
@@ -152,7 +152,17 @@ internal sealed partial class Material
             return material;
         }
 
-        if (availableMaterials is null || !availableMaterials.TryGetValue(name, out var materialDto))
+        var materialDto = availableMaterials?.GetValueOrDefault(name);
+
+        if (materialDto is null && endsWith)
+        {
+            materialDto = availableMaterials?.FirstOrDefault(m =>
+                m.Key.EndsWith(name, StringComparison.OrdinalIgnoreCase)
+                || m.Key.EndsWith(name.Replace('/', '\\'), StringComparison.OrdinalIgnoreCase)
+                ).Value;
+        }
+
+        if (materialDto is null)
         {
             material = CreateRandomMaterial();
             materials.Add(uniqueMaterial, material);

@@ -7,8 +7,13 @@ export function create(isCatalog) {
 
     const gridHelper = new THREE.GridHelper(128, 128, 0x880000);
     gridHelper.name = "helper";
-    gridHelper.visible = false; // hopefully i wont forget
+    gridHelper.visible = isCatalog; // hopefully i wont forget
     add(scene, gridHelper);
+
+    if (isCatalog) {
+        const axesHelper = new THREE.AxesHelper(4);
+        scene.add(axesHelper);
+    }
 
     scene.updateMatrixWorld();
     return scene;

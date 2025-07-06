@@ -1,4 +1,5 @@
 ﻿using GBX.NET;
+using GBX.NET.Engines.Plug;
 using GbxTools3D.Client.Deserializers;
 using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Enums;
@@ -126,7 +127,8 @@ internal sealed partial class Solid(JSObject obj)
         [JSMarshalAs<JSType.MemoryView>] Span<byte> vertexData,
         [JSMarshalAs<JSType.MemoryView>] Span<byte> normalData,
         [JSMarshalAs<JSType.MemoryView>] Span<int> indices, 
-        [JSMarshalAs<JSType.MemoryView>] Span<byte> uvData);
+        [JSMarshalAs<JSType.MemoryView>] Span<byte> uvData,
+        bool computeNormals = false);
     
     [JSImport("mergeGeometries", nameof(Solid))]
     private static partial JSObject MergeGeometries(JSObject[] geometries);
@@ -189,6 +191,9 @@ internal sealed partial class Solid(JSObject obj)
     private static partial JSObject CreateCollisionMesh(
         [JSMarshalAs<JSType.MemoryView>] Span<byte> vertexData,
         [JSMarshalAs<JSType.MemoryView>] Span<int> indices);
+
+    [JSImport("triangulate", nameof(Solid))]
+    private static partial int[] Triangulate(double[] positions3d);
 
     [JSImport("log", nameof(Solid))]
     private static partial void Log(JSObject tree);
@@ -675,6 +680,224 @@ internal sealed partial class Solid(JSObject obj)
         var z = reader.ReadSingle();
 
         return new Vector3(x, y, z);
+    }
+
+    public static Task<Solid> CreateFromSolidAsync(CPlugSolid solid, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        if (solid.Tree is not CPlugTree tree)
+        {
+            throw new InvalidDataException("Solid tree is null");
+        }
+
+        return Task.FromResult(new Solid(CreateObjectFromTree(tree, gameVersion, availableMaterials)));
+    }
+
+    private static JSObject CreateObjectFromTree(CPlugTree plugTree, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        var tree = Create(matrixAutoUpdate: true);
+
+        SetName(tree, plugTree.Name);
+
+        var iso4 = plugTree.Location ?? Iso4.Identity;
+        SetRotationMatrix(tree, iso4.XX, iso4.XY, iso4.XZ, iso4.YX, iso4.YY, iso4.YZ, iso4.ZX, iso4.ZY, iso4.ZZ);
+        SetPosition(tree, iso4.TX, iso4.TY, iso4.TZ);
+
+        if (plugTree.Visual is CPlugVisualIndexedTriangles visual)
+        {
+            var materialName = GbxPath.ChangeExtension(plugTree.ShaderFile?.FilePath ?? "", null);
+            var mesh = CreateMeshFromVisual(visual, materialName, gameVersion, availableMaterials);
+            Add(tree, mesh);
+        }
+
+        if (plugTree is CPlugTreeVisualMip lodTree)
+        {
+            var lod = CreateLod();
+
+            foreach (var level in lodTree.Levels)
+            {
+                var levelTree = CreateObjectFromTree(level.Tree, gameVersion, availableMaterials);
+                var distance = level.FarZ * 8;
+                AddLod(lod, levelTree, distance);
+            }
+
+            Add(tree, lod);
+        }
+
+        foreach (var child in plugTree.Children)
+        {
+            Add(tree, CreateObjectFromTree(child, gameVersion, availableMaterials));
+        }
+
+        return tree;
+    }
+
+    private static JSObject CreateMeshFromVisual(CPlugVisualIndexedTriangles visual, string materialName, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        bool hasNormals;
+        Vec3[] positions;
+        Vec3[] normals;
+
+        if (visual.Vertices.Length > 0)
+        {
+            hasNormals = visual.Vertices.Any(x => x.Normal.HasValue);
+
+            positions = new Vec3[visual.Vertices.Length];
+            normals = new Vec3[hasNormals ? visual.Vertices.Length : 0];
+
+            for (var i = 0; i < visual.Vertices.Length; i++)
+            {
+                var vertex = visual.Vertices[i];
+                positions[i] = visual.Vertices[i].Position;
+
+                if (hasNormals)
+                {
+                    normals[i] = visual.Vertices[i].Normal.GetValueOrDefault();
+                }
+            }
+        }
+        else
+        {
+            hasNormals = visual.VertexStreams.Any(x => x.Normals?.Length > 0);
+            positions = visual.VertexStreams.SelectMany(x => x.Positions ?? []).ToArray();
+            normals = hasNormals ? visual.VertexStreams.SelectMany(x => x.Normals ?? []).ToArray() : [];
+        }
+
+        Span<byte> vertexData = MemoryMarshal.AsBytes<Vec3>(positions);
+        Span<byte> normalData = hasNormals ? MemoryMarshal.AsBytes<Vec3>(normals) : [];
+        Span<int> indices = visual.IndexBuffer?.Indices ?? [];
+
+        var uvs = visual.TexCoords.SelectMany(x => x.TexCoords).Select(x => x.UV).ToArray();
+        Span<byte> uvData = MemoryMarshal.AsBytes<Vec2>(uvs);
+
+        var geometry = CreateGeometry(vertexData, normalData, indices, uvData);
+
+        return CreateMeshSingleMaterial(geometry, Material.GetOrCreateMaterial(materialName, gameVersion, availableMaterials, terrainModifier: null, endsWith: true), receiveShadow: true, castShadow: true);
+    }
+
+    public static async Task<Solid> CreateFromSolid2Async(CPlugSolid2Model solid2, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        return new Solid(await CreateObjectFromSolid2Async(solid2, gameVersion, availableMaterials));
+    }
+
+    public static Task<JSObject> CreateObjectFromSolid2Async(CPlugSolid2Model solid2, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        var tree = Create(matrixAutoUpdate: true);
+
+        foreach (var geom in solid2.ShadedGeoms ?? [])
+        {
+            if (solid2.Visuals?[geom.VisualIndex] is not CPlugVisualIndexedTriangles visual)
+            {
+                continue;
+            }
+
+            var materialName = GetMaterialName(solid2, geom.MaterialIndex);
+
+            var mesh = CreateMeshFromVisual(visual, materialName, gameVersion, availableMaterials);
+            Add(tree, mesh);
+        }
+
+        return Task.FromResult(tree);
+    }
+
+    private static string GetMaterialName(CPlugSolid2Model solid, int materialIndex)
+    {
+        if (solid.CustomMaterials is { Length: > 0 } customMaterials)
+        {
+            return customMaterials[materialIndex].MaterialUserInst?.Link ?? "";
+        }
+
+        if (solid.Materials is { Length: > 0 } materialsArray)
+        {
+            return GbxPath.GetFileNameWithoutExtension(materialsArray[materialIndex].File?.FilePath) ?? "";
+        }
+
+        if (solid.MaterialInsts is { Length: > 0 } materialInsts)
+        {
+            return materialInsts[materialIndex].Link ?? "";
+        }
+
+        if (solid.MaterialIds is { Length: > 0 } materialIds)
+        {
+            return materialIds[materialIndex];
+        }
+
+        return "";
+    }
+
+    public static async Task<Solid> CreateFromPrefabAsync(CPlugPrefab prefab, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        var tree = Create(matrixAutoUpdate: true);
+
+        foreach (var ent in prefab.Ents)
+        {
+            if (ent.Model is CPlugStaticObjectModel { Mesh: not null } staticObject)
+            {
+                var subTree = await CreateObjectFromSolid2Async(staticObject.Mesh, gameVersion, availableMaterials);
+                Add(tree, subTree);
+            }
+            else if (ent.Model is CPlugDynaObjectModel { Mesh: not null } dynaObject)
+            {
+                var subTree = await CreateObjectFromSolid2Async(dynaObject.Mesh, gameVersion, availableMaterials);
+                Add(tree, subTree);
+            }
+        }
+
+        return new Solid(tree);
+    }
+
+    public static Task<Solid> CreateFromCrystalAsync(CPlugCrystal crystal, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
+    {
+        var tree = Create(matrixAutoUpdate: true);
+
+        foreach (var layer in crystal.Layers)
+        {
+            if (layer is CPlugCrystal.GeometryLayer { Crystal: not null } geometryLayer)
+            {
+                var positions = geometryLayer.Crystal.Positions;
+                var indices = new List<int>();
+                var uvs = new Vec2[positions.Length];
+
+                foreach (var face in geometryLayer.Crystal.Faces)
+                {
+                    if (face.Vertices.Length > 3)
+                    {
+                        var triangulatedInds = Triangulate(face.Vertices.SelectMany(x =>
+                        {
+                            var pos = positions[x.Index];
+                            return new double[] { pos.X, pos.Y, pos.Z };
+                        }).ToArray());
+
+                        var projectedInds = triangulatedInds.Select(x => face.Vertices[x].Index);
+                        indices.AddRange(projectedInds);
+
+                        foreach (var index in triangulatedInds)
+                        {
+                            var vert = face.Vertices[index];
+                            uvs[vert.Index] = vert.TexCoord;
+                        }
+                    }
+                    else
+                    {
+                        indices.AddRange(face.Vertices.Select(x => x.Index));
+
+                        foreach (var vert in face.Vertices)
+                        {
+                            uvs[vert.Index] = vert.TexCoord;
+                        }
+                    }
+                }
+
+                Span<byte> vertexData = MemoryMarshal.AsBytes<Vec3>(positions);
+                Span<byte> uvData = MemoryMarshal.AsBytes<Vec2>(uvs);
+
+                var geometry = CreateGeometry(vertexData, [], CollectionsMarshal.AsSpan(indices), uvData, computeNormals: true);
+
+                var mesh = CreateMeshSingleMaterial(geometry, Material.GetOrCreateMaterial("", gameVersion, availableMaterials, terrainModifier: null, endsWith: true), receiveShadow: true, castShadow: true);
+                Add(tree, mesh);
+            }
+        }
+
+        return Task.FromResult(new Solid(tree));
     }
 
     private static async Task RestAsync(int indexCount)

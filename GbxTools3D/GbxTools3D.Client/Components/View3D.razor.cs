@@ -1,5 +1,7 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
+using GBX.NET.Engines.GameData;
+using GBX.NET.Engines.Plug;
 using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.Extensions;
 using GbxTools3D.Client.Models;
@@ -72,6 +74,18 @@ public partial class View3D : ComponentBase
     [Parameter]
     public bool IsCatalog { get; set; }
 
+    [Parameter]
+    public CPlugSolid? Solid1 { get; set; }
+
+    [Parameter]
+    public CPlugSolid2Model? Solid2 { get; set; }
+
+    [Parameter]
+    public CPlugPrefab? Prefab { get; set; }
+
+    [Parameter]
+    public CGameItemModel? Item { get; set; }
+
     public event Action<IntersectionInfo>? OnIntersect;
 
     public BlockInfoDto? CurrentBlockInfo { get; private set; }
@@ -124,6 +138,8 @@ public partial class View3D : ComponentBase
             await TryLoadBlockAsync(cts.Token);
             await TryLoadVehicleAsync(cts.Token);
             await TryLoadDecorationAsync(cts.Token);
+            await TryLoadMeshAsync(cts.Token);
+            await TryLoadItemAsync(cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -268,7 +284,7 @@ public partial class View3D : ComponentBase
 
         // camera position after knowing block details
         center = new Vec3(realSize.X / 2f, realSize.Y / 2f, realSize.Z / 2f);
-        position = center * (4, 6, 1);
+        position = center * (-4, 6, 1);
 
         mapCamera.Position = position;
         mapCamera.CreateOrbitControls(renderer, center);
@@ -438,6 +454,116 @@ public partial class View3D : ComponentBase
         {
             FocusedSolids.Add(solid);
         }
+        await OnFocusedSolidsChange.InvokeAsync();
+
+        Renderer.EnableRaycaster();
+
+        return true;
+    }
+
+    private async Task<bool> TryLoadMeshAsync(CancellationToken cancellationToken = default)
+    {
+        if (mapCamera is null || renderer is null)
+        {
+            return false;
+        }
+
+        if (Solid1 is null && Solid2 is null && Prefab is null)
+        {
+            return false; // no mesh to load
+        }
+
+        // initial camera position
+        var center = new Vec3(16, 4, 16);
+        var position = center * (4, 6, 1);
+
+        mapCamera.Position = position;
+        mapCamera.CreateMapControls(renderer, center);
+        //
+
+        if (GameVersion == (GameVersion.TMT | GameVersion.MP4))
+        {
+            GameVersion = GameVersion.MP4;
+        }
+
+        try
+        {
+            await TryFetchDataAsync(loadMaterials: true, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            return false;
+        }
+
+        Solid focusedSolid;
+        if (Solid1 is not null)
+        {
+            focusedSolid = await Solid.CreateFromSolidAsync(Solid1, GameVersion, materials);
+        }
+        else if (Solid2 is not null)
+        {
+            focusedSolid = await Solid.CreateFromSolid2Async(Solid2, GameVersion, materials);
+        }
+        else if (Prefab is not null)
+        {
+            focusedSolid = await Solid.CreateFromPrefabAsync(Prefab, GameVersion, materials);
+        }
+        else
+        {
+            throw new InvalidOperationException("No solid or prefab provided for mesh view.");
+        }
+        Scene?.Add(focusedSolid);
+        FocusedSolids = [focusedSolid];
+        await OnFocusedSolidsChange.InvokeAsync();
+
+        Renderer.EnableRaycaster();
+
+        return true;
+    }
+
+    private async Task<bool> TryLoadItemAsync(CancellationToken cancellationToken = default)
+    {
+        if (mapCamera is null || renderer is null || Item is null)
+        {
+            return false;
+        }
+
+        // initial camera position
+        var center = new Vec3(16, 4, 16);
+        var position = center * (4, 6, 1);
+
+        mapCamera.Position = position;
+        mapCamera.CreateMapControls(renderer, center);
+        //
+
+        try
+        {
+            await TryFetchDataAsync(loadMaterials: true, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            return false;
+        }
+
+        Solid focusedSolid;
+        if (Item.EntityModelEdition is CGameCommonItemEntityModelEdition { MeshCrystal: not null } modelEdition)
+        {
+            focusedSolid = await Solid.CreateFromCrystalAsync(modelEdition.MeshCrystal, GameVersion, materials);
+        }
+        else if (Item.EntityModel is CGameCommonItemEntityModel { StaticObject.Mesh: not null } model)
+        {
+            focusedSolid = await Solid.CreateFromSolid2Async(model.StaticObject.Mesh, GameVersion, materials);
+        }
+        else if (Item.EntityModel is CPlugPrefab prefab)
+        {
+            focusedSolid = await Solid.CreateFromPrefabAsync(prefab, GameVersion, materials);
+        }
+        else
+        {
+            throw new InvalidOperationException("Item does not have a valid mesh to display.");
+        }
+        Scene?.Add(focusedSolid);
+        FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
 
         Renderer.EnableRaycaster();
