@@ -1,12 +1,8 @@
 ﻿using GbxTools3D.Client.Converters;
-using GbxTools3D.Components;
-using GbxTools3D.Endpoints;
 using GbxTools3D.Health;
-using HealthChecks.UI.Client;
+using ManiaAPI.TMX.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.BearerToken;
-using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.ResponseCompression;
-using Scalar.AspNetCore;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 
@@ -24,6 +20,8 @@ public static class WebConfiguration
         {
             client.DefaultRequestHeaders.Add(Microsoft.Net.Http.Headers.HeaderNames.UserAgent, "GbxTools3D");
         }).AddStandardResilienceHandler();
+
+        services.AddTMX();
 
         services.AddResponseCompression(options =>
         {

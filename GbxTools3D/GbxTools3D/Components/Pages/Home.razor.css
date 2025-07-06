@@ -1,11 +1,32 @@
 ﻿.brand-3d {
     font-size: 12rem;
     margin: 30px 0 0 0;
+    z-index: 1;
 }
 
 .brand-gbx-tools {
     font-size: 6rem;
     margin: 0 0 50px 0;
+    z-index: 1;
+}
+
+.home-text {
+    z-index: 1;
+}
+
+section.scene {
+    position: relative;
+}
+
+    section.scene .container {
+        display: flex;
+        flex-direction: column;
+    }
+
+video {
+    position: absolute;
+    right: 0;
+    height: 100%;
 }
 
 @media (max-width: 600px) {
@@ -28,6 +49,7 @@
     display: flex;
     flex-direction: column;
     width: 100%;
+    z-index: 1;
 }
 
 @media (max-width: 850px) {
@@ -51,6 +73,7 @@
     font-size: 140%;
     font-weight: bold;
     transition: background-color 0.1s ease;
+    backdrop-filter: blur(10px);
 }
 
     .button-blue:hover {
@@ -62,7 +85,7 @@
     align-items: center;
     justify-content: center;
     color: white;
-    background: #3333;
+    background: #111A;
     border-bottom: 2px solid #FFF3;
     border-radius: 4px;
     height: 2.5rem;
@@ -71,11 +94,61 @@
     margin-top: 10px;
     margin-bottom: 60px;
     transition: background-color 0.05s ease;
+    backdrop-filter: blur(10px);
 }
 
     .button-catalog:hover {
+        background-color: #2228;
+    }
+
+.showcase-button {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    position: relative;
+    background-color: #3333;
+    border-bottom: 2px solid #FFF3;
+    border-radius: 4px;
+    cursor: pointer;
+    gap: 25px;
+    color: white;
+    text-decoration: none;
+    margin-bottom: 10px;
+}
+
+    .showcase-button:hover {
         background-color: #3338;
     }
+
+    .showcase-button .info {
+        flex: 1;
+    }
+
+        .showcase-button .info .name {
+            font-size: 120%;
+            font-weight: bold;
+        }
+
+    .showcase-button .game {
+        font-size: 200%;
+        font-weight: bold;
+        padding: 20px;
+    }
+
+.wrs {
+    display: flex;
+    gap: 15px;
+}
+
+    .wrs div.wrs-category {
+        flex: 1;
+    }
+
+@media (max-width: 1400px) {
+    .wrs {
+        flex-direction: column;
+    }
+}
 
 @media (max-width: 450px) {
     .button-blue {
