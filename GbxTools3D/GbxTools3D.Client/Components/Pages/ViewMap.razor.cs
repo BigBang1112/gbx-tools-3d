@@ -10,7 +10,6 @@ namespace GbxTools3D.Client.Components.Pages;
 
 public partial class ViewMap : ComponentBase
 {
-    private View3D? view3d;
     private RenderInfo? renderInfo;
 
     private readonly string[] extensions = ["Challenge.Gbx", "Map.Gbx"];

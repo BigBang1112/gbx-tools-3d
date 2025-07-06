@@ -60,14 +60,25 @@
 }
 else
 {
-    <View3D Map="Map" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
-    @if (RendererInfo.IsInteractive)
-    {
-        <div class="panels left">
-            <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
-        </div>
-        <div class="panels right">
-            <MapInfo Map="Map"></MapInfo>
-        </div>
-    }
+    <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
+
+        @if (!RendererInfo.IsInteractive)
+        {
+            <div class="centered">
+                <Loader></Loader>
+            </div>
+        }
+
+        <View3D Map="Map" OnRenderDetails="OnRenderDetails"></View3D>
+        @if (RendererInfo.IsInteractive)
+        {
+            <div class="panels left">
+                <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+            </div>
+            <div class="panels right">
+                <MapInfo Map="Map"></MapInfo>
+            </div>
+        }
+
+    </div>
 }

@@ -14,7 +14,6 @@ using System.Net.Http.Json;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Text;
-using System.Threading;
 using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Pages;
@@ -51,6 +50,9 @@ public partial class ViewReplay : ComponentBase
     private string? MxSite { get; set; }
 
     [SupplyParameterFromQuery(Name = "id")]
+    private string? ReplayId { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mapid")]
     private string? MapId { get; set; }
 
     public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
@@ -101,15 +103,20 @@ public partial class ViewReplay : ComponentBase
         string endpoint;
         if (!string.IsNullOrEmpty(TmxSite))
         {
-            endpoint = $"/api/replay/tmx/{TmxSite}/{MapId}";
+            endpoint = $"/api/replay/tmx/{TmxSite}/{ReplayId}";
         }
         else if (!string.IsNullOrEmpty(MxSite))
         {
-            endpoint = $"/api/replay/mx/{MxSite}/{MapId}";
+            endpoint = $"/api/replay/mx/{MxSite}/{ReplayId}";
         }
         else
         {
             throw new Exception();
+        }
+
+        if (string.IsNullOrEmpty(MapId))
+        {
+            endpoint += $"/{MapId}";
         }
 
         using var response = await Http.GetAsync(endpoint);
@@ -346,11 +353,11 @@ public partial class ViewReplay : ComponentBase
                 if (node is null) continue;
                 Solid.ReorderEuler(node);
                 // Steer
-                var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"]);
+                var steerTrack = Animation.CreateRotationYTrack(times, partData[$"{wheel}_steer"], discrete: true);
                 actions[$"{wheel}SteerCollision"] = Animation.CreateAction(collisionMixer,
                     Animation.CreateClip($"{wheel}SteerCollision", duration, [steerTrack]), node);
                 // Dampen (as relative position)
-                var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node);
+                var dampenTrack = Animation.CreateRelativePositionYTrack(times, partData[$"{wheel}_dampen"], node, discrete: true);
                 actions[$"{wheel}DampenCollision"] = Animation.CreateAction(collisionMixer,
                     Animation.CreateClip($"{wheel}DampenCollision", duration, [dampenTrack]), node);
                 ghostCollisionSolid.Object.GetPropertyAsJSObject("userData")!.SetProperty(wheel, wheel);

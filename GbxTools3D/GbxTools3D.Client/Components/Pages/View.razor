@@ -2,6 +2,7 @@
 @using GBX.NET
 @using GBX.NET.Engines.Game
 @using GBX.NET.Engines.GameData
+@using GBX.NET.Engines.Plug
 @rendermode InteractiveWebAssembly
 
 @inject GbxService GbxService
@@ -42,66 +43,53 @@
         new ViewType(
             Name: "Replay",
             Points: [
-                "Lorem ipsum dolor sit amet",
-                            "Consectetuer adipiscing elit",
-                            "Etiam commodo dui eget wisi"
+                "See the replay almost instantly and anywhere",
+                "Checkpoints and inputs that you cannot see in MediaTracker",
+                "Drifts, speed, brakes, and other vehicle parameters"
             ],
             Link: "replay",
             Extensions: ["Replay.Gbx"]),
         new ViewType(
             Name: "Map",
             Points: [
-                "Lorem ipsum dolor sit amet",
-                "Consectetuer adipiscing elit",
-                "Etiam commodo dui eget wisi"
+                "See how the map actually looks like",
+                "No need to rely on thumbnails anymore",
+                "Look into various map parameters in context"
             ],
             Link: "map",
             Extensions: ["Challenge.Gbx", "Map.Gbx"]),
         new ViewType(
             Name: "Item",
             Points: [
-                "Lorem ipsum dolor sit amet",
-                "Consectetuer adipiscing elit",
-                "Etiam commodo dui eget wisi"
+                "See the item in a real shape without relying on icons or screenshots",
+                "Find out their mesh parameters or the placement metadata"
             ],
             Link: "item",
             Extensions: ["Item.Gbx", "Block.Gbx"]),
         new ViewType(
             Name: "Ghost",
             Points: [
-                "Lorem ipsum dolor sit amet",
-                "Consectetuer adipiscing elit",
-                "Etiam commodo dui eget wisi"
+                "Only have a Ghost.Gbx? Put it here and import the map additionally",
+                "Same experience as with Replay viewing"
             ],
             Link: "ghost",
             Extensions: ["Ghost.Gbx"]),
         new ViewType(
             Name: "Skin",
             Points: [
-                "Lorem ipsum dolor sit amet",
-                "Consectetuer adipiscing elit",
-                "Etiam commodo dui eget wisi"
+                "Check out the skins before you equip them",
+                "Open doors or bonnets, if you wish so"
             ],
             Link: "skin",
             Extensions: ["zip", "Pack.Gbx"]),
         new ViewType(
-            Name: "Solid",
+            Name: "Mesh",
             Points: [
-                "Lorem ipsum dolor sit amet",
-                "Consectetuer adipiscing elit",
-                "Etiam commodo dui eget wisi"
+                "If you only have the mesh piece in Gbx format",
+                "Similar overview to Item viewing"
             ],
-            Link: "solid",
-            Extensions: ["Solid.Gbx"]),
-        new ViewType(
-            Name: "Prefab",
-            Points: [
-                "Lorem ipsum dolor sit amet",
-                "Consectetuer adipiscing elit",
-                "Etiam commodo dui eget wisi"
-            ],
-            Link: "prefab",
-            Extensions: ["Prefab.Gbx"]),
+            Link: "mesh",
+            Extensions: ["Mesh.Gbx", "Solid.Gbx", "Solid2.Gbx", "Prefab.Gbx"]),
     ];
 
     private async Task OnUploadAsync(UploadEventArgs e, string? type)
@@ -113,12 +101,10 @@
         {
             case Gbx<CGameCtnChallenge> map:
                 if (type is not null && type != "map") return;
-                GbxService.Add(map);
                 NavManager.NavigateTo("/view/map");
                 break;
             case Gbx<CGameCtnReplayRecord> replay:
                 if (type is not null && type != "replay") return;
-                GbxService.Add(replay);
                 NavManager.NavigateTo("/view/replay");
                 break;
             case Gbx<CGameCtnGhost> ghost:
@@ -129,10 +115,16 @@
                 if (type is not null && type != "item") return;
                 NavManager.NavigateTo("/view/item");
                 break;
+            case Gbx<CPlugSolid>:
+            case Gbx<CPlugSolid2Model>:
+            case Gbx<CPlugPrefab>:
+                if (type is not null && type != "mesh") return;
+                NavManager.NavigateTo("/view/mesh");
+                break;
             default:
                 return;
         }
 
-        GbxService.List.Add(gbx);
+        GbxService.Add(gbx);
     }
 }

@@ -31,7 +31,17 @@
 }
 else
 {
-    <View3D GameVersion="GameVersion.TMF" @ref="view3d"></View3D>
+    <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
+
+        @if (!RendererInfo.IsInteractive)
+        {
+            <div class="centered">
+                <Loader></Loader>
+            </div>
+        }
+
+        <View3D GameVersion="GameVersion.TMF" @ref="view3d"></View3D>
+    </div>
 }
 
 @code {

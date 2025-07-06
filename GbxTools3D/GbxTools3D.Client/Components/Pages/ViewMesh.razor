@@ -1,0 +1,32 @@
+﻿@page "/view/mesh"
+@using GBX.NET
+@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+
+@inject HttpClient Http
+@inject GbxService GbxService
+
+<PageTitle>View mesh - 3D Gbx Tools</PageTitle>
+
+@if (solid is null && solid2 is null && prefab is null)
+{
+    <div class="container">
+        <div class="navbar-fake-margin"></div>
+        <h2 class="view">View a Mesh.Gbx / Solid.Gbx / Solid2.Gbx / Prefab.Gbx file</h2>
+        <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
+    </div>
+}
+else
+{
+    <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
+
+        @if (!RendererInfo.IsInteractive)
+        {
+            <div class="centered">
+                <Loader></Loader>
+            </div>
+        }
+
+        <View3D GameVersion="solid?.GameVersion ?? solid2?.GameVersion ?? prefab?.GameVersion ?? GameVersion.MP4" Solid1="solid" Solid2="solid2" Prefab="prefab" IsCatalog="true"></View3D>
+    </div>
+}
