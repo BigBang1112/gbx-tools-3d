@@ -1,6 +1,7 @@
 ﻿import * as THREE from 'three';
 import { updateCamera } from './camera.js';
 import { updateMixer } from './animation.js';
+import { updateSlides } from './slide.js';
 
 let renderer, scene, camera, stats, raycaster, raycasterEnabled, dotNetHelper;
 
@@ -96,6 +97,8 @@ function update() {
             const intersects = raycaster.intersectObjects(scene.children.filter(item => item.name !== "helper"), true);
             processIntersections(intersects);
         }
+
+        updateSlides(scene);
 
         renderer.render(scene, camera);
     }

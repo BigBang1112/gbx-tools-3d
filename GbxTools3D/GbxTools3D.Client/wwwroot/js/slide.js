@@ -82,6 +82,10 @@ export function doSlide(wheelObj, scene) {
     else {
         const mesh = new THREE.Mesh(geometry, material);
         mesh.receiveShadow = true;
+        mesh.matrixAutoUpdate = false;
+        mesh.matrixWorldAutoUpdate = false;
+        // Přidáme čas vytvoření pro pozdější odstranění
+        mesh.userData.createdAt = Date.now();
         currentLines.set(wheelObj, mesh);
 
         placedLines.push(mesh);
@@ -108,4 +112,19 @@ export function stopSlide(wheelObj) {
     // Vyčištění
     currentLines.delete(wheelObj);
     linePointsMap.delete(wheelObj);
+}
+
+// Aktualizační funkce pro odstranění placedLines po 30 sekundách
+export function updateSlides(scene) {
+    const now = Date.now();
+    for (let i = placedLines.length - 1; i >= 0; i--) {
+        const mesh = placedLines[i];
+        if (mesh.userData.createdAt && (now - mesh.userData.createdAt) >= 30000) {
+            scene.remove(mesh);
+            if (mesh.geometry) {
+                mesh.geometry.dispose();
+            }
+            placedLines.splice(i, 1);
+        }
+    }
 }
