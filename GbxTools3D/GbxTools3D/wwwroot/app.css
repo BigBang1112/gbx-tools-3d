@@ -42,6 +42,14 @@ html, body {
     animation: fadeToBlack 0.5s;
 }
 
+.centered {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+}
+
 @keyframes fadeToBlack {
     from {
         background-color: transparent;
@@ -65,7 +73,7 @@ h1 {
 }
 
 ul {
-    list-style-type: "\1F44D";
+    list-style-type: "- ";
 }
 
     ul.no-bullet {
