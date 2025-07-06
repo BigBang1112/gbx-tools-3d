@@ -6,6 +6,19 @@
         background-color: #6373EDDD !important;
     }
 
+.kofi {
+    background-color: #FF6433DD !important;
+    cursor: pointer;
+}
+
+    .kofi:hover {
+        background-color: #FF8966DD !important;
+    }
+
+    .kofi.open {
+        background-color: #FF9375DD !important;
+    }
+
 .navbar {
     position: relative;
     z-index: 10;

@@ -59,10 +59,17 @@
                 </a>
             </div>
 
-            <div class="nav-item" title="Login">
-                <NavLink class="nav-link" href="login">
-                    <img src="icons/ui/login.svg" alt="Login" width="32" height="32" />
-                </NavLink>
+            <div class="nav-item" title="Donate">
+                <button class="nav-link kofi @(showDono ? "open" : "")" @onclick="() => showDono = !showDono">
+                    @if (RendererInfo.IsInteractive)
+                    {
+                        <img src="icons/kofi.png" alt="Login" width="32" height="32" />
+                    }
+                    else
+                    {
+                        <GbxTools3D.Client.Components.Loader Size="20" Thickness="5"></GbxTools3D.Client.Components.Loader>
+                    }
+                </button>
             </div>
         </nav>
 
@@ -85,9 +92,15 @@
     }
 </div>
 
+@if (showDono)
+{
+    <Donate></Donate>
+}
+
 @code {
     private bool showBurger;
     private bool showNavbar;
+    private bool showDono;
 
     [Parameter]
     public bool IsAbsolute { get; set; }
@@ -112,6 +125,7 @@
                currentPath.StartsWith("view/item") ||
                currentPath.StartsWith("view/ghost") ||
                currentPath.StartsWith("view/skin") ||
+               currentPath.StartsWith("view/mesh") ||
                currentPath.StartsWith("catalog");
     }
 }
