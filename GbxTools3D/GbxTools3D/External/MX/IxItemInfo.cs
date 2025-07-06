@@ -1,6 +1,6 @@
 ﻿namespace GbxTools3D.External.MX;
 
-public sealed class IxItemInfo
+internal sealed class IxItemInfo
 {
     public required string Name { get; set; }
     public required ulong UserID { get; set; }

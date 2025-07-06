@@ -2,6 +2,7 @@
 
 internal sealed class MxMapInfo
 {
+    public required string Name { get; set; }
     public required MxUser Uploader { get; set; }
     public required MxAuthor[] Authors { get; set; }
     public required DateTime UpdatedAt { get; set; }

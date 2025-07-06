@@ -1,10 +1,10 @@
-﻿using System.Text.Json.Serialization;
-using GbxTools3D.Client.Enums;
+﻿using GbxTools3D.Client.Enums;
 
 namespace GbxTools3D.Client.Dtos;
 
 public sealed class MapInfoDto
 {
+    public required string Name { get; set; }
     public required string UploaderId { get; set; }
     public required string UploaderName { get; set; }
     public required DateTime UpdatedAt { get; set; }

@@ -31,7 +31,7 @@ public static class MapApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=Uploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
+        using var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
         using var trackResponse = await http.GetAsync($"https://{siteUrl}/trackgbx/{trackId}", cancellationToken);
 
         if (trackResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -68,6 +68,7 @@ public static class MapApiEndpoint
 
                 mapInfoDto = new MapInfoDto
                 {
+                    Name = track.TrackName,
                     UploaderId = track.Uploader.UserId.ToString(),
                     UploaderName = track.Uploader.Name,
                     UpdatedAt = track.UpdatedAt,
@@ -100,7 +101,7 @@ public static class MapApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=Uploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
+        using var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=Name%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
         using var mapResponse = await http.GetAsync($"https://{siteUrl}/mapgbx/{mapId}", cancellationToken);
 
         if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -137,6 +138,7 @@ public static class MapApiEndpoint
 
                 mapInfoDto = new MapInfoDto
                 {
+                    Name = map.Name,
                     UploaderId = map.Uploader.UserId.ToString(),
                     UploaderName = map.Uploader.Name,
                     UpdatedAt = map.UpdatedAt,

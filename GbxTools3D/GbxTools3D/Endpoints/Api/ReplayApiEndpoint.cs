@@ -76,7 +76,7 @@ public static class ReplayApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=Uploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
+        using var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
         using var replayInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/replays?trackId={trackId}&from={replayId}&count=1&fields=User.UserId%2CUser.Name%2CPosition%2CReplayAt", cancellationToken);
         using var replayResponse = await http.GetAsync($"https://{siteUrl}/recordgbx/{replayId}", cancellationToken);
 
@@ -114,6 +114,7 @@ public static class ReplayApiEndpoint
 
                 mapInfoDto = new MapInfoDto
                 {
+                    Name = track.TrackName,
                     UploaderId = track.Uploader.UserId.ToString(),
                     UploaderName = track.Uploader.Name,
                     UpdatedAt = track.UpdatedAt,
@@ -209,7 +210,7 @@ public static class ReplayApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=Uploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
+        using var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=Name%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
         using var replayInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/replays?mapId={mapId}&from={replayId}&count=1&fields=User.UserId%2CUser.Name%2CPosition%2CReplayAt", cancellationToken);
         using var replayResponse = await http.GetAsync($"https://{siteUrl}/recordgbx/{replayId}", cancellationToken);
 
@@ -247,6 +248,7 @@ public static class ReplayApiEndpoint
 
                 mapInfoDto = new MapInfoDto
                 {
+                    Name = map.Name,
                     UploaderId = map.Uploader.UserId.ToString(),
                     UploaderName = map.Uploader.Name,
                     UpdatedAt = map.UpdatedAt,
