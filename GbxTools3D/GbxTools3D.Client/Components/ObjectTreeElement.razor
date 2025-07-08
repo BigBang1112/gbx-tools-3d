@@ -1,6 +1,6 @@
 ﻿@using System.Runtime.InteropServices.JavaScript
 
-<li>
+<li @onclick="OnClick">
     @if (Object is null)
     {
         <div class="item">null</div>
@@ -68,6 +68,9 @@
 
     [Parameter]
     public string? Description { get; set; }
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
 
     private IEnumerable<JSObject> GetChildren()
     {

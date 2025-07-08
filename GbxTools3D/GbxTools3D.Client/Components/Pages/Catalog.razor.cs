@@ -23,6 +23,10 @@ public partial class Catalog : ComponentBase
 
     private bool showCatalog = true;
     private bool showProperties = true;
+    private bool selectMode;
+    private bool showGrid;
+
+    private Solid? currentSolid;
 
     private BlockInfoDto? block;
     private bool blockIsGround;
@@ -59,7 +63,6 @@ public partial class Catalog : ComponentBase
     public CollectionDto? SelectedCollection => ContentTypeEnum == Enums.ContentType.Collection
         ? CollectionClientService.Collections?.FirstOrDefault(c => c.Name == CollectionName) : null;
 
-    private string? materialName;
     private string? shaderName;
     private JSObject? selectedTreeObject;
 
@@ -245,7 +248,7 @@ public partial class Catalog : ComponentBase
 
     private void OnFocusedSolidHover(IntersectionInfo intersection)
     {
-        materialName = intersection.ObjectName;
+        selectedTreeObject = intersection.Object;
 
         if (intersection.MaterialUserData?.RootElement.TryGetProperty("shaderName", out var shaderJson) == true)
         {
@@ -287,6 +290,8 @@ public partial class Catalog : ComponentBase
         {
             await view3d.ChangeBlockVariantAsync(blockIsGround, variant.Variant, variant.SubVariant);
         }
+
+        currentSolid = view3d?.FocusedSolids?.FirstOrDefault();
     }
 
     private async Task ChangeBlockVariantAsync(BlockVariantDto variant)
@@ -298,6 +303,8 @@ public partial class Catalog : ComponentBase
         {
             await view3d.ChangeBlockVariantAsync(blockIsGround, blockVariant, blockSubVariant);
         }
+
+        currentSolid = view3d?.FocusedSolids?.FirstOrDefault();
     }
 
     private void OnSelectedTreeObjectChanged(JSObject treeObject)
@@ -324,6 +331,40 @@ public partial class Catalog : ComponentBase
         if (view3d is not null)
         {
             await view3d.ToggleBlockCollisionsAsync(blockIsGround, blockVariant, blockSubVariant, solid);
+        }
+    }
+
+    private void ToggleSelectMode()
+    {
+        selectMode = !selectMode;
+
+        if (selectMode)
+        {
+            Renderer.EnableRaycaster();
+        }
+        else
+        {
+            Renderer.DisableRaycaster();
+        }
+    }
+
+    private void DisableSelectMode()
+    {
+        selectMode = false;
+        Renderer.DisableRaycaster();
+    }
+
+    private void ToggleGrid()
+    {
+        showGrid = !showGrid;
+
+        if (showGrid)
+        {
+            view3d?.ShowGrid();
+        }
+        else
+        {
+            view3d?.HideGrid();
         }
     }
 

@@ -129,7 +129,7 @@ function processIntersections(intersects) {
             INTERSECTED.material.emissive.setHex(0x666666);
         }
 
-        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.parent.name, INTERSECTED.material.name, INTERSECTED.material.userData);
+        dotNetHelper.invokeMethodAsync("Intersects", INTERSECTED.parent.id, INTERSECTED.material.name, INTERSECTED.material.userData);
     }
 }
 

@@ -12,7 +12,7 @@
 
 <PageTitle>Catalog - 3D Gbx Tools</PageTitle>
 
-<div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
+<div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")" @onclick="DisableSelectMode">
 
     @if (!RendererInfo.IsInteractive)
     {
@@ -59,105 +59,116 @@
                 <NavLink href="@($"/catalog/TM2020{(ContentType is null ? "" : $"/{ContentType.ToLowerInvariant()}")}")"><img src="icons/game/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
             </div>
 
-            @if (GameVersionEnum != GBX.NET.GameVersion.Unspecified)
+            @if (GameVersionEnum == GBX.NET.GameVersion.Unspecified)
+            {
+                <div class="fill">Select a Gbx game...</div>
+            }
+            else
             {
                 <div class="asset-types">
                     <NavLink href="@($"/catalog/{GameVersionEnum}/collections")" class="button-generic">Environments</NavLink>
                     <NavLink href="@($"/catalog/{GameVersionEnum}/vehicles")" class="button-generic">Vehicles</NavLink>
                 </div>
-            }
 
-            @if (ContentTypeEnum == Enums.ContentType.Collection)
-            {
-                <div class="collections">
-                    @foreach (var collection in CollectionClientService.Collections)
-                    {
-                        <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/collection/{collection.Name}/environment")" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
-                    }
-                </div>
-
-                @if (SelectedCollection is not null)
+                @if (ContentTypeEnum == Enums.ContentType.Collection)
                 {
-                    <div class="asset-types">
-                        @if (SelectedCollection.HasBlocks)
+                    <div class="collections">
+                        @foreach (var collection in CollectionClientService.Collections)
                         {
-                            <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/blocks")" class="button-generic">Blocks</NavLink>
-                        }
-
-                        @if (SelectedCollection.HasDecorations)
-                        {
-                            <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/decorations")" class="button-generic">Decorations</NavLink>
-                        }
-
-                        @if (SelectedCollection.HasItems)
-                        {
-                            <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/items")" class="button-generic">Items</NavLink>
+                            <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{collection.Name}{(GetAssetTypeString() is string str ? $"/{str}" : "")}")"><img src="@($"api/icon/{GameVersionEnum}/collection/{collection.Name}/environment")" height="48" />@(collection.DisplayName ?? collection.Name)</NavLink>
                         }
                     </div>
 
-                    @if (AssetTypeEnum != Enums.AssetType.None)
+                    @if (SelectedCollection is null)
                     {
-                        <div class="assets">
-                            @if (AssetTypeEnum == Enums.AssetType.Block)
+                        <div class="fill">Select an environment...</div>
+                    }
+                    else
+                    {
+                        <div class="asset-types">
+                            @if (SelectedCollection.HasBlocks)
                             {
-                                <Virtualize ItemsProvider="(req) => FilterAssets(BlockClientService.Blocks, x => x.Name, req)" Context="block" @ref="blocksVirtualize">
-                                    <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/blocks?selected={block.Name}")">
-                                        @if (block.HasIcon)
-                                        {
-                                            <img src="@($"api/icon/{GameVersionEnum}/collection/{SelectedCollection.Name}/block/{block.Name}")" width="24" height="24" />
-                                        }
-                                        else
-                                        {
-                                            <img src="icons/noicon.webp" width="24" height="24" />
-                                        }
-                                        @block.Name
-                                        <span>@TestGetSoundHash(block)</span>
-                                    </NavLink>
-                                </Virtualize>
+                                <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/blocks")" class="button-generic">Blocks</NavLink>
                             }
 
-                            @if (AssetTypeEnum == Enums.AssetType.Decoration)
+                            @if (SelectedCollection.HasDecorations)
                             {
-                                @foreach (var decorationGroup in DecorationClientService.DecorationSizes.GroupBy(x => x.Size))
-                                {
-                                    var hasSingle = decorationGroup.Count() == 1;
+                                <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/decorations")" class="button-generic">Decorations</NavLink>
+                            }
 
-                                    foreach (var decoration in decorationGroup)
-                                    {
-                                        var sceneName = decoration.SceneName.Substring(decoration.SceneName.LastIndexOf('\\') + 1);
-
-                                        <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}{(hasSingle ? "" : $"&scene={sceneName}")}")">
-                                            <span>@decoration.Size</span>
-                                            @if (!hasSingle)
-                                            {
-                                                <span>(@sceneName)</span>
-                                            }
-                                        </NavLink>
-                                    }
-                                }
+                            @if (SelectedCollection.HasItems)
+                            {
+                                <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/items")" class="button-generic">Items</NavLink>
                             }
                         </div>
+
+                        @if (AssetTypeEnum != Enums.AssetType.None)
+                        {
+                            <div class="assets">
+                                @if (AssetTypeEnum == Enums.AssetType.Block)
+                                {
+                                    <Virtualize ItemsProvider="(req) => FilterAssets(BlockClientService.Blocks, x => x.Name, req)" Context="block" @ref="blocksVirtualize">
+                                        <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/blocks?selected={block.Name}")">
+                                            @if (block.HasIcon)
+                                            {
+                                                <img src="@($"api/icon/{GameVersionEnum}/collection/{SelectedCollection.Name}/block/{block.Name}")" width="24" height="24" />
+                                            }
+                                            else
+                                            {
+                                                <img src="icons/noicon.webp" width="24" height="24" />
+                                            }
+                                            @block.Name
+                                            <span>@TestGetSoundHash(block)</span>
+                                        </NavLink>
+                                    </Virtualize>
+                                }
+
+                                @if (AssetTypeEnum == Enums.AssetType.Decoration)
+                                {
+                                    @foreach (var decorationGroup in DecorationClientService.DecorationSizes.GroupBy(x => x.Size))
+                                    {
+                                        var hasSingle = decorationGroup.Count() == 1;
+
+                                        foreach (var decoration in decorationGroup)
+                                        {
+                                            var sceneName = decoration.SceneName.Substring(decoration.SceneName.LastIndexOf('\\') + 1);
+
+                                            <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{CollectionName}/decorations?selected={decoration.Size.X}x{decoration.Size.Y}x{decoration.Size.Z}{(hasSingle ? "" : $"&scene={sceneName}")}")">
+                                                <span>@decoration.Size</span>
+                                                @if (!hasSingle)
+                                                {
+                                                    <span>(@sceneName)</span>
+                                                }
+                                            </NavLink>
+                                        }
+                                    }
+                                }
+                            </div>
+                        }
                     }
                 }
-            }
-
-            @if (ContentTypeEnum == Enums.ContentType.Vehicle)
-            {
-                <div class="assets">
-                    <Virtualize ItemsProvider="(req) => FilterAssets(VehicleClientService.Vehicles, x => x.Name, req)" Context="vehicle" @ref="vehiclesVirtualize">
-                        <NavLink href="@($"/catalog/{GameVersionEnum}/vehicles?selected={vehicle.Name}")">
-                            @if (vehicle.HasIcon)
-                            {
-                                <img src="@($"api/icon/{GameVersionEnum}/vehicle/{vehicle.Name}")" width="24" height="24" />
-                            }
-                            else
-                            {
-                                <img src="icons/noicon.webp" width="24" height="24" />
-                            }
-                            @vehicle.Name
-                        </NavLink>
-                    </Virtualize>
-                </div>
+                else if (ContentTypeEnum == Enums.ContentType.Vehicle)
+                {
+                    <div class="assets">
+                        <Virtualize ItemsProvider="(req) => FilterAssets(VehicleClientService.Vehicles, x => x.Name, req)" Context="vehicle" @ref="vehiclesVirtualize">
+                            <NavLink href="@($"/catalog/{GameVersionEnum}/vehicles?selected={vehicle.Name}")">
+                                @if (vehicle.HasIcon)
+                                {
+                                    <img src="@($"api/icon/{GameVersionEnum}/vehicle/{vehicle.Name}")" width="24" height="24" />
+                                }
+                                else
+                                {
+                                    <img src="icons/noicon.webp" width="24" height="24" />
+                                }
+                                @vehicle.Name
+                            </NavLink>
+                        </Virtualize>
+                    </div>
+                }
+                else
+                {
+                    <div class="fill">Select a content type...</div>
+                }
             }
 
             @if ((ContentTypeEnum == Enums.ContentType.Collection && AssetTypeEnum == Enums.AssetType.Block && SelectedCollection is not null) || ContentTypeEnum == Enums.ContentType.Vehicle)
@@ -178,7 +189,7 @@
                     <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
                 }
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px">
+            <div style="display: flex; flex-direction: column; gap: 10px; height: 100%">
                 @if (block is not null)
                 {
                     <div class="title">
@@ -260,9 +271,18 @@
                         <div style="font-size: 150%;">@AssetName</div>
                     </div>
                 }
+                else
+                {
+                    <div class="fill">No asset selected.</div>
+                }
 
                 @{
                     var focusedSolids = view3d?.FocusedSolids ?? [];
+
+                    if (currentSolid is null || !focusedSolids.Contains(currentSolid))
+                    {
+                        currentSolid = focusedSolids.FirstOrDefault();
+                    }
                 }
 
                 @if (focusedSolids.Count > 0)
@@ -273,48 +293,53 @@
                             <ObjectTreeElement Object="solid.Object"
                                                SelectedObject="selectedTreeObject"
                                                OnSelected="OnSelectedTreeObjectChanged"
-                                               Description="@Path.GetFileName(solid.Object.GetPropertyAsJSObject("userData")?.GetPropertyAsString("filePath"))"></ObjectTreeElement>
-                            @*
-
-                            @foreach (var (matName, shadName) in solid.GetAllMaterials())
-                            {
-                                <ul>
-                                    <li>
-                                        @matName
-                                        <ul>
-                                            <li>@shadName</li>
-                                        </ul>
-                                    </li>
-                                </ul>
-                            }
-                            *@
+                                               Description="@Path.GetFileName(solid.Object.GetPropertyAsJSObject("userData")?.GetPropertyAsString("filePath"))"
+                                               OnClick="() => currentSolid = solid"></ObjectTreeElement>
                         }
                     </ul>
+                    <div style="flex: 1">
+                        <small>@selectedTreeObject?.GetPropertyAsString("name")</small>
+                        <small>@shaderName?.Replace('\\', '/')</small>
+                    </div>
 
-                    @foreach (var solid in focusedSolids)
+                    @if (currentSolid is not null)
                     {
-                        <div class="solid-tools">
-                            <div class="button-generic @(solid.WireframeEnabled ? "active" : "")" @onclick="() => solid.ToggleWireframe()">
+                        <div style="text-align: center; opacity: 0.5">
+                            @Path.GetFileName(currentSolid.Object.GetPropertyAsJSObject("userData")?.GetPropertyAsString("filePath"))
+                        </div>
+                    }
+
+                    <div class="solid-tools">
+                        <div class="button-generic @(selectMode ? "active" : "")" @onclick="ToggleSelectMode" title="Select mode">
+                            <img src="icons/ui/ads_click.svg" alt="Select mode" class="icon" width="32" height="32" />
+                        </div>
+                        <div class="button-generic @(showGrid ? "active" : "")" @onclick="ToggleGrid" title="Grid">
+                            <img src="icons/ui/grid_4x4.svg" alt="Grid" class="icon" width="32" height="32" />
+                        </div>
+
+                        @if (currentSolid is not null)
+                        {
+                            <div class="button-generic @(currentSolid.WireframeEnabled ? "active" : "")" @onclick="() => currentSolid.ToggleWireframe()" title="Wireframe">
                                 <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
                             </div>
-                            <div class="button-generic">
-                                <img src="icons/ui/ads_click.svg" alt="Select Mode" class="icon" width="32" height="32" />
-                            </div>
-                            <div class="button-generic @(solid.CollisionsEnabled ? "active" : "")" @onclick="() => ToggleCollisionsAsync(solid)">
-                                Collisions
+                            <div class="button-generic @(currentSolid.CollisionsEnabled ? "active" : "")" @onclick="() => ToggleCollisionsAsync(currentSolid)" title="Collisions">
+                                <img src="icons/ui/minor_crash.svg" alt="Collisions" class="icon" width="32" height="32" />
                             </div>
                             @if (view3d?.Scene is not null)
                             {
-                                <div class="button-generic @(solid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => solid.ToggleVertexNormalHelper(view3d.Scene)">
-                                    Vertex normals
+                                <div class="button-generic @(currentSolid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => currentSolid.ToggleVertexNormalHelper(view3d.Scene)" title="Vertex normals">
+                                    <img src="icons/ui/merge_type.svg" alt="Vertex normals" class="icon" width="32" height="32" />
                                 </div>
                             }
-                        </div>
-                    }
+                            @if (decoSize is not null)
+                            {
+                                <div class="button-generic active" title="Buildable area zone">
+                                    <img src="icons/ui/grass.svg" alt="Zone" class="icon" width="32" height="32" />
+                                </div>
+                            }
+                        }
+                    </div>
                 }
-
-                <small>@materialName</small>
-                <small>@shaderName?.Replace('\\', '/')</small>
             </div>
         </div>
     </div>

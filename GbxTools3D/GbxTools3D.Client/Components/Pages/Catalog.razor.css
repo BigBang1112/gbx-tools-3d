@@ -7,6 +7,14 @@
         flex: 1;
     }
 
+.fill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.3;
+}
+
 .properties {
     position: fixed;
     padding: 20px;

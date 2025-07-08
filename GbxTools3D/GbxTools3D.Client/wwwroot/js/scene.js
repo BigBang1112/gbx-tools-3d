@@ -6,8 +6,8 @@ export function create(isCatalog) {
     add(scene, createDirectionalLight(isCatalog));
 
     const gridHelper = new THREE.GridHelper(128, 128, 0x880000);
-    gridHelper.name = "helper";
-    gridHelper.visible = isCatalog; // hopefully i wont forget
+    gridHelper.name = "grid";
+    gridHelper.visible = false;
     add(scene, gridHelper);
 
     if (isCatalog) {
@@ -69,6 +69,19 @@ export function clear(scene) {
         const child = scene.children[0];
         scene.remove(child);
     }
+}
+
+export function toggleGrid(scene, visible) {
+    if (scene) {
+        const gridHelper = scene.getObjectByName("grid");
+        if (gridHelper) {
+            gridHelper.visible = visible;
+        }
+    }
+}
+
+export function getObjectById(scene, id) {
+    return scene.getObjectById(id);
 }
 
 function createDirectionalLight(isCatalog) {

@@ -13,6 +13,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
+using System.Security.AccessControl;
 using System.Text.Json;
 
 namespace GbxTools3D.Client.Components;
@@ -279,7 +280,9 @@ public partial class View3D : ComponentBase
         var units = isGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
 
         var blockSize = collectionInfo?.GetSquareSize() ?? (32, 8, 32);
-        var size = new Int3(units.Select(x => x.Offset.X).Max() + 1, units.Select(x => x.Offset.Y).Max() + 1, units.Select(x => x.Offset.Z).Max() + 1);
+        var size = units.Length == 0
+            ? new Int3(1, 1, 1)
+            : new Int3(units.Select(x => x.Offset.X).Max() + 1, units.Select(x => x.Offset.Y).Max() + 1, units.Select(x => x.Offset.Z).Max() + 1);
         var realSize = size * blockSize;
 
         // camera position after knowing block details
@@ -303,7 +306,7 @@ public partial class View3D : ComponentBase
 
         CurrentBlockInfo = blockInfo;
 
-        Renderer.EnableRaycaster();
+        //Renderer.EnableRaycaster();
 
         return true;
     }
@@ -358,7 +361,7 @@ public partial class View3D : ComponentBase
         await OnFocusedSolidsChange.InvokeAsync();
 
         mapCamera.Position = new Vec3(0, 5, 10);
-        mapCamera.CreateMapControls(renderer, default);
+        mapCamera.CreateOrbitControls(renderer, default);
 
         try
         {
@@ -390,7 +393,7 @@ public partial class View3D : ComponentBase
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
 
-        Renderer.EnableRaycaster();
+        //Renderer.EnableRaycaster();
 
         return true;
     }
@@ -456,7 +459,7 @@ public partial class View3D : ComponentBase
         }
         await OnFocusedSolidsChange.InvokeAsync();
 
-        Renderer.EnableRaycaster();
+        //Renderer.EnableRaycaster();
 
         return true;
     }
@@ -516,7 +519,7 @@ public partial class View3D : ComponentBase
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
 
-        Renderer.EnableRaycaster();
+        //Renderer.EnableRaycaster();
 
         return true;
     }
@@ -566,7 +569,7 @@ public partial class View3D : ComponentBase
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
 
-        Renderer.EnableRaycaster();
+        //Renderer.EnableRaycaster();
 
         return true;
     }
@@ -633,9 +636,14 @@ public partial class View3D : ComponentBase
     }
 
     [JSInvokable]
-    public void Intersects(string objectName, string materialName, JsonDocument? materialUserData)
+    public void Intersects(int objectId, string materialName, JsonDocument? materialUserData)
     {
-        OnIntersect?.Invoke(new(objectName, materialName, materialUserData));
+        var obj = Scene?.GetObjectById(objectId);
+
+        if (obj is not null)
+        {
+            OnIntersect?.Invoke(new(obj, materialName, materialUserData));
+        }
     }
 
     private async IAsyncEnumerable<Solid> CreateDecorationAsync(string collectionName, DecorationSizeDto decoSize, bool optimized, [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -828,12 +836,6 @@ public partial class View3D : ComponentBase
 
         var collisionSolid = await Solid.ParseAsync(stream, GameVersion, materials, optimized: false);
         solid.ToggleCollision(Scene, collisionSolid);
-    }
-
-    public void Unfollow()
-    {
-        Camera.Unfollow();
-        //mapCamera?.CreateMapControls(renderer, default);
     }
 
     private async Task ProcessBlockResponsesAsync(
@@ -1543,6 +1545,15 @@ public partial class View3D : ComponentBase
         }
 
         await OnRenderDetails.InvokeAsync(new RenderDetails(fps, calls, triangles, geometries, textures));
+    }
+
+    public void ShowGrid() => Scene?.ShowGrid();
+    public void HideGrid() => Scene?.HideGrid();
+
+    public void Unfollow()
+    {
+        Camera.Unfollow();
+        //mapCamera?.CreateMapControls(renderer, default);
     }
 
     public async ValueTask DisposeAsync()
