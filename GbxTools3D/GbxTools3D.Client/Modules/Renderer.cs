@@ -21,6 +21,21 @@ internal static partial class Renderer
     [JSImport("disableRaycaster", nameof(Renderer))]
     public static partial void DisableRaycaster();
 
+    [JSImport("attachTransformControls", nameof(Renderer))]
+    public static partial void AttachTransformControls(JSObject obj);
+
+    [JSImport("detachTransformControls", nameof(Renderer))]
+    public static partial void DetachTransformControls();
+
+    [JSImport("showTransformControls", nameof(Renderer))]
+    public static partial void ShowTransformControls();
+
+    [JSImport("hideTransformControls", nameof(Renderer))]
+    public static partial void HideTransformControls();
+
+    [JSImport("setTransformControlsAxis", nameof(Renderer))]
+    public static partial void SetTransformControlsAxis(bool x, bool y, bool z);
+
     [JSImport("dispose", nameof(Renderer))]
     public static partial void Dispose();
 

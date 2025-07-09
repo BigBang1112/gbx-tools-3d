@@ -84,6 +84,10 @@ export function getObjectById(scene, id) {
     return scene.getObjectById(id);
 }
 
+export function getObjectByName(scene, name) {
+    return scene.getObjectByName(name);
+}
+
 function createDirectionalLight(isCatalog) {
     const light = new THREE.DirectionalLight(0xffffff, 2);
     light.matrixAutoUpdate = true;

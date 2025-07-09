@@ -112,7 +112,7 @@ export function createGeometry(vertData, normData, indData, uvData, computeNorma
         geometry.computeVertexNormals();
     }
 
-    geometry.computeTangents();
+    //geometry.computeTangents();
     
     return geometry;
 }
@@ -208,6 +208,7 @@ export function createSpotLight(parent, r, g, b, intensity, distance, angleInner
     const light = new THREE.SpotLight(new THREE.Color(r, g, b), intensity * 100, distance /*, halfAngleRad, penumbra*/);
     light.castShadow = true;
     light.userData.nightOnly = nightOnly;
+    light.visible = false; // something is still wrong about them
 
     const worldPos = new THREE.Vector3();
     parent.getWorldPosition(worldPos);

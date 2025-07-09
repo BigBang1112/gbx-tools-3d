@@ -29,6 +29,9 @@ internal partial class Scene
     [JSImport("getObjectById", nameof(Scene))]
     private static partial JSObject? GetObjectById(JSObject scene, int objectId);
 
+    [JSImport("getObjectByName", nameof(Scene))]
+    private static partial JSObject? GetObjectByName(JSObject scene, string name);
+
     public Scene(bool isCatalog)
     {
         Object = Create(isCatalog);
@@ -77,6 +80,11 @@ internal partial class Scene
     public JSObject? GetObjectById(int objectId)
     {
         return GetObjectById(Object, objectId);
+    }
+
+    public JSObject? GetObjectByName(string name)
+    {
+        return GetObjectByName(Object, name);
     }
 
     public static explicit operator JSObject(Scene scene) => scene.Object;

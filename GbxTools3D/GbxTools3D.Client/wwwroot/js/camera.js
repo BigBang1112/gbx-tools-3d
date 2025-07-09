@@ -125,6 +125,10 @@ export function unfollow() {
     followTarget = null;
 }
 
+export function getControls() {
+    return controls;
+}
+
 export function updateCamera(camera) {
     if (followTarget) {
         if (controls == null) {

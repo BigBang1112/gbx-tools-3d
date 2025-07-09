@@ -1,9 +1,11 @@
 ﻿import * as THREE from 'three';
-import { updateCamera } from './camera.js';
+import { updateCamera, getControls } from './camera.js';
 import { updateMixer } from './animation.js';
 import { updateSlides } from './slide.js';
 
-let renderer, scene, camera, stats, raycaster, raycasterEnabled, dotNetHelper;
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+
+let renderer, scene, camera, stats, raycaster, raycasterEnabled, transformControls, dotNetHelper;
 
 const pointer = new THREE.Vector2();
 let INTERSECTED;
@@ -45,6 +47,8 @@ export function setScene(newScene) {
 
 export function setCamera(newCamera) {
     camera = newCamera;
+
+    createTransformControls();
 }
 
 function onPointerMove(event) {
@@ -60,6 +64,54 @@ export function disableRaycaster() {
     raycasterEnabled = false;
 }
 
+export function createTransformControls() {
+    if (!camera) {
+        return;
+    }
+
+    transformControls = new TransformControls(camera, renderer.domElement);
+    transformControls.setMode('rotate');
+    transformControls.addEventListener('dragging-changed', function (event) {
+        getControls().enabled = !event.value;
+    });
+    transformControls.size = 0.5;
+}
+
+export function attachTransformControls(obj) {
+    if (transformControls) {
+        transformControls.attach(obj);
+    }
+}
+
+export function detachTransformControls() {
+    if (transformControls) {
+        transformControls.detach();
+    }
+}
+
+export function showTransformControls() {
+    if (scene && transformControls) {
+        const helper = transformControls.getHelper();
+        scene.remove(helper);
+        scene.add(helper);
+    }
+}
+
+export function hideTransformControls() {
+    if (scene && transformControls) {
+        scene.remove(transformControls.getHelper());
+    }
+}
+
+export function setTransformControlsAxis(x, y, z) {
+    if (!transformControls) {
+        return;
+    }
+    transformControls.showX = x;
+    transformControls.showY = y;
+    transformControls.showZ = z;
+}
+
 export function passDotNet(helper) {
     dotNetHelper = helper;
 }
@@ -69,6 +121,7 @@ export function dispose() {
 
     //disposeInstances();
     disableRaycaster();
+    hideTransformControls();
 
     if (renderer) {
         renderer.dispose();
@@ -94,7 +147,7 @@ function update() {
         raycaster.setFromCamera(pointer, camera);
 
         if (raycasterEnabled) {
-            const intersects = raycaster.intersectObjects(scene.children.filter(item => item.name !== "helper"), true);
+            const intersects = raycaster.intersectObjects(scene.children.filter(item => item.name !== "helper" && item.visible), true);
             processIntersections(intersects);
         }
 

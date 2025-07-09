@@ -133,6 +133,11 @@ public partial class View3D : ComponentBase
             await LoadSceneAsync(cts.Token);
         }
 
+        if (renderer is not null)
+        {
+            Renderer.HideTransformControls();
+        }
+
         try
         {
             await TryLoadMapAsync(cts.Token);
@@ -178,8 +183,8 @@ public partial class View3D : ComponentBase
         Scene = new Scene(IsCatalog);
         mapCamera = new Camera();
 
-        Renderer.Camera = mapCamera;
         Renderer.Scene = Scene;
+        Renderer.Camera = mapCamera;
     }
 
     private async Task<bool> TryFetchDataAsync(

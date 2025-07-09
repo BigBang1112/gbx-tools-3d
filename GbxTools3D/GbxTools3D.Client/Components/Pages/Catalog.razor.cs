@@ -256,6 +256,8 @@ public partial class Catalog : ComponentBase
         }
 
         StateHasChanged();
+
+        TryApplyTransformControls(selectedTreeObject);
     }
 
     internal string? TestGetSoundHash(BlockInfoDto blockInfo)
@@ -323,6 +325,47 @@ public partial class Catalog : ComponentBase
             {
                 view3d?.SetLightHelper(child, Solid.CreatePointLightHelper);
             }
+        }
+
+        TryApplyTransformControls(treeObject);
+    }
+
+    private void TryApplyTransformControls(JSObject treeObject)
+    {
+        if (ContentTypeEnum != Enums.ContentType.Vehicle)
+        {
+            Renderer.DetachTransformControls();
+            Renderer.HideTransformControls();
+            return;
+        }
+
+        var name = treeObject.GetPropertyAsString("name") ?? "";
+        var shouldDisplayTransformControls = name.EndsWith("FLWheel") || name.EndsWith("FRWheel")
+            || name.EndsWith("DoorLeft") || name.StartsWith("DoorLeft")
+            || name.EndsWith("DoorRight") || name.StartsWith("DoorRight")
+            || name.EndsWith("Bonnet") || name.StartsWith("Bonnet")
+            || name.EndsWith("Boot") || name.StartsWith("Boot");
+
+        if (shouldDisplayTransformControls)
+        {
+            Renderer.AttachTransformControls(treeObject);
+            Renderer.ShowTransformControls();
+
+            if (name.EndsWith("FLWheel") || name.EndsWith("FRWheel")
+                || name.EndsWith("DoorLeft") || name.StartsWith("DoorLeft")
+                || name.EndsWith("DoorRight") || name.StartsWith("DoorRight"))
+            {
+                Renderer.SetTransformControlsAxis(false, true, false);
+            }
+            else if (name.EndsWith("Bonnet") || name.StartsWith("Bonnet") || name.EndsWith("Boot") || name.StartsWith("Boot"))
+            {
+                Renderer.SetTransformControlsAxis(true, false, false);
+            }
+        }
+        else
+        {
+            Renderer.DetachTransformControls();
+            Renderer.HideTransformControls();
         }
     }
 
