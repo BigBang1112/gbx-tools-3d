@@ -136,6 +136,12 @@ public partial class View3D : ComponentBase
         try
         {
             await TryLoadMapAsync(cts.Token);
+
+            if (GameVersion == GameVersion.TM2020)
+            {
+                return;
+            }
+
             await TryLoadBlockAsync(cts.Token);
             await TryLoadVehicleAsync(cts.Token);
             await TryLoadDecorationAsync(cts.Token);
@@ -595,6 +601,11 @@ public partial class View3D : ComponentBase
         mapLoadAttempted = true; // because map load doesnt have good cleanup process, this hack will prevent multiple map loads
 
         GameVersion = GameVersionSupport.GetSupportedGameVersion(Map);
+
+        if (GameVersion == GameVersion.TM2020)
+        {
+            return false;
+        }
 
         await BeforeMapLoad.InvokeAsync();
 
