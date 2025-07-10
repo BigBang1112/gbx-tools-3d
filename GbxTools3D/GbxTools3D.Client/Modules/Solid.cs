@@ -434,16 +434,13 @@ internal sealed partial class Solid(JSObject obj)
         {
             var lod = CreateLod();
 
-            var storedDistance = 0f;
-
             for (var i = 0; i < mipLevelCount; i++)
             {
-                var distance = storedDistance;
-                storedDistance = r.ReadSingle();
+                var distance = r.ReadSingle();
 
                 var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights);
 
-                AddLod(lod, lodTree, distance * 8);
+                AddLod(lod, lodTree, distance);
             }
 
             Add(tree, lod);
@@ -718,8 +715,7 @@ internal sealed partial class Solid(JSObject obj)
             foreach (var level in lodTree.Levels)
             {
                 var levelTree = CreateObjectFromTree(level.Tree, gameVersion, availableMaterials);
-                var distance = level.FarZ * 8;
-                AddLod(lod, levelTree, distance);
+                AddLod(lod, levelTree, level.FarZ);
             }
 
             Add(tree, lod);

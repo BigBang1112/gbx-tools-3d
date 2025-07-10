@@ -16,6 +16,7 @@
             {
                 <img src="icons/ui/keyboard_arrow_right.svg" width="24" height="24" class="no-children" />
             }
+
             @Object.GetPropertyAsString("name")
 
             @if (!string.IsNullOrEmpty(Description))
@@ -37,6 +38,16 @@
                 @if (child.GetPropertyAsBoolean("isMesh"))
                 {
                     <img src="icons/ui/shapes.svg" width="20" height="20" />
+                }
+            }
+
+            @if (IsLOD)
+            {
+                var distance = Object.GetPropertyAsJSObject("userData")?.GetPropertyAsDouble("distance");
+
+                @if (distance.HasValue)
+                {
+                    <small><span style="opacity: 0.5">distance:</span> @distance.Value</small>
                 }
             }
         </div>
@@ -71,6 +82,8 @@
 
     [Parameter]
     public EventCallback OnClick { get; set; }
+
+    public bool IsLOD => Object?.GetPropertyAsJSObject("parent")?.GetPropertyAsBoolean("isLOD") ?? false;
 
     private IEnumerable<JSObject> GetChildren()
     {

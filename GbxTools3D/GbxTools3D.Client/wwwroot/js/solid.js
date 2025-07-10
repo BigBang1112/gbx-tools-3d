@@ -60,7 +60,8 @@ export function createLod() {
 }
 
 export function addLod(lodTree, levelTree, distance) {
-    lodTree.addLevel(levelTree, distance);
+    levelTree.userData.distance = distance;
+    lodTree.addLevel(levelTree, distance * 8);
 }
 
 export function createGeometry(vertData, normData, indData, uvData, computeNormals) {
