@@ -7,6 +7,11 @@
         flex: 1;
     }
 
+.current-solid-name {
+    text-align: center;
+    opacity: 0.5;
+}
+
 .fill {
     flex: 1;
     display: flex;
@@ -14,22 +19,6 @@
     justify-content: center;
     opacity: 0.3;
 }
-
-.properties {
-    position: fixed;
-    padding: 20px;
-    top: 120px;
-    bottom: 100px;
-    width: 500px;
-}
-
-    .properties .opener {
-        padding: 0.8rem;
-    }
-
-    .properties.closed {
-        transform: translateX(500px);
-    }
 
 .title {
     text-align: center;
@@ -58,6 +47,10 @@
     .solid-tools div {
         flex: 1;
     }
+
+.no-material {
+    text-align: center;
+}
 
 .catalog {
     position: fixed;
@@ -105,7 +98,7 @@
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        background-color: #1A1A1A;
+        background-color: #1A1A1AAA;
         border: 1px solid #333;
         border-radius: 5px;
         padding: 5px;
@@ -144,7 +137,7 @@
         display: flex;
         flex-direction: column;
         flex: 1;
-        background-color: #1A1A1A;
+        background-color: #1A1A1AAA;
         border: 1px solid #333;
         border-radius: 5px;
         overflow: hidden auto;
@@ -172,6 +165,78 @@
 
             .catalog .assets ::deep a img {
                 border-radius: 3px;
+            }
+
+
+.properties {
+    position: fixed;
+    padding: 20px;
+    top: 120px;
+    bottom: 100px;
+    width: 500px;
+}
+
+    .properties .opener {
+        padding: 0.8rem;
+    }
+
+    .properties.closed {
+        transform: translateX(500px);
+    }
+
+    .properties .asset-name {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        height: 100%;
+    }
+
+    .properties .table {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .properties .table .label {
+            padding: 5px;
+        }
+
+        .properties .table ::deep input.text {
+            font-size: 80%;
+        }
+
+    .properties .tree-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px
+    }
+
+        .properties .tree-info .tree-name {
+            font-size: 110%;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .properties .tree-info .textures {
+            display: flex;
+            text-align: center;
+            overflow-x: auto;
+            background-color: #222A;
+            padding: 5px 10px;
+            border-radius: 5px;
+            gap: 10px;
+        }
+
+            .properties .tree-info .textures .texture-name {
+                margin-bottom: 3px;
+                font-size: 80%;
+            }
+
+            .properties .tree-info .textures .texture-image {
+                border-radius: 3px;
+                background-color: black;
             }
 
 @media (max-width: 580px) {

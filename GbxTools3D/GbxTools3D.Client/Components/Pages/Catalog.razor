@@ -10,6 +10,8 @@
 @inject IDecorationClientService DecorationClientService
 @inject IVehicleClientService VehicleClientService
 
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
 <PageTitle>Catalog - 3D Gbx Tools</PageTitle>
 
 <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")" @onclick="DisableSelectMode">
@@ -40,7 +42,7 @@
 {
     <div class="panels left">
         <div class="panel left catalog @(showCatalog ? "" : "closed")">
-            <div class="opener" @onclick="() => showCatalog = !showCatalog">
+            <div class="opener" @onclick="ToggleCatalogAsync">
                 @if (showCatalog)
                 {
                     <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
@@ -179,7 +181,7 @@
     </div>
     <div class="panels right">
         <div class="panel right properties @(showProperties ? "" : "closed")">
-            <div class="opener" @onclick="() => showProperties = !showProperties">
+            <div class="opener" @onclick="TogglePropertiesAsync">
                 @if (showProperties)
                 {
                     <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
@@ -189,7 +191,7 @@
                     <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
                 }
             </div>
-            <div style="display: flex; flex-direction: column; gap: 10px; height: 100%">
+            <div class="asset-name">
                 @if (block is not null)
                 {
                     <div class="title">
@@ -241,14 +243,14 @@
 
                     @if (currentVariant is not null)
                     {
-                        <div style="display: grid; grid-template-columns: auto 1fr;align-items:center;gap: 10px;">
+                        <div class="table">
                             @if (currentVariant.MobilPath is not null)
                             {
-                                <div style="padding: 5px">Mobil:</div>
-                                <InputText class="text" @bind-Value="currentVariant.MobilPath" style="font-size: 80%;" disabled />
+                                <div class="label">Mobil:</div>
+                                <InputText class="text" @bind-Value="currentVariant.MobilPath" disabled />
                             }
-                            <div style="padding: 5px">Mesh:</div>
-                            <InputText class="text" @bind-Value="currentVariant.MeshPath" style="font-size: 80%;" disabled />
+                            <div class="label">Mesh:</div>
+                            <InputText class="text" @bind-Value="currentVariant.MeshPath" disabled />
                         </div>
                     }
 
@@ -297,14 +299,64 @@
                                                OnClick="() => currentSolid = solid"></ObjectTreeElement>
                         }
                     </ul>
-                    <div style="flex: 1">
-                        <small>@selectedTreeObject?.GetPropertyAsString("name")</small>
-                        <small>@shaderName?.Replace('\\', '/')</small>
+                    <div class="tree-info">
+                        @if (selectedTreeObject is not null)
+                        {
+                            var hasMaterial = false;
+
+                            <div class="tree-name"><b>@selectedTreeObject.GetPropertyAsString("name")</b></div>
+
+                            @foreach (var child in Solid.GetChildren(selectedTreeObject))
+                            {
+                                if (child.GetPropertyAsBoolean("isMesh"))
+                                {
+                                    var material = child.GetPropertyAsJSObject("material");
+
+                                    @if (material is not null)
+                                    {
+                                        hasMaterial = true;
+
+                                        var materialNameRaw = material.GetPropertyAsString("name");
+                                        var materialName = materialNameRaw?.Replace('\\', '/');
+                                        var shaderName = material.GetPropertyAsJSObject("userData")?.GetPropertyAsString("shaderName")?.Replace('\\', '/');
+
+                                        <div class="table">
+                                            <div class="label">Material:</div>
+                                            <InputText class="text" @bind-Value="materialName" disabled />
+                                            @if (shaderName is not null)
+                                            {
+                                                <div class="label">Shader:</div>
+                                                <InputText class="text" @bind-Value="shaderName" disabled />
+                                            }
+                                        </div>
+                                        <div class="textures">
+                                            @if (materialNameRaw is not null && view3d?.Materials.TryGetValue(materialNameRaw, out var materialDto) == true && materialDto.Textures is not null)
+                                            {
+                                                foreach (var (textureName, texturePath) in materialDto.Textures)
+                                                {
+                                                    var hash = $"GbxTools3D|Texture|{GameVersionEnum}|{texturePath}|PeopleOnTheBusLikeDMCA".Hash();
+
+                                                    <div>
+                                                        <div class="texture-name">@textureName</div>
+                                                        <img class="texture-image" src="api/texture/@hash" height="64" title="@texturePath" />
+                                                    </div>
+                                                }
+                                            } 
+                                        </div>
+                                    }
+                                }
+                            }
+
+                            @if (!hasMaterial)
+                            {
+                                <div class="no-material">No material found.</div>
+                            }
+                        }
                     </div>
 
                     @if (currentSolid is not null)
                     {
-                        <div style="text-align: center; opacity: 0.5">
+                        <div class="current-solid-name">
                             @Path.GetFileName(currentSolid.Object.GetPropertyAsJSObject("userData")?.GetPropertyAsString("filePath"))
                         </div>
                     }

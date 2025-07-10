@@ -13,7 +13,7 @@ using System.Runtime.Versioning;
 namespace GbxTools3D.Client.Modules;
 
 [SupportedOSPlatform("browser")]
-internal sealed partial class Solid(JSObject obj)
+internal sealed partial class Solid(JSObject obj, string? filePath)
 {
     private static int indexCounter;
 
@@ -30,6 +30,7 @@ internal sealed partial class Solid(JSObject obj)
     public bool CollisionsEnabled => collision is not null;
 
     public JSObject Object { get; } = obj;
+    public string? FilePath { get; } = filePath;
 
     public Vec3 Position
     {
@@ -273,7 +274,7 @@ internal sealed partial class Solid(JSObject obj)
             SetUserData(tree, filePath.NormalizePath());
         }
 
-        return new Solid(tree);
+        return new Solid(tree, filePath);
     }
 
     public void Instantiate(JSObject[] instanceInfos)
@@ -688,7 +689,7 @@ internal sealed partial class Solid(JSObject obj)
             throw new InvalidDataException("Solid tree is null");
         }
 
-        return Task.FromResult(new Solid(CreateObjectFromTree(tree, gameVersion, availableMaterials)));
+        return Task.FromResult(new Solid(CreateObjectFromTree(tree, gameVersion, availableMaterials), filePath: null));
     }
 
     private static JSObject CreateObjectFromTree(CPlugTree plugTree, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
@@ -774,7 +775,7 @@ internal sealed partial class Solid(JSObject obj)
 
     public static async Task<Solid> CreateFromSolid2Async(CPlugSolid2Model solid2, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
     {
-        return new Solid(await CreateObjectFromSolid2Async(solid2, gameVersion, availableMaterials));
+        return new Solid(await CreateObjectFromSolid2Async(solid2, gameVersion, availableMaterials), filePath: null);
     }
 
     public static Task<JSObject> CreateObjectFromSolid2Async(CPlugSolid2Model solid2, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
@@ -840,7 +841,7 @@ internal sealed partial class Solid(JSObject obj)
             }
         }
 
-        return new Solid(tree);
+        return new Solid(tree, filePath: null);
     }
 
     public static Task<Solid> CreateFromCrystalAsync(CPlugCrystal crystal, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
@@ -895,7 +896,7 @@ internal sealed partial class Solid(JSObject obj)
             }
         }
 
-        return Task.FromResult(new Solid(tree));
+        return Task.FromResult(new Solid(tree, filePath: null));
     }
 
     private static async Task RestAsync(int indexCount)

@@ -1,4 +1,5 @@
-﻿using GbxTools3D.Client.Converters;
+﻿using Blazored.LocalStorage;
+using GbxTools3D.Client.Converters;
 using GbxTools3D.Health;
 using ManiaAPI.TMX.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -15,6 +16,8 @@ public static class WebConfiguration
         services.AddRazorComponents()
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
+
+        services.AddBlazoredLocalStorage();
 
         services.AddHttpClient("exchange", client =>
         {

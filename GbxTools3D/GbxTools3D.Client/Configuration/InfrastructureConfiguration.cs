@@ -1,4 +1,5 @@
-﻿using GbxTools3D.Client.Services;
+﻿using Blazored.LocalStorage;
+using GbxTools3D.Client.Services;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
 namespace GbxTools3D.Client.Configuration;
@@ -16,5 +17,7 @@ public static class InfrastructureConfiguration
         services.AddScoped<IBlockClientService, BlockClientService>();
         services.AddScoped<IDecorationClientService, DecorationClientService>();
         services.AddScoped<IVehicleClientService, VehicleClientService>();
+
+        services.AddBlazoredLocalStorage();
     }
 }

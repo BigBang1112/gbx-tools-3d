@@ -15,6 +15,9 @@ namespace GbxTools3D.Client.Components.Pages;
 [SupportedOSPlatform("browser")]
 public partial class Catalog : ComponentBase
 {
+    private const string CatalogHide = "CatalogHide";
+    private const string CatalogPropertiesShow = "CatalogPropertiesShow";
+
     private View3D? view3d;
 
     private Virtualize<BlockInfoDto>? blocksVirtualize;
@@ -22,7 +25,7 @@ public partial class Catalog : ComponentBase
     private IJSObjectReference? module;
 
     private bool showCatalog = true;
-    private bool showProperties = true;
+    private bool showProperties = false;
     private bool selectMode;
     private bool showGrid;
 
@@ -63,7 +66,6 @@ public partial class Catalog : ComponentBase
     public CollectionDto? SelectedCollection => ContentTypeEnum == Enums.ContentType.Collection
         ? CollectionClientService.Collections?.FirstOrDefault(c => c.Name == CollectionName) : null;
 
-    private string? shaderName;
     private JSObject? selectedTreeObject;
 
     private string assetSearchValue = "";
@@ -103,12 +105,30 @@ public partial class Catalog : ComponentBase
         return ValueTask.FromResult(new ItemsProviderResult<T>(assets, totalCount));
     }
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        showCatalog = !await LocalStorage.GetItemAsync<bool>(CatalogHide);
+        showProperties = await LocalStorage.GetItemAsync<bool>(CatalogPropertiesShow);
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             module = await JS.InvokeAsync<IJSObjectReference>("import", $"./Components/Pages/Catalog.razor.js");
             //await module.InvokeVoidAsync("addHandlers", assets);
+        }
+
+        if (!RendererInfo.IsInteractive)
+        {
+
+            showCatalog = !await LocalStorage.GetItemAsync<bool>(CatalogHide);
+            showProperties = await LocalStorage.GetItemAsync<bool>(CatalogPropertiesShow);
         }
     
         if (view3d is not null)
@@ -152,6 +172,7 @@ public partial class Catalog : ComponentBase
     private async Task FetchInfoAsync(CancellationToken cancellationToken = default)
     {
         block = null;
+        selectedTreeObject = null;
 
         if (GameVersionEnum == GBX.NET.GameVersion.Unspecified)
         {
@@ -189,6 +210,11 @@ public partial class Catalog : ComponentBase
                     if (blockTask is not null)
                     {
                         block = await blockTask;
+
+                        if (RendererInfo.IsInteractive)
+                        {
+                            await TogglePropertiesAsync(true);
+                        }
                     }
                     break;
                 case Enums.AssetType.Decoration:
@@ -218,6 +244,11 @@ public partial class Catalog : ComponentBase
                         else
                         {
                             decoSize = null;
+                        }
+
+                        if (RendererInfo.IsInteractive)
+                        {
+                            await TogglePropertiesAsync(true);
                         }
                     }
                     break;
@@ -250,10 +281,10 @@ public partial class Catalog : ComponentBase
     {
         selectedTreeObject = intersection.Object;
 
-        if (intersection.MaterialUserData?.RootElement.TryGetProperty("shaderName", out var shaderJson) == true)
+        /*if (intersection.MaterialUserData?.RootElement.TryGetProperty("shaderName", out var shaderJson) == true)
         {
             shaderName = shaderJson.GetString();
-        }
+        }*/
 
         StateHasChanged();
 
@@ -307,6 +338,7 @@ public partial class Catalog : ComponentBase
         }
 
         currentSolid = view3d?.FocusedSolids?.FirstOrDefault();
+        selectedTreeObject = null;
     }
 
     private void OnSelectedTreeObjectChanged(JSObject treeObject)
@@ -373,7 +405,18 @@ public partial class Catalog : ComponentBase
     {
         if (view3d is not null)
         {
-            await view3d.ToggleBlockCollisionsAsync(blockIsGround, blockVariant, blockSubVariant, solid);
+            if (AssetTypeEnum == Enums.AssetType.Decoration)
+            {
+                await view3d.ToggleDecorationCollisionsAsync(solid);
+            }
+            else if (ContentTypeEnum == Enums.ContentType.Vehicle)
+            {
+                await view3d.ToggleVehicleCollisionsAsync(solid);
+            }
+            else
+            {
+                await view3d.ToggleBlockCollisionsAsync(blockIsGround, blockVariant, blockSubVariant, solid);
+            }
         }
     }
 
@@ -409,6 +452,23 @@ public partial class Catalog : ComponentBase
         {
             view3d?.HideGrid();
         }
+    }
+
+    private async Task ToggleCatalogAsync()
+    {
+        showCatalog = !showCatalog;
+        await LocalStorage.SetItemAsync(CatalogHide, !showCatalog);
+    }
+
+    private async Task TogglePropertiesAsync(bool show)
+    {
+        showProperties = show;
+        await LocalStorage.SetItemAsync(CatalogPropertiesShow, showProperties);
+    }
+
+    private async Task TogglePropertiesAsync()
+    {
+        await TogglePropertiesAsync(!showProperties);
     }
 
     async ValueTask IAsyncDisposable.DisposeAsync()

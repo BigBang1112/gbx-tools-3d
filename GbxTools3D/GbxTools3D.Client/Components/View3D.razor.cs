@@ -13,7 +13,6 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
-using System.Security.AccessControl;
 using System.Text.Json;
 
 namespace GbxTools3D.Client.Components;
@@ -97,7 +96,7 @@ public partial class View3D : ComponentBase
     private Dictionary<string, BlockInfoDto> blockInfos = [];
     private ILookup<Int3, DecorationSizeDto> decorations = new Dictionary<Int3, DecorationSizeDto>()
         .ToLookup(x => x.Key, x => x.Value);
-    private Dictionary<string, MaterialDto> materials = [];
+    public Dictionary<string, MaterialDto> Materials { get; private set; } = [];
     private Dictionary<string, VehicleDto> vehicles = [];
 
     private readonly CancellationTokenSource cts = new();
@@ -209,7 +208,7 @@ public partial class View3D : ComponentBase
             decorationTask = loadDecorations && decorations.Count == 0 ? http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
         }
 
-        var materialTask = loadMaterials && materials.Count == 0 ? http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
+        var materialTask = loadMaterials && Materials.Count == 0 ? http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
         var vehicleTask = loadVehicles && vehicles.Count == 0 ? http.GetAsync($"/api/vehicles/{GameVersion}", cts.Token) : null;
 
         if (collectionsTask is not null) tasks.Add(collectionsTask);
@@ -244,7 +243,7 @@ public partial class View3D : ComponentBase
             }
             else if (task == materialTask)
             {
-                materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken) ?? [];
+                Materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken) ?? [];
             }
             else if (task == vehicleTask)
             {
@@ -353,7 +352,7 @@ public partial class View3D : ComponentBase
 
         using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
+        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: false);
         Scene?.Add(focusedSolid);
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
@@ -399,7 +398,7 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
+        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: false);
         Scene?.Add(focusedSolid);
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
@@ -512,15 +511,15 @@ public partial class View3D : ComponentBase
         Solid focusedSolid;
         if (Solid1 is not null)
         {
-            focusedSolid = await Solid.CreateFromSolidAsync(Solid1, GameVersion, materials);
+            focusedSolid = await Solid.CreateFromSolidAsync(Solid1, GameVersion, Materials);
         }
         else if (Solid2 is not null)
         {
-            focusedSolid = await Solid.CreateFromSolid2Async(Solid2, GameVersion, materials);
+            focusedSolid = await Solid.CreateFromSolid2Async(Solid2, GameVersion, Materials);
         }
         else if (Prefab is not null)
         {
-            focusedSolid = await Solid.CreateFromPrefabAsync(Prefab, GameVersion, materials);
+            focusedSolid = await Solid.CreateFromPrefabAsync(Prefab, GameVersion, Materials);
         }
         else
         {
@@ -562,15 +561,15 @@ public partial class View3D : ComponentBase
         Solid focusedSolid;
         if (Item.EntityModelEdition is CGameCommonItemEntityModelEdition { MeshCrystal: not null } modelEdition)
         {
-            focusedSolid = await Solid.CreateFromCrystalAsync(modelEdition.MeshCrystal, GameVersion, materials);
+            focusedSolid = await Solid.CreateFromCrystalAsync(modelEdition.MeshCrystal, GameVersion, Materials);
         }
         else if (Item.EntityModel is CGameCommonItemEntityModel { StaticObject.Mesh: not null } model)
         {
-            focusedSolid = await Solid.CreateFromSolid2Async(model.StaticObject.Mesh, GameVersion, materials);
+            focusedSolid = await Solid.CreateFromSolid2Async(model.StaticObject.Mesh, GameVersion, Materials);
         }
         else if (Item.EntityModel is CPlugPrefab prefab)
         {
-            focusedSolid = await Solid.CreateFromPrefabAsync(prefab, GameVersion, materials);
+            focusedSolid = await Solid.CreateFromPrefabAsync(prefab, GameVersion, Materials);
         }
         else
         {
@@ -705,7 +704,7 @@ public partial class View3D : ComponentBase
             }
 
             await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
-            var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: optimized, receiveShadow: false, castShadow: false);
+            var solid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: optimized, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             Scene?.Add(solid);
             
@@ -792,7 +791,7 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
+        var vehicle = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
         Scene?.Add(vehicle);
 
         vehicleCamera = new Camera(vehicleInfo.CameraFov);
@@ -820,13 +819,13 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var vehicle = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
+        var vehicle = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: false, castShadow: false, noLights: true);
         Scene?.Add(vehicle);
 
         return vehicle;
     }
 
-    internal async Task ToggleBlockCollisionsAsync(bool isGround, int variant, int subVariant, Solid solid, CancellationToken cancellationToken = default)
+    internal async Task ToggleCollisionsAsync(string hash, Solid solid, CancellationToken cancellationToken = default)
     {
         if (Scene is null)
         {
@@ -839,8 +838,6 @@ public partial class View3D : ComponentBase
             return;
         }
 
-        var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
-
         using var meshResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
 
         if (!meshResponse.IsSuccessStatusCode)
@@ -850,8 +847,23 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var collisionSolid = await Solid.ParseAsync(stream, GameVersion, materials, optimized: false);
+        var collisionSolid = await Solid.ParseAsync(stream, GameVersion, Materials, optimized: false);
         solid.ToggleCollision(Scene, collisionSolid);
+    }
+
+    internal async Task ToggleBlockCollisionsAsync(bool isGround, int variant, int subVariant, Solid solid, CancellationToken cancellationToken = default)
+    {
+        await ToggleCollisionsAsync($"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash(), solid, cancellationToken);
+    }
+
+    internal async Task ToggleVehicleCollisionsAsync(Solid solid, CancellationToken cancellationToken = default)
+    {
+        await ToggleCollisionsAsync($"GbxTools3D|Vehicle|{GameVersion}|{VehicleName}|WhyDidYouNotHelpMe?".Hash(), solid, cancellationToken);
+    }
+
+    internal async Task ToggleDecorationCollisionsAsync(Solid solid, CancellationToken cancellationToken = default)
+    {
+        await ToggleCollisionsAsync($"GbxTools3D|Decoration|{GameVersion}|{CollectionName}|{GbxPath.GetFileNameWithoutExtension(solid.FilePath)}|Je te hais".Hash(), solid, cancellationToken);
     }
 
     private async Task ProcessBlockResponsesAsync(
@@ -873,7 +885,7 @@ public partial class View3D : ComponentBase
                 await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
 
                 var expectedCount = uniqueBlockVariantLookup[variant].Count();
-                var solid = await Solid.ParseAsync(stream, GameVersion, materials, variant.TerrainModifier, expectedCount);
+                var solid = await Solid.ParseAsync(stream, GameVersion, Materials, variant.TerrainModifier, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
             }
@@ -1209,7 +1221,7 @@ public partial class View3D : ComponentBase
 
             await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-            var solid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: pylonKeys.Count);
+            var solid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: pylonKeys.Count);
 
             var instanceInfos = new JSObject[pylonKeys.Count];
 
