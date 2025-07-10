@@ -591,40 +591,42 @@ internal sealed partial class Solid(JSObject obj)
                 var triCount = r.Read7BitEncodedInt();
                 var intSize = r.ReadByte();
 
-                // 1 mat index byte, 3 floats
+                // 1 mat index byte, 3 indices
                 Span<byte> triBuffer = r.ReadBytes(triCount * (1 + intSize * 3));
 
-                Span<int> triBufferInts = stackalloc int[triCount * 4];
+                // material index is not yet processed
+
+                Span<int> indices = stackalloc int[triCount * 3];
 
                 switch (intSize)
                 {
                     case 1:
-                        for (var i = 0; i < triBufferInts.Length; i++)
+                        for (var i = 0; i < triCount; i++)
                         {
-                            triBufferInts[i] = triBuffer[i];
+                            indices[i * 3] = triBuffer[i * 4 + 1];
+                            indices[i * 3 + 1] = triBuffer[i * 4 + 2];
+                            indices[i * 3 + 2] = triBuffer[i * 4 + 3];
                         }
                         break;
                     case 2:
                         for (var i = 0; i < triCount; i++)
                         {
-                            triBufferInts[i * 4] = triBuffer[i * 7];
-                            triBufferInts[i * 4 + 1] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 1, 2));
-                            triBufferInts[i * 4 + 2] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 3, 2));
-                            triBufferInts[i * 4 + 3] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 5, 2));
+                            indices[i * 3] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 1, 2));
+                            indices[i * 3 + 1] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 3, 2));
+                            indices[i * 3 + 2] = BitConverter.ToUInt16(triBuffer.Slice(i * 7 + 5, 2));
                         }
                         break;
                     case 4:
                         for (var i = 0; i < triCount; i++)
                         {
-                            triBufferInts[i * 4] = triBuffer[i * 13];
-                            triBufferInts[i * 4 + 1] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 1, 4));
-                            triBufferInts[i * 4 + 2] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 5, 4));
-                            triBufferInts[i * 4 + 3] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 9, 4));
+                            indices[i * 3] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 1, 4));
+                            indices[i * 3 + 1] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 5, 4));
+                            indices[i * 3 + 2] = BitConverter.ToInt32(triBuffer.Slice(i * 13 + 9, 4));
                         }
                         break;
                 }
 
-                return CreateCollisionMesh(vertices, triBufferInts);
+                return CreateCollisionMesh(vertices, indices);
             default:
                 throw new InvalidDataException("Unknown surface type");
         }
