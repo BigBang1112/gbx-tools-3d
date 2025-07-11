@@ -16,7 +16,7 @@ public sealed class BlockVariant
     public int MeshId { get; set; }
     public required Mesh Mesh { get; set; }
     
-    [StringLength(255)]
+    [StringLength(byte.MaxValue)]
     public string? Path { get; set; }
 
     public ICollection<ObjectLink> ObjectLinks { get; set; } = [];

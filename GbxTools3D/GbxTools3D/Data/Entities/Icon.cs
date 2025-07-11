@@ -7,10 +7,10 @@ public sealed class Icon
 {
     public int Id { get; set; }
     
-    [StringLength(255)]
+    [StringLength(byte.MaxValue)]
     public string? TexturePath { get; set; }
     
-    [StringLength(255)]
+    [StringLength(byte.MaxValue)]
     public string? ImagePath { get; set; }
 
     [Column(TypeName = "blob")]

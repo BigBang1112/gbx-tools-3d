@@ -13,7 +13,7 @@ public sealed class Texture
 
     public required GameVersion GameVersion { get; set; }
 
-    [MinLength(64), MaxLength(64)]
+    [MinLength(52), MaxLength(52)]
     public required string Hash { get; set; }
 
     [Column(TypeName = "mediumblob")]

@@ -9,7 +9,7 @@ public sealed class Mesh
 {
     public int Id { get; set; }
 
-    [MinLength(64), MaxLength(64)]
+    [MinLength(52), MaxLength(52)]
     public required string Hash { get; set; }
 
     [Column(TypeName = "mediumblob")]

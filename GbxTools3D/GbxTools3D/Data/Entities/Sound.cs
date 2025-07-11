@@ -13,13 +13,13 @@ public sealed class Sound
 
     public required GameVersion GameVersion { get; set; }
 
-    [MinLength(64), MaxLength(64)]
+    [MinLength(52), MaxLength(52)]
     public required string Hash { get; set; }
 
     [MaxLength(16_777_215)]
     public required byte[] Data { get; set; }
 
-    [StringLength(255)]
+    [StringLength(byte.MaxValue)]
     public required string Path { get; set; }
 
     [Required]

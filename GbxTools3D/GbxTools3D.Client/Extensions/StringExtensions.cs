@@ -1,5 +1,6 @@
 ﻿using System.Security.Cryptography;
 using System.Text;
+using SimpleBase;
 
 namespace GbxTools3D.Client.Extensions;
 
@@ -20,6 +21,6 @@ public static class StringExtensions
             throw new InvalidOperationException("Failed to hash string");
         }
         
-        return Convert.ToHexStringLower(hash);
+        return Base32.ZBase32.Encode(hash);
     }
 }
