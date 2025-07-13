@@ -20,8 +20,6 @@ public static class MapApiEndpoint
 
     private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromTmx(
         HttpContext context,
-        AppDbContext db,
-        HybridCache cache,
         IHttpClientFactory httpFactory,
         TmxSite site,
         ulong trackId,
@@ -90,8 +88,6 @@ public static class MapApiEndpoint
 
     private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromMx(
         HttpContext context,
-        AppDbContext db,
-        HybridCache cache,
         IHttpClientFactory httpFactory,
         MxSite site,
         ulong mapId,

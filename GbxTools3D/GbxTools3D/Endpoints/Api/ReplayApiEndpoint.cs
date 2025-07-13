@@ -25,8 +25,6 @@ public static class ReplayApiEndpoint
 
     private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromTmx(
         HttpContext context,
-        AppDbContext db,
-        HybridCache cache,
         HttpClient http,
         TmxSite site,
         ulong replayId,
@@ -65,7 +63,6 @@ public static class ReplayApiEndpoint
     private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromTmxWithMapInfo(
         HttpContext context,
         AppDbContext db,
-        HybridCache cache,
         IHttpClientFactory httpFactory,
         TmxSite site,
         ulong replayId,
@@ -157,8 +154,6 @@ public static class ReplayApiEndpoint
 
     private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromMx(
         HttpContext context,
-        AppDbContext db,
-        HybridCache cache,
         IHttpClientFactory httpFactory,
         MxSite site,
         ulong replayId,
@@ -199,7 +194,6 @@ public static class ReplayApiEndpoint
     private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromMxWithMapInfo(
         HttpContext context,
         AppDbContext db,
-        HybridCache cache,
         IHttpClientFactory httpFactory,
         MxSite site,
         ulong replayId,

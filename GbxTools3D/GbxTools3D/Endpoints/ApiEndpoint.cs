@@ -27,5 +27,6 @@ public static class ApiEndpoint
         IconApiEndpoint.Map(group.MapGroup("/icon"));
         VehicleApiEndpoint.Map(group.MapGroup("/vehicles"));
         SoundApiEndpoint.Map(group.MapGroup("/sound"));
+        SkinApiEndpoint.Map(group.MapGroup("/skin"));
     }
 }

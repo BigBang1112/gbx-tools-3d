@@ -23,8 +23,6 @@ public class ItemApiEndpoint
 
     private static async Task<Results<Ok<ItemContentDto>, NotFound, StatusCodeHttpResult>> GetItemFromIx(
         HttpContext context,
-        AppDbContext db,
-        HybridCache cache,
         IHttpClientFactory httpFactory,
         ulong id,
         ILogger<ItemApiEndpoint> logger,
