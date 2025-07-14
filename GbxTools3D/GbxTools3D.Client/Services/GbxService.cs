@@ -2,17 +2,21 @@
 using GBX.NET.Engines.Game;
 using GBX.NET.Engines.GameData;
 using GBX.NET.Engines.Plug;
+using System.IO.Compression;
 
 namespace GbxTools3D.Client.Services;
 
+// this is done horribly and should be redone
 public sealed class GbxService
 {
     public List<Gbx> List { get; } = [];
+    private List<ZipArchive> Zips { get; } = []; // should be moved to CPlugFileZip once it works
 
     public Gbx<CGameCtnChallenge>? SelectedMap { get; private set; }
     public Gbx<CGameCtnReplayRecord>? SelectedReplay { get; private set; }
     public Gbx? SelectedMesh { get; private set; }
     public Gbx<CGameItemModel>? SelectedItem { get; private set; }
+    public ZipArchive? SelectedSkinZip { get; private set; }
 
     public void Select(Gbx gbx)
     {
@@ -34,12 +38,23 @@ public sealed class GbxService
         }
     }
 
+    public void Add(ZipArchive zip, bool select = true)
+    {
+        Zips.Add(zip);
+
+        if (select)
+        {
+            SelectEnsured(zip);
+        }
+    }
+
     public void Deselect()
     {
         SelectedMap = null;
         SelectedReplay = null;
         SelectedMesh = null;
         SelectedItem = null;
+        SelectedSkinZip = null;
     }
 
     private void SelectEnsured(Gbx gbx)
@@ -48,6 +63,7 @@ public sealed class GbxService
         SelectedReplay = null;
         SelectedMesh = null;
         SelectedItem = null;
+        SelectedSkinZip = null;
 
         switch (gbx)
         {
@@ -66,5 +82,14 @@ public sealed class GbxService
                 SelectedItem = item;
                 break;
         }
+    }
+
+    private void SelectEnsured(ZipArchive zip)
+    {
+        SelectedMap = null;
+        SelectedReplay = null;
+        SelectedMesh = null;
+        SelectedItem = null;
+        SelectedSkinZip = zip;
     }
 }

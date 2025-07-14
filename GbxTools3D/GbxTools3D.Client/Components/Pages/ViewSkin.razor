@@ -10,7 +10,7 @@
 
 <PageTitle>View skin - 3D Gbx Tools</PageTitle>
 
-@if (IsDragAndDrop)
+@if (IsDragAndDrop && SkinZip is null)
 {
     <div class="container">
         <div class="navbar-fake-margin"></div>
@@ -29,36 +29,6 @@ else
             </div>
         }
 
-        <View3D GameVersion="GameVersion.TMF" @ref="view3d"></View3D>
+        <View3D GameVersion="GameVersionEnum" @ref="view3d" SkinZip="SkinZip" VehicleName="@VehicleName" IsCatalog="true"></View3D>
     </div>
-}
-
-@code {
-    private View3D? view3d;
-
-    private string[] extensions = ["zip", "Pack.Gbx"];
-
-    public bool IsDragAndDrop => true;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-
-        if (!RendererInfo.IsInteractive)
-        {
-            return;
-        }
-    }
-
-    private async Task OnUploadAsync(UploadEventArgs e)
-    {
-        
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        GbxService.Deselect(); // can be more flexible
-
-        return ValueTask.CompletedTask;
-    }
 }

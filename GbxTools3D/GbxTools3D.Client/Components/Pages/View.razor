@@ -3,6 +3,8 @@
 @using GBX.NET.Engines.Game
 @using GBX.NET.Engines.GameData
 @using GBX.NET.Engines.Plug
+@using GBX.NET.Exceptions
+@using System.IO.Compression
 @rendermode InteractiveWebAssembly
 
 @inject GbxService GbxService
@@ -41,14 +43,14 @@
     private static ViewType[] viewTypes =
     [
         new ViewType(
-            Name: "Replay",
-            Points: [
-                "See the replay almost instantly and anywhere",
+    Name: "Replay",
+    Points: [
+    "See the replay almost instantly and anywhere",
                 "Checkpoints and inputs that you cannot see in MediaTracker",
                 "Drifts, speed, brakes, and other vehicle parameters"
-            ],
-            Link: "replay",
-            Extensions: ["Replay.Gbx"]),
+    ],
+    Link: "replay",
+    Extensions: ["Replay.Gbx"]),
         new ViewType(
             Name: "Map",
             Points: [
@@ -81,7 +83,7 @@
                 "Open doors or bonnets, if you wish so"
             ],
             Link: "skin",
-            Extensions: ["zip", "Pack.Gbx"]),
+            Extensions: ["zip"]),
         new ViewType(
             Name: "Mesh",
             Points: [
@@ -94,37 +96,47 @@
 
     private async Task OnUploadAsync(UploadEventArgs e, string? type)
     {
-        using var ms = new MemoryStream(e.Data);
-        var gbx = await Gbx.ParseAsync(ms);
-
-        switch (gbx)
+        try
         {
-            case Gbx<CGameCtnChallenge> map:
-                if (type is not null && type != "map") return;
-                NavManager.NavigateTo("/view/map");
-                break;
-            case Gbx<CGameCtnReplayRecord> replay:
-                if (type is not null && type != "replay") return;
-                NavManager.NavigateTo("/view/replay");
-                break;
-            case Gbx<CGameCtnGhost> ghost:
-                if (type is not null && type != "ghost") return;
-                NavManager.NavigateTo("/view/ghost");
-                break;
-            case Gbx<CGameItemModel> item:
-                if (type is not null && type != "item") return;
-                NavManager.NavigateTo("/view/item");
-                break;
-            case Gbx<CPlugSolid>:
-            case Gbx<CPlugSolid2Model>:
-            case Gbx<CPlugPrefab>:
-                if (type is not null && type != "mesh") return;
-                NavManager.NavigateTo("/view/mesh");
-                break;
-            default:
-                return;
-        }
+            await using var ms = new MemoryStream(e.Data);
+            var gbx = await Gbx.ParseAsync(ms);
 
-        GbxService.Add(gbx);
+            switch (gbx)
+            {
+                case Gbx<CGameCtnChallenge> map:
+                    if (type is not null && type != "map") return;
+                    NavManager.NavigateTo("/view/map");
+                    break;
+                case Gbx<CGameCtnReplayRecord> replay:
+                    if (type is not null && type != "replay") return;
+                    NavManager.NavigateTo("/view/replay");
+                    break;
+                case Gbx<CGameCtnGhost> ghost:
+                    if (type is not null && type != "ghost") return;
+                    NavManager.NavigateTo("/view/ghost");
+                    break;
+                case Gbx<CGameItemModel> item:
+                    if (type is not null && type != "item") return;
+                    NavManager.NavigateTo("/view/item");
+                    break;
+                case Gbx<CPlugSolid>:
+                case Gbx<CPlugSolid2Model>:
+                case Gbx<CPlugPrefab>:
+                    if (type is not null && type != "mesh") return;
+                    NavManager.NavigateTo("/view/mesh");
+                    break;
+                default:
+                    return;
+            }
+
+            GbxService.Add(gbx);
+        }
+        catch (NotAGbxException)
+        {
+            var ms = new MemoryStream(e.Data);
+            var zip = new ZipArchive(ms);
+            NavManager.NavigateTo("/view/skin");
+            GbxService.Add(zip);
+        }
     }
 }

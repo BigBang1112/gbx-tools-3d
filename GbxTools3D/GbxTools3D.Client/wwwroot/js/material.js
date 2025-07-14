@@ -1,7 +1,9 @@
 ﻿import * as THREE from 'three';
 import { getWaterVertexShader, getWaterFragmentShader } from '../shaders/water.js';
+import { DDSLoader } from 'three/addons/loaders/DDSLoader.js';
 
 const textureLoader = new THREE.TextureLoader();
+const ddsLoader = new DDSLoader();
 
 const wireframeCollisionMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 });
 const wireframeMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0xDDDDDD });
@@ -51,7 +53,8 @@ export function createMaterial(
     nightOnly,
     invisible,
     water,
-    substract) {
+    substract,
+    ddsFlipY) {
     let material;
     if (basic) {
         material = new THREE.MeshBasicMaterial({
@@ -129,6 +132,7 @@ export function createMaterial(
     if (blend2Texture && blendIntensityTexture) key |= 4;
     else if (blend3Texture) key |= 8;
     if (worldUV && material.map) key |= 16;
+    if (ddsFlipY) key |= 32;
 
     material.onBeforeCompile = (shader) => {
         if (specularAlpha) {
@@ -199,6 +203,12 @@ export function createMaterial(
                     #endif
                     worldPosition = modelMatrix * worldPosition;
                     vMapUv = (uvTransform * vec3(worldPosition.xz, 1)).xy;`
+                );
+        }
+        else if (ddsFlipY) {
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <uv_vertex>',
+                '#include <uv_vertex>\n                vMapUv.y = 1.0 - vMapUv.y;'
             );
         }
     };
@@ -216,7 +226,12 @@ export function createMaterial(
 }
 
 export function createTexture(path, urlPath, noWrap) {
-    const texture = textureLoader.load(urlPath);
+    let texture;
+    if (urlPath.startsWith('data:image/vnd.ms-dds')) {
+        texture = ddsLoader.load(urlPath);
+    } else {
+        texture = textureLoader.load(urlPath);
+    }
     if (!noWrap) {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;

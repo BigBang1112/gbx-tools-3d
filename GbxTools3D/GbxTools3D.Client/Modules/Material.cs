@@ -21,7 +21,8 @@ internal sealed partial class Material
         bool Invisible = false,
         bool Water = false,
         bool NoWrap = false,
-        bool Substract = false)
+        bool Substract = false,
+        bool DdsFlipY = false)
     {
         public static readonly Properties Default = new();
     }
@@ -81,6 +82,7 @@ internal sealed partial class Material
         ["Island/Media/Material/IslandSky"] = new(Basic: true/*, Invisible: true*/),
         ["Sky/Media/Material/SkyDay"] = new(Basic: true/*, Invisible: true*/),
         ["Island/Media/Material/IslandWindowsMip"] = new(Transparent: true, Opacity: 0.7),
+        [":DDSFlipY"] = new(DdsFlipY: true)
     };
 
     private static readonly Dictionary<(string, GameVersion), JSObject> textures = [];
@@ -119,7 +121,8 @@ internal sealed partial class Material
         bool nightOnly,
         bool invisible,
         bool water,
-        bool substract);
+        bool substract,
+        bool ddsFlipY);
 
     [JSImport("createTexture", nameof(Material))]
     private static partial JSObject CreateTexture(string path, string urlPath, bool noWrap);
@@ -135,9 +138,17 @@ internal sealed partial class Material
         {
             return texture;
         }
+
+        if (path.StartsWith("data:"))
+        {
+            texture = CreateTexture("", path, noWrap);
+        }
+        else
+        {
+            var hash = $"GbxTools3D|Texture|{gameVersion}|{path}|PeopleOnTheBusLikeDMCA".Hash();
+            texture = CreateTexture(path, $"api/texture/{hash}", noWrap);
+        }
         
-        var hash = $"GbxTools3D|Texture|{gameVersion}|{path}|PeopleOnTheBusLikeDMCA".Hash();
-        texture = CreateTexture(path, $"api/texture/{hash}", noWrap);
         textures.Add((path, gameVersion), texture);
         
         return texture;
@@ -154,7 +165,7 @@ internal sealed partial class Material
 
         var materialDto = availableMaterials?.GetValueOrDefault(name);
 
-        if (materialDto is null && endsWith)
+        if (materialDto is null && endsWith && !string.IsNullOrWhiteSpace(name))
         {
             materialDto = availableMaterials?.FirstOrDefault(m =>
                 m.Key.EndsWith(name, StringComparison.OrdinalIgnoreCase)
@@ -255,7 +266,8 @@ internal sealed partial class Material
             properties.NightOnly,
             properties.Invisible,
             properties.Water,
-            properties.Substract);
+            properties.Substract,
+            properties.DdsFlipY);
         materials.Add(uniqueMaterial, material);
         return material;
     }

@@ -704,7 +704,32 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
 
         if (plugTree.Visual is CPlugVisualIndexedTriangles visual)
         {
-            var materialName = GbxPath.ChangeExtension(plugTree.ShaderFile?.FilePath ?? "", null);
+            var materialName = GbxPath.ChangeExtension(plugTree.ShaderFile?.FilePath, null);
+
+            if (materialName is null)
+            {
+                if (plugTree.Name.StartsWith('d'))
+                {
+                    materialName = "d";
+                }
+                else if (plugTree.Name.StartsWith('s'))
+                {
+                    materialName = "s";
+                }
+                else if (plugTree.Name.StartsWith('p'))
+                {
+                    materialName = "p";
+                }
+                else if (plugTree.Name.StartsWith('g'))
+                {
+                    materialName = ":Glass";
+                }
+                else
+                {
+                    materialName = "";
+                }
+            }
+
             var mesh = CreateMeshFromVisual(visual, materialName, gameVersion, availableMaterials);
             Add(tree, mesh);
         }

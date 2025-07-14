@@ -9,6 +9,7 @@ using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Collections.Immutable;
+using System.IO.Compression;
 using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
@@ -86,6 +87,9 @@ public partial class View3D : ComponentBase
     [Parameter]
     public CGameItemModel? Item { get; set; }
 
+    [Parameter]
+    public ZipArchive? SkinZip { get; set; }
+
     public event Action<IntersectionInfo>? OnIntersect;
 
     public BlockInfoDto? CurrentBlockInfo { get; private set; }
@@ -151,6 +155,7 @@ public partial class View3D : ComponentBase
             await TryLoadDecorationAsync(cts.Token);
             await TryLoadMeshAsync(cts.Token);
             await TryLoadItemAsync(cts.Token);
+            await TryLoadSkinAsync(cts.Token);
         }
         catch (OperationCanceledException)
         {
@@ -398,7 +403,34 @@ public partial class View3D : ComponentBase
 
         await using var stream = await meshResponse.Content.ReadAsStreamAsync(cancellationToken);
 
-        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: false);
+        var materials = Materials;
+        if (SkinZip is not null)
+        {
+            materials = new Dictionary<string, MaterialDto>(Materials);
+
+            string[] prefixes = ["Bay", "Coast", "Rally", "Snow", "Speed", "Sport", "Stadium"];
+
+            var skinMaterial = await CreateSkinMaterialAsync(SkinZip, "Diffuse.dds", ":DDSFlipY", cancellationToken);
+            if (skinMaterial is not null)
+            {
+                foreach (var prefix in prefixes)
+                {
+                    materials[$"Vehicles\\Media\\Material\\{prefix}CarSkin"] = skinMaterial;
+                }
+            }
+            var detailsMaterial = await CreateSkinMaterialAsync(SkinZip, "Details.dds", ":DDSFlipY", cancellationToken);
+            if (detailsMaterial is not null)
+            {
+                foreach (var prefix in prefixes)
+                {
+                    materials[$"Vehicles\\Media\\Material\\{prefix}CarSkinDetails"] = detailsMaterial;
+                }
+            }
+            var projShadMaterial = await CreateSkinMaterialAsync(SkinZip, "ProjShad.dds", ":FakeShad", cancellationToken);
+            if (projShadMaterial is not null) materials[""] = projShadMaterial; // shouldnt be empty? or wtf?
+        }
+
+        var focusedSolid = await Solid.ParseAsync(stream, GameVersion, materials, expectedMeshCount: null, optimized: false);
         Scene?.Add(focusedSolid);
         FocusedSolids = [focusedSolid];
         await OnFocusedSolidsChange.InvokeAsync();
@@ -486,6 +518,9 @@ public partial class View3D : ComponentBase
             return false; // no mesh to load
         }
 
+        ClearFocusedSolids();
+        await OnFocusedSolidsChange.InvokeAsync();
+
         // initial camera position
         var center = new Vec3(16, 4, 16);
         var position = center * (4, 6, 1);
@@ -541,6 +576,9 @@ public partial class View3D : ComponentBase
             return false;
         }
 
+        ClearFocusedSolids();
+        await OnFocusedSolidsChange.InvokeAsync();
+
         // initial camera position
         var center = new Vec3(16, 4, 16);
         var position = center * (4, 6, 1);
@@ -582,6 +620,95 @@ public partial class View3D : ComponentBase
         //Renderer.EnableRaycaster();
 
         return true;
+    }
+
+    private async Task<bool> TryLoadSkinAsync(CancellationToken cancellationToken = default)
+    {
+        if (mapCamera is null || renderer is null || SkinZip is null)
+        {
+            return false;
+        }
+
+        if (!string.IsNullOrEmpty(VehicleName))
+        {
+            return false;
+        }
+
+        ClearFocusedSolids();
+        await OnFocusedSolidsChange.InvokeAsync();
+
+        mapCamera.Position = new Vec3(0, 5, 10);
+        mapCamera.CreateOrbitControls(renderer, default);
+
+        try
+        {
+            await TryFetchDataAsync(loadMaterials: true, cancellationToken: cancellationToken);
+        }
+        catch (HttpRequestException ex)
+        {
+            return false;
+        }
+
+        var mainBody = SkinZip.Entries
+            .FirstOrDefault(x => string.Equals(x.Name, "MainBodyHigh.Solid.Gbx", StringComparison.OrdinalIgnoreCase))
+            ?? SkinZip.Entries
+                .FirstOrDefault(x => string.Equals(x.Name, "MainBody.Solid.Gbx", StringComparison.OrdinalIgnoreCase));
+
+        var materials = new Dictionary<string, MaterialDto>(Materials);
+
+        var skinMaterial = await CreateSkinMaterialAsync(SkinZip, "Diffuse.dds", ":DDSFlipY", cancellationToken);
+        if (skinMaterial is not null) materials["s"] = skinMaterial;
+        var detailsMaterial = await CreateSkinMaterialAsync(SkinZip, "Details.dds", ":DDSFlipY", cancellationToken);
+        if (detailsMaterial is not null) materials["d"] = detailsMaterial;
+        var projShadMaterial = await CreateSkinMaterialAsync(SkinZip, "ProjShad.dds", ":FakeShad", cancellationToken);
+        if (projShadMaterial is not null) materials[""] = projShadMaterial; // shouldnt be empty? or wtf?
+
+        Solid focusedSolid;
+        if (mainBody is null)
+        {
+            return false; // load official vehicle
+        }
+        else
+        {
+            await using var stream = mainBody.Open();
+            await using var ms = new MemoryStream((int)mainBody.Length);
+            await stream.CopyToAsync(ms, cancellationToken);
+            ms.Position = 0;
+            var solid = await Gbx.ParseNodeAsync<CPlugSolid>(ms, cancellationToken: cancellationToken);
+            focusedSolid = await Solid.CreateFromSolidAsync(solid, GameVersion, materials);
+        }
+
+        Scene?.Add(focusedSolid);
+        FocusedSolids = [focusedSolid];
+        await OnFocusedSolidsChange.InvokeAsync();
+
+        //Renderer.EnableRaycaster();
+
+        return true;
+    }
+
+    private static async Task<MaterialDto?> CreateSkinMaterialAsync(ZipArchive zip, string diffuseFileName, string shaderName, CancellationToken cancellationToken)
+    {
+        var texture = zip.Entries
+            .FirstOrDefault(x => string.Equals(x.Name, diffuseFileName, StringComparison.OrdinalIgnoreCase));
+
+        if (texture is null)
+        {
+            return null;
+        }
+
+        await using var stream = texture.Open();
+        await using var ms = new MemoryStream((int)texture.Length);
+        await stream.CopyToAsync(ms, cancellationToken);
+
+        return new MaterialDto
+        {
+            Textures = new Dictionary<string, string>
+            {
+                { "Diffuse", $"data:image/vnd.ms-dds;base64,{Convert.ToBase64String(ms.ToArray())}" }
+            }.ToImmutableDictionary(),
+            Shader = shaderName
+        };
     }
 
     private void ClearFocusedSolids()
