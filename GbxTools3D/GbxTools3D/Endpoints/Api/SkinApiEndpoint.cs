@@ -1,9 +1,15 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
+using System.Collections.Immutable;
 
 namespace GbxTools3D.Endpoints.Api;
 
 public static class SkinApiEndpoint
 {
+    private static readonly ImmutableHashSet<string> ZipMimeTypes = ImmutableHashSet.Create(
+        "application/x-zip-compressed",
+        "application/zip"
+    );
+
     public static void Map(RouteGroupBuilder group)
     {
         group.MapGet("/mp/{id}", GetSkinFromManiaPark)
@@ -28,7 +34,8 @@ public static class SkinApiEndpoint
 
         skinResponse.EnsureSuccessStatusCode();
 
-        if (skinResponse.Content.Headers.ContentType?.MediaType != "application/x-zip-compressed")
+        if (skinResponse.Content.Headers.ContentType?.MediaType is null ||
+            !ZipMimeTypes.Contains(skinResponse.Content.Headers.ContentType.MediaType))
         {
             skinResponse.Dispose();
             return TypedResults.BadRequest();

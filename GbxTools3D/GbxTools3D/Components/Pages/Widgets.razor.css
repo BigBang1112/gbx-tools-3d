@@ -3,7 +3,7 @@
     grid-template-columns: 2fr 3fr;
     align-items: center;
     gap: 10px;
-    width: 300px;
+    overflow: auto;
 }
 
 iframe {

@@ -43,11 +43,25 @@
                 @switch (selectedExternal)
                 {
                     case "tmx":
-                        <div class="label">Track ID:</div>
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Track ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetTmxTrackLink(mapId)">Track ID</a>:</div>
+                        }
                         <InputText class="text" @bind-Value="mapId" placeholder="ID" style="width: 80px" />
                         break;
                     case "mx":
-                        <div class="label">Map ID:</div>
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Map ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetMxMapLink(mapId)">Map ID</a>:</div>
+                        }
                         <InputText class="text" @bind-Value="mapId" placeholder="ID" style="width: 80px" />
                         break;
                 }
@@ -56,9 +70,10 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetViewMapFrameRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetViewMapRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetViewMapRelativeUrl())" placeholder="https://..." disabled />
         </div>
-        <iframe src="@GetViewMapFrameRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+        <iframe src="@GetViewMapRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
     </div>
     <h3>View replay</h3>
     <div class="iframe-settings">
@@ -98,11 +113,25 @@
                 @switch (selectedExternal)
                 {
                     case "tmx":
-                        <div class="label">Track ID:</div>
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Track ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetTmxTrackLink(mapId)">Track ID</a>:</div>
+                        }
                         <InputText class="text" @bind-Value="mapId" placeholder="(optional)" style="width: 80px" />
                         break;
                     case "mx":
-                        <div class="label">Map ID:</div>
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Map ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetMxMapLink(mapId)">Map ID</a>:</div>
+                        }
                         <InputText class="text" @bind-Value="mapId" placeholder="(optional)" style="width: 80px" />
                         break;
                 }
@@ -111,9 +140,46 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetViewReplayFrameRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetViewReplayRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetViewReplayRelativeUrl()" placeholder="https://..." disabled />
         </div>
-        <iframe src="@GetViewReplayFrameRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+        <iframe src="@GetViewReplayRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+    </div>
+    <h3>View skin</h3>
+    <div class="iframe-settings">
+        <div class="settings">
+            <div class="table">
+                @if (string.IsNullOrWhiteSpace(maniaParkId))
+                {
+                    <div class="label">ManiaPark ID:</div>
+                }
+                else
+                {
+                    <div class="label"><a href="https://maniapark.com/skin/@maniaParkId">ManiaPark ID</a>:</div>
+                }
+                <InputText class="text" @bind-Value="maniaParkId" placeholder="ID" />
+
+                <div class="label">Game:</div>
+                <InputSelect id="external-select" @bind-Value="selectedGame">
+                    <option value="">(optional)</option>
+                    <option value="TMF">TMF</option>
+                    <option value="TMT">TMT</option>
+                    <option value="MP4">MP4</option>
+                    <option value="TM2020">TM2020</option>
+                </InputSelect>
+
+                <div class="label">Vehicle name:</div>
+                <InputText class="text" @bind-Value="vehicleName" placeholder="StadiumCar" />
+
+                <div class="label">Width:</div>
+                <InputNumber class="text" @bind-Value="width" placeholder="800" style="width: 60px" />
+                <div class="label">Height:</div>
+                <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
+            </div>
+            <input type="text" class="text" value="@GetFrameHtml(GetViewSkinRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetViewSkinRelativeUrl())" placeholder="https://..." disabled />
+        </div>
+        <iframe src="@GetViewSkinRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
     </div>
     <h3>Catalog</h3>
     <div class="iframe-settings">
@@ -157,9 +223,10 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetCatalogFrameRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetCatalogRelativeUrl(isFrame: true))" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetCatalogRelativeUrl(isFrame: false))" placeholder="https://..." disabled />
         </div>
-        <iframe src="@GetCatalogFrameRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+        <iframe src="@GetCatalogRelativeUrl(isFrame: true)" width="800" height="450" loading="lazy"></iframe>
     </div>
 </div>
 
