@@ -13,7 +13,10 @@ builder.Services.AddCacheServices();
 
 var app = builder.Build();
 
-app.MigrateDatabase();
+if (builder.Environment.IsDevelopment())
+{
+    app.MigrateDatabase();
+}
 
 app.UseMiddleware();
 
