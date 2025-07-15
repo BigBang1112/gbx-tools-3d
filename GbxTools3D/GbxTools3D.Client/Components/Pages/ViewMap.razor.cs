@@ -60,10 +60,11 @@ public partial class ViewMap : ComponentBase
         }
         else
         {
-            throw new Exception();
+            throw new Exception("This should not happen");
         }
 
         using var response = await Http.GetAsync(endpoint);
+
         var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
 
         if (content is null)

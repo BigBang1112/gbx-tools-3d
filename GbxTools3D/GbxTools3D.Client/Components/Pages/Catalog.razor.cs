@@ -126,7 +126,6 @@ public partial class Catalog : ComponentBase
 
         if (!RendererInfo.IsInteractive)
         {
-
             showCatalog = !await LocalStorage.GetItemAsync<bool>(CatalogHide);
             showProperties = await LocalStorage.GetItemAsync<bool>(CatalogPropertiesShow);
         }

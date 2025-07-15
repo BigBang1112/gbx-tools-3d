@@ -1,0 +1,15 @@
+﻿.catalog {
+    position: fixed;
+    padding: 20px;
+    top: 120px;
+    bottom: 100px;
+    width: 500px;
+}
+
+    .catalog .opener {
+        padding: 0.8rem;
+    }
+
+    .catalog.closed {
+        transform: translateX(-500px);
+    }

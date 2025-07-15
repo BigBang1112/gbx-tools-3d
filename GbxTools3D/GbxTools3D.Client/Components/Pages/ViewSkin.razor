@@ -7,6 +7,8 @@
 
 @inject HttpClient Http
 @inject GbxService GbxService
+@inject IVehicleClientService VehicleClientService
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <PageTitle>View skin - 3D Gbx Tools</PageTitle>
 
@@ -29,6 +31,52 @@ else
             </div>
         }
 
-        <View3D GameVersion="GameVersionEnum" @ref="view3d" SkinZip="SkinZip" VehicleName="@VehicleName" IsCatalog="true"></View3D>
+        @if (SkinZip is not null)
+        {
+            <View3D GameVersion="GameVersionEnum"
+                    @ref="view3d"
+                    SkinZip="SkinZip"
+                    VehicleName="@VehicleName"
+                    IsCatalog="true"></View3D>
+        }
     </div>
+    @if (!NoCatalog)
+    {
+        <div class="panels left">
+            <PanelLeft>
+                <div class="games">
+                    <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(GBX.NET.GameVersion.TMSX)}")"><img src="icons/game/TMS.webp" alt="TMSX" width="48" height="48" /></NavLink>
+                    <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(GBX.NET.GameVersion.TMNESWC)}")"><img src="icons/game/TMNESWC.webp" alt="TMNESWC" width="48" height="48" /></NavLink>
+                    <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(GBX.NET.GameVersion.TMF)}")"><img src="icons/game/TMUF.webp" alt="TMUF" width="48" height="48" /></NavLink>
+                    <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(GBX.NET.GameVersion.TMT)}")"><img src="icons/game/TMT.webp" alt="TMT" width="48" height="48" /></NavLink>
+                    <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(GBX.NET.GameVersion.MP4)}")"><img src="icons/game/MP4.webp" alt="MP4" width="48" height="48" /></NavLink>
+                    <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(GBX.NET.GameVersion.TM2020)}")"><img src="icons/game/TM2020.webp" alt="TM2020" width="48" height="48" /></NavLink>
+                </div>
+
+                @if (GameVersionEnum == GBX.NET.GameVersion.Unspecified)
+                {
+                    <div class="fill">Select a Gbx game...</div>
+                }
+                else
+                {
+                    <div class="assets">
+                        <Virtualize ItemsProvider="FilterVehicles" Context="vehicle" @ref="vehiclesVirtualize">
+                            <NavLink href="@($"view/skin?{GetViewSkinUrlQuery(vehicleName: vehicle.Name)}")">
+                                @if (vehicle.HasIcon)
+                                {
+                                    <img src="@($"api/icon/{GameVersionEnum}/vehicle/{vehicle.Name}")" width="24" height="24" />
+                                }
+                                else
+                                {
+                                    <img src="icons/noicon.webp" width="24" height="24" />
+                                }
+                                @vehicle.Name
+                            </NavLink>
+                        </Virtualize>
+                    </div>
+                    <InputText type="text" @bind-Value="VehicleSearchValue" @oninput="OnAssetSearchInput" placeholder="Search..." />
+                }
+            </PanelLeft>
+        </div>
+    }
 }
