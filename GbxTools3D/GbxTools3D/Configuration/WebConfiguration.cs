@@ -21,7 +21,7 @@ public static class WebConfiguration
 
         services.AddHttpClient("exchange", client =>
         {
-            client.DefaultRequestHeaders.Add(Microsoft.Net.Http.Headers.HeaderNames.UserAgent, "GbxTools3D");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("Exchange"));
         }).AddStandardResilienceHandler();
 
         services.AddTMX();
@@ -74,5 +74,10 @@ public static class WebConfiguration
             options.SerializerOptions.Converters.Add(new JsonInt3Converter());
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
         });
+    }
+
+    private static string GetUserAgent(string clientName)
+    {
+        return $"GbxTools3D/1.0 ({clientName} Client; Email=petrpiv1@gmail.com; Discord=bigbang1112)";
     }
 }
