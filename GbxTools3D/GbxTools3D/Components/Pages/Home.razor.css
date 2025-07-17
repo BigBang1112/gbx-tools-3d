@@ -114,6 +114,7 @@ video {
     color: white;
     text-decoration: none;
     margin-bottom: 10px;
+    height: 100px;
 }
 
     .showcase-button:hover {

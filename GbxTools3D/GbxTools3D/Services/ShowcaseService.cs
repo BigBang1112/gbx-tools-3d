@@ -104,7 +104,7 @@ internal sealed class ShowcaseService
     {
         var trackId = (await responseTask).RequestMessage?.RequestUri?.Segments.LastOrDefault();
         var siteUrl = ExternalUtils.GetSiteUrl(site);
-        var trackInfoResponse = await http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
+        var trackInfoResponse = await http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackId%2CTrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
         var trackInfos = await trackInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxTrackInfo, cancellationToken);
         
         if (trackInfos?.Results.Length > 0)
@@ -126,7 +126,7 @@ internal sealed class ShowcaseService
     {
         var mapId = (await responseTask).RequestMessage?.RequestUri?.Segments.LastOrDefault();
         var siteUrl = ExternalUtils.GetSiteUrl(site);
-        using var mapInfoResponse = await http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=Name%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
+        using var mapInfoResponse = await http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
         var mapInfos = await mapInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseMxMapInfo, cancellationToken);
         
         if (mapInfos?.Results.Length > 0)
@@ -150,7 +150,13 @@ internal sealed class ShowcaseService
         
         var showcases = new List<Showcase>();
 
-        var wrs = await exchange.SearchTracksAsync(new() { Count = 5, LbType = LeaderboardType.Nadeo, Order1 = TrackOrder.WorldRecordSetMostRecent }, cancellationToken);
+        var wrs = await exchange.SearchTracksAsync(new()
+        {
+            Count = 5,
+            LbType = LeaderboardType.Nadeo,
+            Order1 = TrackOrder.WorldRecordSetMostRecent,
+            PrimaryType = TrackType.Race,
+        }, cancellationToken);
 
         var siteStr = site.ToString();
 
