@@ -231,8 +231,10 @@ internal sealed partial class Material
             ?? materialDto.Textures.GetValueOrDefault("Grass")
             ?? materialDto.Textures.GetValueOrDefault("Foam 1")
             ?? materialDto.Textures.GetValueOrDefault("GDiffuse")
+            ?? materialDto.Textures.GetValueOrDefault("PxzDiffuse")
             ?? materialDto.Textures.GetValueOrDefault("PyDiffuse")
-            ?? materialDto.Textures.GetValueOrDefault("PxzDiffuse"), gameVersion, properties.NoWrap);
+            ?? materialDto.Textures.GetValueOrDefault("BaseColor")
+            ?? materialDto.Textures.GetValueOrDefault("PxzBaseColor"), gameVersion, properties.NoWrap);
         var normalTexture = ignoreNormal ? null : GetOrCreateTexture(materialDto.Textures.GetValueOrDefault("Normal")
             // ?? materialDto.Textures.GetValueOrDefault("PxzNormal")  these kinds of normals are not quite working as expected
             , gameVersion, properties.NoWrap);

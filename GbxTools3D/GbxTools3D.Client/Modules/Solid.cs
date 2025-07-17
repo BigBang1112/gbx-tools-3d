@@ -852,18 +852,25 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
     {
         var tree = Create(matrixAutoUpdate: true);
 
+        var i = 0;
         foreach (var ent in prefab.Ents)
         {
             if (ent.Model is CPlugStaticObjectModel { Mesh: not null } staticObject)
             {
                 var subTree = await CreateObjectFromSolid2Async(staticObject.Mesh, gameVersion, availableMaterials);
                 Add(tree, subTree);
+
+                SetName(subTree, $"#{i}");
             }
             else if (ent.Model is CPlugDynaObjectModel { Mesh: not null } dynaObject)
             {
                 var subTree = await CreateObjectFromSolid2Async(dynaObject.Mesh, gameVersion, availableMaterials);
                 Add(tree, subTree);
+
+                SetName(subTree, $"#{i}");
             }
+
+            i++;
         }
 
         return new Solid(tree, filePath: null);
