@@ -3,6 +3,7 @@ using GBX.NET.Components;
 using GBX.NET.Engines.Graphic;
 using GBX.NET.Engines.Plug;
 using System.IO.Compression;
+using System.Numerics;
 
 namespace GbxTools3D.Serializers;
 
@@ -134,17 +135,7 @@ public class MeshSerializer
         }
         else if (prefab is not null)
         {
-            var tree2 = new CPlugTree();
-
-            foreach (var ent in prefab.Ents)
-            {
-                if (ent.Model is CPlugStaticObjectModel { Mesh: not null } staticObject)
-                {
-                    tree2.Children.Add(CreateSolid2Tree(staticObject.Mesh));
-                }
-            }
-
-            WriteTree(w, tree2, gamePath, isRoot: true);
+            WriteTree(w, CreatePrefabTree(prefab), gamePath, isRoot: true);
         }
         else
         {
@@ -159,6 +150,43 @@ public class MeshSerializer
         }*/
     }
 
+    private static CPlugTree CreatePrefabTree(CPlugPrefab prefab)
+    {
+        var tree2 = new CPlugTree();
+
+        for (int i = 0; i < prefab.Ents.Length; i++)
+        {
+            var ent = prefab.Ents[i];
+
+            CPlugTree subTree;
+            if (ent.Model is CPlugStaticObjectModel { Mesh: not null } staticObject)
+            {
+                subTree = CreateSolid2Tree(staticObject.Mesh);
+            }
+            else if (ent.Model is CPlugPrefab subPrefab) // this could get download expensive, may consider mesh reference
+            {
+                subTree = CreatePrefabTree(subPrefab);
+            }
+            else
+            {
+                continue;
+            }
+
+            subTree.Name = $"#{i}";
+
+            var mat = (Mat3)Matrix4x4.CreateFromQuaternion(
+                new Quaternion(ent.Rotation.X, ent.Rotation.Y, ent.Rotation.Z, ent.Rotation.W)
+            );
+
+            subTree.Location = new Iso4(mat.XX, mat.XY, mat.XZ, mat.YX, mat.YY, mat.YZ, mat.ZX, mat.ZY, mat.ZZ, ent.Position.X, ent.Position.Y, ent.Position.Z);
+
+            tree2.Children.Add(subTree);
+
+        }
+
+        return tree2;
+    }
+
     private static CPlugTree CreateSolid2Tree(CPlugSolid2Model solid2)
     {
         var tree2 = new CPlugTree();
@@ -171,12 +199,29 @@ public class MeshSerializer
         {
             var levelTree = mips is null ? null : new CPlugTree(); // only used if mips is not null
 
-            foreach (var shadedGeom in shadedGeomLodGroup)
+            foreach (var (i, shadedGeom) in shadedGeomLodGroup.Index())
             {
                 var subTree = new CPlugTree
                 {
-                    Visual = solid2.Visuals?[shadedGeom.VisualIndex]
+                    Name = $"#{shadedGeom.VisualIndex}",
+                    Visual = solid2.Visuals?[shadedGeom.VisualIndex],
                 };
+
+                if (solid2.MaterialIds?.Length > 0)
+                {
+                    var materialName = solid2.MaterialIds[shadedGeom.MaterialIndex];
+                    subTree.ShaderFile = materialName is null ? null : new GbxRefTableFile(new(), 0, false, materialName);
+                }
+                else if (solid2.Materials?.Length > 0)
+                {
+                    subTree.Shader = solid2.Materials[shadedGeom.MaterialIndex].Node;
+                    subTree.ShaderFile = solid2.Materials[shadedGeom.MaterialIndex].File;
+                }
+                else
+                {
+
+                }
+
 
                 if (levelTree is null)
                 {
