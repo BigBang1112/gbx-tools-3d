@@ -10,4 +10,5 @@ public sealed class MapInfoDto
     public required DateTime UpdatedAt { get; set; }
     public UnlimiterVersion? Unlimiter { get; set; }
     public Guid? OnlineMapId { get; set; }
+    public ulong? MxId { get; set; }
 }

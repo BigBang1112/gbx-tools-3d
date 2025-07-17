@@ -1,6 +1,5 @@
 ﻿@page "/view/replay"
 @rendermode InteractiveWebAssembly
-@implements IAsyncDisposable
 
 @using System.Runtime.InteropServices.JavaScript
 @using GBX.NET
@@ -9,7 +8,6 @@
 
 @inject HttpClient Http
 @inject GbxService GbxService
-@inject IJSRuntime JS
 
 <PageTitle>View replay - 3D Gbx Tools</PageTitle>
 
@@ -72,21 +70,6 @@ else
         }
 
         <View3D Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
-        @if (RendererInfo.IsInteractive)
-        {
-            <Checkpoint UseHundredths="UseHundredths" @ref="checkpoint"></Checkpoint>
-            <div class="panels left">
-                <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@GetPlaybackDescription()" UseHundredths="UseHundredths" @ref="playback"></Playback>
-                <InputList Ghost="CurrentGhost" Replay="Replay" OnInputClick="OnInputListItemClick" @ref="inputList"></InputList>
-                <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Replay?.Challenge) ?? 1" OnCheckpointClick="OnCheckpointListItemClick" UseHundredths="UseHundredths" @ref="checkpointList"></CheckpointList>
-                <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
-                <Controls OnCameraTypeChanged="ChangeCameraType" OnCollisionsToggled="ToggleCollisions"></Controls>
-            </div>
-            <div class="panels right">
-                <MapInfo Map="Replay?.Challenge"></MapInfo>
-                <GhostInfo Ghost="CurrentGhost" UseHundredths="UseHundredths" @ref="ghostInfo"></GhostInfo>
-                <Speedometer @ref="speedometer"></Speedometer>
-            </div>
-        }
+        <GhostControls View3D="view3d" Map="Replay?.Challenge" @ref="ghostControls"></GhostControls>
     </div>
 }

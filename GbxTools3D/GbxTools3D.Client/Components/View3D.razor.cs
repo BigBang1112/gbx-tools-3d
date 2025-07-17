@@ -64,6 +64,9 @@ public partial class View3D : ComponentBase
     public string? SceneName { get; set; }
 
     [Parameter]
+    public EventCallback AfterSceneLoad { get; set; }
+
+    [Parameter]
     public EventCallback BeforeMapLoad { get; set; }
 
     [Parameter]
@@ -134,6 +137,8 @@ public partial class View3D : ComponentBase
         if (firstRender)
         {
             await LoadSceneAsync(cts.Token);
+
+            await AfterSceneLoad.InvokeAsync();
         }
 
         if (renderer is not null)
@@ -722,7 +727,7 @@ public partial class View3D : ComponentBase
         FocusedSolids.Clear();
     }
 
-    private async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
+    public async Task<bool> TryLoadMapAsync(CancellationToken cancellationToken = default)
     {
         if (Map is null || mapCamera is null || renderer is null || mapLoadAttempted)
         {
@@ -754,7 +759,7 @@ public partial class View3D : ComponentBase
             mapCamera.CreateMapControls(renderer, center);
         }
 
-            var baseHeight = 5;
+        var baseHeight = 5;
         var decoSize = default(DecorationSizeDto);
 
         if (decorations.Contains(Map.Size))
@@ -898,6 +903,11 @@ public partial class View3D : ComponentBase
 
     internal async Task<Solid?> LoadGhostAsync(CGameCtnGhost ghost, CancellationToken cancellationToken = default)
     {
+        if (GameVersion == GameVersion.Unspecified)
+        {
+            GameVersion = GameVersionSupport.GetSupportedGameVersion(ghost);
+        }
+
         await TryFetchDataAsync(loadMaterials: true, loadVehicles: true, cancellationToken: cancellationToken);
 
         var vehicleName = ghost.PlayerModel?.Id;

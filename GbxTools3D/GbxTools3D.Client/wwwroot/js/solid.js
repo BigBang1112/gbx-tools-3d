@@ -266,5 +266,5 @@ export function triangulate(positions3d) {
 }
 
 export function log(tree) {
-    console.log(tree);
+    //console.log(tree);
 }

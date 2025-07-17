@@ -12,9 +12,13 @@
         }
     </div>
     <div class="contents">
-        <div class="details">
-            @if (Map is not null)
-            {
+        @if (Map is null && Uploadable)
+        {
+            <UploadArea Height="97" Extensions="extensions" FontSize="80" OnUpload="OnUploadAsync"></UploadArea>
+        }
+        else if (Map is not null)
+        {
+            <div class="details">
                 <div>
                     <FormattedText Text="@Map.MapName"></FormattedText>
                 </div>
@@ -28,14 +32,11 @@
                 <div class="mode">
                     <span>@(Map.Mode == GBX.NET.Engines.Game.CGameCtnChallenge.PlayMode.Script ? Map.MapType : Map.Mode.ToString())</span>
                 </div>
-            }
-        </div>
-        <div class="icons">
-            @if (Map is not null)
-            {
+            </div>
+            <div class="icons">
                 <img src="icons/env/@(Map.Collection).webp" title="Environment: @Map.Collection" width="32" height="32" />
                 <img src="icons/mood/@(Mood).webp" title="Mood: @Mood" width="32" height="32" />
-            }
-        </div>
+            </div>
+        }
     </div>
 </div>

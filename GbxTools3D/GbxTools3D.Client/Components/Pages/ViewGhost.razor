@@ -10,7 +10,7 @@
 
 <PageTitle>View ghost - 3D Gbx Tools</PageTitle>
 
-@if (IsDragAndDrop && ghost is null)
+@if (IsDragAndDrop && Ghost is null)
 {
     <div class="container">
         <div class="navbar-fake-margin"></div>
@@ -40,76 +40,7 @@ else
             </div>
         }
 
-        <View3D GameVersion="GameVersion.TMF" @ref="view3d"></View3D>
+        <View3D Map="Map" AfterSceneLoad="AfterSceneLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
+        <GhostControls View3D="view3d" Map="Map" @ref="ghostControls" MapUploaded="OnMapUploadedAsync" MapUploadable="true"></GhostControls>
     </div>
-}
-
-@code {
-    private View3D? view3d;
-
-    private string[] extensions = ["Ghost.Gbx"];
-
-    [SupplyParameterFromQuery(Name = "type")]
-    private string? Type { get; set; }
-
-    public bool IsDragAndDrop => string.IsNullOrEmpty(Type);
-
-    private CGameCtnGhost? ghost;
-
-    private string selectedExternal = "tmio";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await base.OnInitializedAsync();
-
-        if (!RendererInfo.IsInteractive)
-        {
-            return;
-        }
-
-        if (IsDragAndDrop)
-        {
-            return;
-        }
-
-        string endpoint;
-        if (!string.IsNullOrEmpty(Type))
-        {
-            endpoint = $"/api/ghost/{Type}";
-        }
-        else
-        {
-            throw new Exception();
-        }
-
-        using var response = await Http.GetAsync(endpoint);
-        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ReplayContentDto);
-
-        if (content is null)
-        {
-            return;
-        }
-
-        await using var ms = new MemoryStream(content.Content);
-        ghost = Gbx.ParseNode<CGameCtnGhost>(ms);
-    }
-
-    private async Task OnUploadAsync(UploadEventArgs e)
-    {
-        using var ms = new MemoryStream(e.Data);
-        var gbx = await Gbx.ParseAsync(ms);
-
-        if (gbx is Gbx<CGameCtnGhost> ghost)
-        {
-            GbxService.Add(ghost);
-            this.ghost = ghost.Node;
-        }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        GbxService.Deselect(); // can be more flexible
-
-        return ValueTask.CompletedTask;
-    }
 }

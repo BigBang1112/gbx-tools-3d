@@ -16,7 +16,7 @@ public partial class InputList : ComponentBase
     private TimeInt32? currentInput;
 
     [Parameter, EditorRequired]
-    public CGameCtnReplayRecord? Replay { get; set; }
+    public ImmutableList<IInput>? OverrideInputs { get; set; }
 
     [Parameter, EditorRequired]
     public CGameCtnGhost? Ghost { get; set; }
@@ -37,7 +37,7 @@ public partial class InputList : ComponentBase
     }
 
     private ImmutableList<IInput>? inputs;
-    private ImmutableList<IInput> Inputs => Replay?.Inputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
+    private ImmutableList<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {

@@ -24,6 +24,11 @@ public static class WebConfiguration
             client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("Exchange"));
         }).AddStandardResilienceHandler();
 
+        services.AddHttpClient("wrr", client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("WRR"));
+        }).AddStandardResilienceHandler();
+
         services.AddTMX();
 
         services.AddResponseCompression(options =>

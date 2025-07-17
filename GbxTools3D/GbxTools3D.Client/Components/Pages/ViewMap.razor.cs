@@ -52,11 +52,11 @@ public partial class ViewMap : ComponentBase
         string endpoint;
         if (!string.IsNullOrEmpty(TmxSite))
         {
-            endpoint = $"/api/map/tmx/{TmxSite}/{MapId}";
+            endpoint = $"/api/map/tmx/{TmxSite}/id/{MapId}";
         }
         else if (!string.IsNullOrEmpty(MxSite))
         {
-            endpoint = $"/api/map/mx/{MxSite}/{MapId}";
+            endpoint = $"/api/map/mx/{MxSite}/id/{MapId}";
         }
         else
         {

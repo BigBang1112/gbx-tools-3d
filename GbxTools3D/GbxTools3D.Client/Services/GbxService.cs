@@ -14,6 +14,7 @@ public sealed class GbxService
 
     public Gbx<CGameCtnChallenge>? SelectedMap { get; private set; }
     public Gbx<CGameCtnReplayRecord>? SelectedReplay { get; private set; }
+    public Gbx<CGameCtnGhost>? SelectedGhost { get; private set; }
     public Gbx? SelectedMesh { get; private set; }
     public Gbx<CGameItemModel>? SelectedItem { get; private set; }
     public ZipArchive? SelectedSkinZip { get; private set; }
@@ -52,6 +53,7 @@ public sealed class GbxService
     {
         SelectedMap = null;
         SelectedReplay = null;
+        SelectedGhost = null;
         SelectedMesh = null;
         SelectedItem = null;
         SelectedSkinZip = null;
@@ -61,6 +63,7 @@ public sealed class GbxService
     {
         SelectedMap = null;
         SelectedReplay = null;
+        SelectedGhost = null;
         SelectedMesh = null;
         SelectedItem = null;
         SelectedSkinZip = null;
@@ -72,6 +75,9 @@ public sealed class GbxService
                 break;
             case Gbx<CGameCtnReplayRecord> replay:
                 SelectedReplay = replay;
+                break;
+            case Gbx<CGameCtnGhost> ghost:
+                SelectedGhost = ghost;
                 break;
             case Gbx<CPlugSolid>:
             case Gbx<CPlugSolid2Model>:
@@ -88,6 +94,7 @@ public sealed class GbxService
     {
         SelectedMap = null;
         SelectedReplay = null;
+        SelectedGhost = null;
         SelectedMesh = null;
         SelectedItem = null;
         SelectedSkinZip = zip;

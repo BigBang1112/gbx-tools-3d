@@ -2,7 +2,6 @@
 using GbxTools3D.Data;
 using GbxTools3D.Enums;
 using GbxTools3D.External;
-using Microsoft.Extensions.Caching.Hybrid;
 using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -116,7 +115,8 @@ public static class ReplayApiEndpoint
                     UploaderName = track.Uploader.Name,
                     UpdatedAt = track.UpdatedAt,
                     Unlimiter = track.UnlimiterVersion,
-                    OnlineMapId = null
+                    OnlineMapId = null,
+                    MxId = track.TrackId,
                     // TODO: add authors
                 };
             }
@@ -247,7 +247,8 @@ public static class ReplayApiEndpoint
                     UploaderName = map.Uploader.Name,
                     UpdatedAt = map.UpdatedAt,
                     Unlimiter = null,
-                    OnlineMapId = map.OnlineMapId
+                    OnlineMapId = map.OnlineMapId,
+                    MxId = map.MapId
                     // TODO: add authors
                 };
             }
