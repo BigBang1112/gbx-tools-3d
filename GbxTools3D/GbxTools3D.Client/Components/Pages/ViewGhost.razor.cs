@@ -101,12 +101,20 @@ public partial class ViewGhost
             using var response = await mapResponseTask;
             if (response.IsSuccessStatusCode)
             {
-                var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
-
-                if (content is not null)
+                if (string.IsNullOrEmpty(MapUrl))
                 {
-                    await using var ms = new MemoryStream(content.Content);
-                    mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
+                    var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
+
+                    if (content is not null)
+                    {
+                        await using var ms = new MemoryStream(content.Content);
+                        mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
+                    }
+                }
+                else
+                {
+                    await using var stream = await response.Content.ReadAsStreamAsync();
+                    mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
                 }
             }
         }

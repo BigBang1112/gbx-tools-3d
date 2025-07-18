@@ -57,15 +57,24 @@ public partial class ViewItem : ComponentBase
         }
 
         using var response = await Http.GetAsync(endpoint);
-        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ItemContentDto);
 
-        if (content is null)
+        if (string.IsNullOrEmpty(Url))
         {
-            return;
-        }
+            var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ItemContentDto);
 
-        await using var ms = new MemoryStream(content.Content);
-        item = Gbx.ParseNode<CGameItemModel>(ms);
+            if (content is null)
+            {
+                return;
+            }
+
+            await using var ms = new MemoryStream(content.Content);
+            item = Gbx.ParseNode<CGameItemModel>(ms);
+        }
+        else
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            var gbx = await Gbx.ParseAsync(stream);
+        }
     }
 
     private async Task OnUploadAsync(UploadEventArgs e)

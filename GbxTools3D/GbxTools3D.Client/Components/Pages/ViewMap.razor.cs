@@ -72,15 +72,23 @@ public partial class ViewMap : ComponentBase
 
         using var response = await Http.GetAsync(endpoint);
 
-        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
-
-        if (content is null)
+        if (string.IsNullOrEmpty(Url))
         {
-            return;
-        }
+            var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
 
-        await using var ms = new MemoryStream(content.Content);
-        Map = Gbx.ParseNode<CGameCtnChallenge>(ms);
+            if (content is null)
+            {
+                return;
+            }
+
+            await using var ms = new MemoryStream(content.Content);
+            Map = Gbx.ParseNode<CGameCtnChallenge>(ms);
+        }
+        else
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            Map = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
+        }
     }
 
     private async Task OnUploadAsync(UploadEventArgs e)

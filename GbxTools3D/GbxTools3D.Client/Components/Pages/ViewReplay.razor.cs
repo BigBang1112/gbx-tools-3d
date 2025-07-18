@@ -79,15 +79,24 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
         }
 
         using var response = await Http.GetAsync(endpoint);
-        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ReplayContentDto);
 
-        if (content is null)
+        if (string.IsNullOrEmpty(Url))
         {
-            return;
-        }
+            var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ReplayContentDto);
 
-        await using var ms = new MemoryStream(content.Content);
-        Replay = Gbx.ParseNode<CGameCtnReplayRecord>(ms);
+            if (content is null)
+            {
+                return;
+            }
+
+            await using var ms = new MemoryStream(content.Content);
+            Replay = Gbx.ParseNode<CGameCtnReplayRecord>(ms);
+        }
+        else
+        {
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            Replay = await Gbx.ParseAsync<CGameCtnReplayRecord>(stream);
+        }
     }
 
     private async Task OnUploadAsync(UploadEventArgs e)
