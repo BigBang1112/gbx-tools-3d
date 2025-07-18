@@ -16,7 +16,10 @@ public partial class ViewItem : ComponentBase
     [SupplyParameterFromQuery(Name = "id")]
     private string? ItemId { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(Type);
+    [SupplyParameterFromQuery(Name = "url")]
+    private string? Url { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(Type) && string.IsNullOrEmpty(Url);
 
     private CGameItemModel? item;
 
@@ -40,7 +43,11 @@ public partial class ViewItem : ComponentBase
         }
 
         string endpoint;
-        if (!string.IsNullOrEmpty(Type))
+        if (!string.IsNullOrEmpty(Url))
+        {
+            endpoint = Url;
+        }
+        else if (!string.IsNullOrEmpty(Type))
         {
             endpoint = $"/api/item/{Type}/{ItemId}";
         }

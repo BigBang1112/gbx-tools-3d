@@ -23,7 +23,10 @@ public partial class ViewMap : ComponentBase
     [SupplyParameterFromQuery(Name = "id")]
     private string? MapId { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite);
+    [SupplyParameterFromQuery(Name = "url")]
+    private string? Url { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url);
 
     public CGameCtnChallenge? Map { get; set; }
 
@@ -50,7 +53,11 @@ public partial class ViewMap : ComponentBase
         }
 
         string endpoint;
-        if (!string.IsNullOrEmpty(TmxSite))
+        if (!string.IsNullOrEmpty(Url))
+        {
+            endpoint = Url;
+        }
+        else if (!string.IsNullOrEmpty(TmxSite))
         {
             endpoint = $"/api/map/tmx/{TmxSite}/id/{MapId}";
         }

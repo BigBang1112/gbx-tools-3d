@@ -4,7 +4,6 @@ using GbxTools3D.Client.EventArgs;
 using GbxTools3D.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
-using System.Collections;
 using System.IO.Compression;
 using System.Text;
 
@@ -35,9 +34,12 @@ public partial class ViewSkin : ComponentBase
     [SupplyParameterFromQuery(Name = "nocatalog")]
     private bool NoCatalog { get; set; }
 
+    [SupplyParameterFromQuery(Name = "url")]
+    private string? Url { get; set; }
+
     public GameVersion GameVersionEnum { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(ManiaParkId);
+    public bool IsDragAndDrop => string.IsNullOrEmpty(ManiaParkId) && string.IsNullOrEmpty(Url);
 
     private MemoryStream? skinStream;
 
@@ -80,7 +82,11 @@ public partial class ViewSkin : ComponentBase
         }
 
         string endpoint;
-        if (!string.IsNullOrEmpty(ManiaParkId))
+        if (!string.IsNullOrEmpty(Url))
+        {
+            endpoint = Url;
+        }
+        else if (!string.IsNullOrEmpty(ManiaParkId))
         {
             endpoint = $"/api/skin/mp/{ManiaParkId}";
         }

@@ -32,7 +32,13 @@ public partial class ViewGhost
     [SupplyParameterFromQuery(Name = "login")]
     private string? Login { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(Type);
+    [SupplyParameterFromQuery(Name = "url")]
+    private string? Url { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mapurl")]
+    private string? MapUrl { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(Type) && string.IsNullOrEmpty(Url);
 
     private string selectedExternal = "tmio";
 
@@ -59,17 +65,25 @@ public partial class ViewGhost
         var ghostResponseTask = default(Task<HttpResponseMessage>);
         var mapResponseTask = default(Task<HttpResponseMessage>);
 
-        if (Type == "wrr")
+        if (!string.IsNullOrEmpty(Url))
+        {
+            ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
+        }
+        else if (Type == "wrr")
         {
             if (MapUid is not null && Time.HasValue && Login is not null)
             {
                 ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
             }
+        }
 
-            if (MxSite is not null && MapUid is not null)
-            {
-                mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
-            }
+        if (!string.IsNullOrEmpty(MapUrl))
+        {
+            mapResponseTask = Http.GetAsync(MapUrl);
+        }
+        else if (MxSite is not null && MapUid is not null)
+        {
+            mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
         }
 
         if (ghostResponseTask is not null)
