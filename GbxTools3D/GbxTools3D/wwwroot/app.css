@@ -202,6 +202,13 @@ h2.view {
     display: flex;
     flex-direction: column;
     gap: 20px;
+    pointer-events: none;
+}
+
+@media (max-width: 450px) {
+    .panels {
+        transform: scale(0.55);
+    }
 }
 
     .panels.left {
@@ -222,6 +229,7 @@ h2.view {
     flex-direction: column;
     gap: 10px;
     transition: transform 0.4s ease;
+    pointer-events: all;
 }
 
     .panel .opener {

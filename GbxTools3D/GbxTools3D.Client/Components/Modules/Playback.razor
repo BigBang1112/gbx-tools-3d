@@ -48,7 +48,7 @@
        <button class="button-control" @onclick="RewindAsync">
            <img src="icons/ui/skip_previous.svg" width="48" height="48" />
        </button>
-       <span class="mono"><b>@CurrentTime.ToTmString(UseHundredths)</b> <small>/ @Duration.ToTmString(UseHundredths)</small></span>
+       <span class="duration mono"><b>@CurrentTime.ToTmString(UseHundredths)</b> <small>/ @Duration.ToTmString(UseHundredths)</small></span>
        <input type="range" min="1" max="20" value="8" class="slider" @oninput="SpeedChange" @onchange="SpeedChange" />
        <span class="mono"><small>@(Speed)x</small></span>
        <div class="right"><span><FormattedText Text="@Description"></FormattedText></span></div>

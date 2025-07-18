@@ -4,8 +4,8 @@
 @if (RendererInfo.IsInteractive)
 {
     <Checkpoint UseHundredths="UseHundredths" @ref="checkpoint"></Checkpoint>
+    <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@GetPlaybackDescription()" UseHundredths="UseHundredths" @ref="playback"></Playback>
     <div class="panels left">
-        <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@GetPlaybackDescription()" UseHundredths="UseHundredths" @ref="playback"></Playback>
         <InputList Ghost="CurrentGhost" OverrideInputs="overrideInputs" OnInputClick="OnInputListItemClick" @ref="inputList"></InputList>
         <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Map) ?? 1" OnCheckpointClick="OnCheckpointListItemClick" UseHundredths="UseHundredths" @ref="checkpointList"></CheckpointList>
         <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
