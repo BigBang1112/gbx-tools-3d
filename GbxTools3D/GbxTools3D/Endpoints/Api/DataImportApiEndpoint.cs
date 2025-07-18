@@ -11,7 +11,7 @@ public abstract class DataImportApiEndpoint
 
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapPost("/", ImportData);//.RequireAuthorization();
+        group.MapPost("/", ImportData).RequireAuthorization();
         group.MapGet("/status", ImportDataStatus).RequireAuthorization();
     }
 
