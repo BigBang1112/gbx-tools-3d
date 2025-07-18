@@ -64,7 +64,7 @@ public static class MiddlewareConfiguration
         app.MapEndpoints();
 
         app.MapRazorComponents<App>()
-            .AddInteractiveServerRenderMode()
+            .AddInteractiveServerRenderMode(x => x.ContentSecurityFrameAncestorsPolicy = "*") // for iframes on other sites
             .AddInteractiveWebAssemblyRenderMode()
             .AddAdditionalAssemblies(typeof(Client._Imports).Assembly);
     }
