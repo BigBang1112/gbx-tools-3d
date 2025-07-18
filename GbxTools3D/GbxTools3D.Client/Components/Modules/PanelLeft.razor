@@ -1,0 +1,25 @@
+﻿<div class="panel left catalog @(show ? "" : "closed")">
+    <div class="opener" @onclick="Toggle">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+    </div>
+    @ChildContent
+</div>
+
+@code {
+    private bool show;
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    private void Toggle()
+    {
+        show = !show;
+    }
+}

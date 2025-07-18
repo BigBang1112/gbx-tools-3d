@@ -1,0 +1,90 @@
+﻿
+
+    .catalog .games {
+        display: flex;
+        flex-flow: wrap;
+    }
+
+        .catalog .games ::deep a {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+            padding: 10px;
+            flex: 1;
+            border-radius: 5px;
+        }
+
+            .catalog .games ::deep a:hover {
+                background-color: #333;
+            }
+
+            .catalog .games ::deep a.active {
+                background-color: #444;
+            }
+
+            .catalog .games ::deep a img {
+                border-radius: 3px;
+            }
+
+    .catalog .collections {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        background-color: #1A1A1AAA;
+        border: 1px solid #333;
+        border-radius: 5px;
+        padding: 5px;
+    }
+
+        .catalog .collections ::deep a {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+        }
+
+            .catalog .collections ::deep a:hover {
+                background-color: #333;
+            }
+
+            .catalog .collections ::deep a.active {
+                background-color: #444;
+            }
+
+    .catalog .assets {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        background-color: #1A1A1AAA;
+        border: 1px solid #333;
+        border-radius: 5px;
+        overflow: hidden auto;
+        font-size: 90%;
+    }
+
+        .catalog .assets ::deep a {
+            display: flex;
+            padding: 4px 6px;
+            gap: 6px;
+            align-items: center;
+            border-radius: 5px;
+            text-decoration: none;
+            color: white;
+            animation: fadeIn 0.3s;
+        }
+
+            .catalog .assets ::deep a:hover {
+                background-color: #333;
+            }
+
+            .catalog .assets ::deep a.active {
+                background-color: #444;
+            }
+
+            .catalog .assets ::deep a img {
+                border-radius: 3px;
+            }

@@ -1,0 +1,43 @@
+﻿@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="upload-area @(dragged ? "drag" : "")" style="@(Height.HasValue ? $"height: {Height.Value}px" : ""); font-size: @(FontSize)%;">
+    @if (RendererInfo.IsInteractive)
+    {
+        @if (uploadFileName is null)
+        {
+            <span>Drag & Drop 
+                @if (Extensions?.Length > 0)
+                {
+                    @foreach (var ext in Extensions)
+                    {
+                        if (ext != Extensions[0])
+                        {
+                            <span>/</span>
+                        }
+                        <span class="ext @(ext.EndsWith("Gbx") ? "gbx" : "other")">@ext</span>
+                    }
+                }
+                else
+                {
+                    <span>any</span>
+                }
+                file here...</span>
+            <span class="note">or click to upload</span>
+        }
+        else
+        {
+            <span>@uploadFileName</span>
+        }
+        
+        <input @ref="inputFile"
+            @ondragenter="DragEnter"
+            @ondragleave="DragEnd"
+            @ondragend="DragEnd"
+            @ondrop="DragEnd" type="file" class="file" accept="@(Extensions is null ? "" : string.Join(',', Extensions.Select(x => "." + x)))" />
+    }
+    else
+    {
+        <Loader></Loader>
+    }
+</div>

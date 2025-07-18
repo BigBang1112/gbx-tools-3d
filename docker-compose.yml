@@ -1,0 +1,50 @@
+services:
+  gbxtools3d:
+    image: ${DOCKER_REGISTRY-}gbxtools3d
+    build:
+      context: .
+      dockerfile: GbxTools3D/GbxTools3D/Dockerfile
+    environment:
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: Server=mariadb;Port=3306;Database=3d_gbx_tools;User=root;
+      OTEL_SERVICE_NAME: GbxTools3D
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://seq/ingest/otlp
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+    volumes:
+    - D:/GbxTools/Dataset:/app/Dataset:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+  
+  mariadb:
+    image: mariadb
+    restart: unless-stopped
+    command: --max_allowed_packet=32505856
+    environment:
+      TZ: CET
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: 1
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      start_period: 10s
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  phpmyadmin:
+    image: beeyev/phpmyadmin-lightweight
+    restart: unless-stopped
+    ports:
+      - 9010:80
+    environment:
+      PMA_HOST: mariadb
+      PMA_USER: root
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+  seq:
+    image: datalust/seq:latest
+    restart: unless-stopped
+    ports:
+      - 8081:80
+    environment:
+      ACCEPT_EULA: Y

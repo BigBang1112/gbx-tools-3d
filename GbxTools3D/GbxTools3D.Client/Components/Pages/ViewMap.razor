@@ -1,0 +1,84 @@
+﻿@page "/view/map"
+@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+
+@using GBX.NET
+@using GBX.NET.Engines.Game
+
+@inject HttpClient Http
+@inject GbxService GbxService
+
+<PageTitle>View map - 3D Gbx Tools</PageTitle>
+
+@if (IsDragAndDrop && Map is null)
+{
+    <div class="container">
+        <div class="navbar-fake-margin"></div>
+        <h2 class="view">View a map</h2>
+        <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
+        <div class="view-external">
+            <EditForm Model="@this" class="view-form">
+                <DataAnnotationsValidator />
+                <label for="external-select">External:</label>
+                <InputSelect id="external-select" @bind-Value="selectedExternal">
+                    <option value="tmx">TMX</option>
+                    <option value="mx">MX</option>
+                    <option value="tmio">TM.IO</option>
+                    <option value="url">URL</option>
+                </InputSelect>
+                @switch (selectedExternal)
+                {
+                    case "tmx":
+                        <InputSelect @bind-Value="selectedTmx">
+                            <option value="tmnf">TMNF</option>
+                            <option value="tmuf">TMUF</option>
+                            <option value="nations">Nations</option>
+                            <option value="sunrise">Sunrise</option>
+                            <option value="original">Original</option>
+                        </InputSelect>
+                        break;
+                    case "mx":
+                        <InputSelect @bind-Value="selectedMx">
+                            <option value="tm2020">TM2020</option>
+                            <option value="tm2">TM2</option>
+                            <option value="sm">SM</option>
+                        </InputSelect>
+                        break;
+
+                }
+                @switch (selectedExternal)
+                {
+                    case "tmx":
+                    case "mx":
+                        <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
+                        break;
+                }
+                <button type="submit" class="button-generic">Load</button>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
+
+        @if (!RendererInfo.IsInteractive)
+        {
+            <div class="centered">
+                <Loader></Loader>
+            </div>
+        }
+
+        <View3D Map="Map" OnRenderDetails="OnRenderDetails"></View3D>
+        @if (RendererInfo.IsInteractive)
+        {
+            <div class="panels left">
+                <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+            </div>
+            <div class="panels right">
+                <MapInfo Map="Map"></MapInfo>
+            </div>
+        }
+
+    </div>
+}

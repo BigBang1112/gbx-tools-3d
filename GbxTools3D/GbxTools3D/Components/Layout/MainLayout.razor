@@ -1,11 +1,58 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager NavManager
+
+@if (!NoTools)
+{
+    <NavMenu></NavMenu>
+}
 
 <div class="page">
     @Body
 </div>
+
+@if (!NoTools)
+{
+    <footer class="@(Is3DPage() ? "fixed" : "")">
+        © 2025 Petr 'BigBang1112' Pivoňka<br />
+        <small>
+            Not affiliated with or endorsed by Nadeo or Ubisoft.
+            All relevant trademarks belong to their respective owners.
+        </small>
+    </footer>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@* @if (!NoTools)
+{
+    <script src='https://storage.ko-fi.com/cdn/scripts/overlay-widget.js'></script>
+    <script>
+        kofiWidgetOverlay.draw('bigbang1112', {
+        'type': 'floating-chat',
+        'floating-chat.donateButton.text': 'Donate',
+        'floating-chat.donateButton.background-color': '#323842',
+        'floating-chat.donateButton.text-color': '#fff'
+        });
+    </script>
+} *@
+
+@code {
+    [SupplyParameterFromQuery(Name = "notools")]
+    private bool NoTools { get; set; }
+
+    bool Is3DPage()
+    {
+        var currentPath = NavManager.Uri.Replace(NavManager.BaseUri, ""); // Get relative path
+        return currentPath.StartsWith("view/map") ||
+               currentPath.StartsWith("view/replay") ||
+               currentPath.StartsWith("view/item") ||
+               currentPath.StartsWith("view/ghost") ||
+               currentPath.StartsWith("view/skin") ||
+               currentPath.StartsWith("view/mesh") ||
+               currentPath.StartsWith("catalog");
+    }
+}

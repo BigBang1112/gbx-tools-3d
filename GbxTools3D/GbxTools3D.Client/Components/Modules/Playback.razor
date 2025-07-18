@@ -1,0 +1,56 @@
+﻿@using TmEssentials
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+<div class="player">
+    <div class="progress" @ref="progress" @onmouseleave="() => PreviewTime = null">
+        @if (PreviewTime.HasValue)
+        {
+            <div class="time-preview-mark" style="left: @(((double)PreviewTime.Value.Ticks / Duration.Ticks * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%">
+                <div class="time-preview mono">@PreviewTime.ToTmString()</div>
+            </div>
+        }
+        @if (Markers.Count <= 100)
+        {
+            @foreach (var marker in Markers)
+            {
+                <div class="marker" style="left: @(((double)marker.Time.Ticks / Duration.Ticks * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"
+                     @onmousedown="() => OnMarkerMouseDown(marker)" @onmouseup="EndSeekAsync" @onmouseenter="() => SelectedMarker = marker" @onmouseleave="() => SelectedMarker = null">
+                    @if (SelectedMarker == marker)
+                    {
+                        <span class="time mono">@marker.Time.ToTmString(UseHundredths)</span>
+                    }
+                    <div class="chevron @marker.Type.ToString().ToLowerInvariant()">
+                        @switch (marker.Type)
+                        {
+                            case PlaybackMarkerType.Finish:
+                            case PlaybackMarkerType.Multilap:
+                                <img src="icons/ui/sports_score.svg" width="24" height="24" />
+                                break;
+                        }
+                    </div>
+                </div>
+            }
+        }
+       <div class="progress-value" style="width: @((CurrentTime.TotalSeconds / Duration.TotalSeconds * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+   </div>
+   <div class="controls">
+       <button class="button-control" @onclick="PlayAsync">
+           @if (IsPlaying && !IsPaused)
+           {
+               <img src="icons/ui/pause.svg" width="48" height="48" />
+           }
+           else
+           {
+               <img src="icons/ui/play.svg" width="48" height="48" />
+           }
+       </button>
+       <button class="button-control" @onclick="RewindAsync">
+           <img src="icons/ui/skip_previous.svg" width="48" height="48" />
+       </button>
+       <span class="duration mono"><b>@CurrentTime.ToTmString(UseHundredths)</b> <small>/ @Duration.ToTmString(UseHundredths)</small></span>
+       <input type="range" min="1" max="20" value="8" class="slider" @oninput="SpeedChange" @onchange="SpeedChange" />
+       <span class="mono"><small>@(Speed)x</small></span>
+       <div class="right"><span><FormattedText Text="@Description"></FormattedText></span></div>
+   </div>
+</div>

@@ -1,0 +1,108 @@
+﻿@using System.Runtime.InteropServices.JavaScript
+
+<li @onclick="OnClick">
+    @if (Object is null)
+    {
+        <div class="item">null</div>
+    }
+    else
+    {
+        <div class="item @(SelectedObject == Object ? "active" : "")" @onclick="ToggleOpenAsync">
+            @if (GetChildren().Any())
+            {
+                <img src="icons/ui/keyboard_arrow_right.svg" width="24" height="24" class="@(IsOpen ? "open" : "")" />
+            }
+            else
+            {
+                <img src="icons/ui/keyboard_arrow_right.svg" width="24" height="24" class="no-children" />
+            }
+
+            @Object.GetPropertyAsString("name")
+
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <span class="description">(@Description)</span>
+            }
+
+            @foreach (var child in Solid.GetChildren(Object))
+            {
+                @if (child.GetPropertyAsBoolean("isSpotLight"))
+                {
+                    <img src="icons/ui/wb_incandescent.svg" title="Spotlight" width="20" height="20" />
+                }
+                else if (child.GetPropertyAsBoolean("isLight"))
+                {
+                    <img src="icons/ui/emoji_objects.svg" title="Light" width="20" height="20" />
+                }
+
+                @if (child.GetPropertyAsBoolean("isMesh"))
+                {
+                    <img src="icons/ui/shapes.svg" width="20" height="20" />
+                }
+            }
+
+            @if (IsLOD)
+            {
+                var distance = Object.GetPropertyAsJSObject("userData")?.GetPropertyAsDouble("distance");
+
+                @if (distance.HasValue)
+                {
+                    <small><span style="opacity: 0.5">distance:</span> @distance.Value</small>
+                }
+            }
+        </div>
+
+        @if (IsOpen)
+        {
+            <ul class="no-bullet">
+                @foreach (var child in GetChildren())
+                {
+                    <ObjectTreeElement Object="child" SelectedObject="SelectedObject" OnSelected="OnSelected" />
+                }
+            </ul>
+        }
+    }
+</li>
+
+@code {
+    [Parameter]
+    public JSObject? Object { get; set; }
+
+    [Parameter]
+    public bool IsOpen { get; set; }
+
+    [Parameter]
+    public EventCallback<JSObject> OnSelected { get; set; }
+
+    [Parameter]
+    public JSObject? SelectedObject { get; set; }
+
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    public bool IsLOD => Object?.GetPropertyAsJSObject("parent")?.GetPropertyAsBoolean("isLOD") ?? false;
+
+    private IEnumerable<JSObject> GetChildren()
+    {
+        if (Object is null)
+        {
+            return [];
+        }
+
+        return Solid.GetChildren(Object).Where(x => !x.GetPropertyAsBoolean("isMesh") && !x.GetPropertyAsBoolean("isLight"));
+    }
+
+    private async Task ToggleOpenAsync()
+    {
+        SelectedObject = Object;
+        await OnSelected.InvokeAsync(Object);
+
+        if (GetChildren().Any())
+        {
+            IsOpen = !IsOpen;
+        }
+    }
+}

@@ -1,0 +1,6 @@
+﻿@RootUrl = https://localhost:7130
+
+### GetMaterials
+POST {{RootUrl}}/api/dataimport
+
+###

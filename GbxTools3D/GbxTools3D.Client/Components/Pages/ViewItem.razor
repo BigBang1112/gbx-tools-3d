@@ -1,0 +1,52 @@
+﻿@page "/view/item"
+@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+
+@using GBX.NET
+@using GBX.NET.Engines.GameData
+
+@inject HttpClient Http
+@inject GbxService GbxService
+
+<PageTitle>View item - 3D Gbx Tools</PageTitle>
+
+@if (IsDragAndDrop && item is null)
+{
+    <div class="container">
+        <div class="navbar-fake-margin"></div>
+        <h2 class="view">View an item (or a custom block)</h2>
+        <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
+        <div class="view-external">
+            <EditForm Model="@this" class="view-form">
+                <DataAnnotationsValidator />
+                <label for="external-select">External:</label>
+                <InputSelect id="external-select" @bind-Value="selectedExternal">
+                    <option value="ix">IX</option>
+                    <option value="url">URL</option>
+                </InputSelect>
+                @switch (selectedExternal)
+                {
+                    case "ix":
+                        <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
+                        break;
+
+                }
+                <button type="submit" class="button-generic">Load</button>
+            </EditForm>
+        </div>
+    </div>
+}
+else
+{
+    <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
+
+        @if (!RendererInfo.IsInteractive)
+        {
+            <div class="centered">
+                <Loader></Loader>
+            </div>
+        }
+
+        <View3D GameVersion="item?.GameVersion ?? GameVersion.MP4" Item="item" IsCatalog="true"></View3D>
+    </div>
+}

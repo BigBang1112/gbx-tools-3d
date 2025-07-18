@@ -1,0 +1,22 @@
+﻿.render-info {
+    padding: 10px;
+    top: 635px;
+    width: 300px;
+    height: 200px;
+}
+
+    .render-info.closed {
+        transform: translateX(-300px);
+    }
+
+.title {
+    text-align: center;
+    padding: 2px;
+}
+
+.table {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3px;
+    margin: 5px;
+}

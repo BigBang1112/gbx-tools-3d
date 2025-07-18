@@ -1,0 +1,20 @@
+﻿@rendermode InteractiveWebAssembly
+@implements IAsyncDisposable
+
+@if (GameVersion == GBX.NET.GameVersion.TM2020)
+{
+    <div class="centered" style="text-align: center;">
+        <div>
+            Trackmania (2020) render is not yet supported, but it is being worked on!
+        </div>
+        <div>
+            You can follow the progress on the <a href="https://discord.gbx.tools">GameBox Sandbox Discord server</a>.
+        </div>
+    </div>
+}
+else if (RendererInfo.IsInteractive)
+{
+    <div class="canvas-wrap">
+        <canvas></canvas>
+    </div>
+}

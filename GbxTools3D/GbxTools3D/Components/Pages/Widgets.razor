@@ -1,0 +1,235 @@
+﻿@page "/widgets"
+@rendermode InteractiveServer
+
+@inject NavigationManager NavManager
+
+<PageTitle>Widgets - 3D Gbx Tools</PageTitle>
+
+<div class="container">
+    <h2>Widgets</h2>
+    <p>You can embed these 3D tools into your websites.</p>
+    <h3>View map</h3>
+    <div class="iframe-settings">
+        <div class="settings">
+            <div class="table">
+                <div class="label">Type:</div>
+                <InputSelect id="external-select" @bind-Value="selectedExternal">
+                    <option value="tmx">TMX</option>
+                    <option value="mx">MX</option>
+                </InputSelect>
+
+                <div class="label">Site:</div>
+                @switch (selectedExternal)
+                {
+                    case "tmx":
+                        <InputSelect @bind-Value="selectedTmx">
+                            <option value="TMNF">TMNF</option>
+                            <option value="TMUF">TMUF</option>
+                            <option value="Nations">Nations</option>
+                            <option value="Sunrise">Sunrise</option>
+                            <option value="Original">Original</option>
+                        </InputSelect>
+                        break;
+                    case "mx":
+                        <InputSelect @bind-Value="selectedMx">
+                            <option value="tm2">TM2</option>
+                            <option value="sm">SM</option>
+                            <option value="tm2020">TM2020</option>
+                        </InputSelect>
+                        break;
+
+                }
+
+                @switch (selectedExternal)
+                {
+                    case "tmx":
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Track ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetTmxTrackLink(mapId)">Track ID</a>:</div>
+                        }
+                        <InputText class="text" @bind-Value="mapId" placeholder="ID" style="width: 80px" />
+                        break;
+                    case "mx":
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Map ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetMxMapLink(mapId)">Map ID</a>:</div>
+                        }
+                        <InputText class="text" @bind-Value="mapId" placeholder="ID" style="width: 80px" />
+                        break;
+                }
+                <div class="label">Width:</div>
+                <InputNumber class="text" @bind-Value="width" placeholder="800" style="width: 60px" />
+                <div class="label">Height:</div>
+                <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
+            </div>
+            <input type="text" class="text" value="@GetFrameHtml(GetViewMapRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetViewMapRelativeUrl())" placeholder="https://..." disabled />
+        </div>
+        <iframe src="@GetViewMapRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+    </div>
+    <h3>View replay</h3>
+    <div class="iframe-settings">
+        <div class="settings">
+            <div class="table">
+                <div class="label">Type:</div>
+                <InputSelect id="external-select" @bind-Value="selectedExternal">
+                    <option value="tmx">TMX</option>
+                    <option value="mx">MX</option>
+                </InputSelect>
+
+                <div class="label">Site:</div>
+                @switch (selectedExternal)
+                {
+                    case "tmx":
+                        <InputSelect @bind-Value="selectedTmx">
+                            <option value="TMNF">TMNF</option>
+                            <option value="TMUF">TMUF</option>
+                            <option value="Nations">Nations</option>
+                            <option value="Sunrise">Sunrise</option>
+                            <option value="Original">Original</option>
+                        </InputSelect>
+                        break;
+                    case "mx":
+                        <InputSelect @bind-Value="selectedMx">
+                            <option value="tm2">TM2</option>
+                            <option value="sm">SM</option>
+                            <option value="tm2020">TM2020</option>
+                        </InputSelect>
+                        break;
+
+                }
+
+                <div class="label">Replay ID:</div>
+                <InputText class="text" @bind-Value="replayId" placeholder="ID" style="width: 80px" />
+
+                @switch (selectedExternal)
+                {
+                    case "tmx":
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Track ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetTmxTrackLink(mapId)">Track ID</a>:</div>
+                        }
+                        <InputText class="text" @bind-Value="mapId" placeholder="(optional)" style="width: 80px" />
+                        break;
+                    case "mx":
+                        @if (string.IsNullOrWhiteSpace(mapId))
+                        {
+                            <div class="label">Map ID:</div>
+                        }
+                        else
+                        {
+                            <div class="label"><a href="@GetMxMapLink(mapId)">Map ID</a>:</div>
+                        }
+                        <InputText class="text" @bind-Value="mapId" placeholder="(optional)" style="width: 80px" />
+                        break;
+                }
+                <div class="label">Width:</div>
+                <InputNumber class="text" @bind-Value="width" placeholder="800" style="width: 60px" />
+                <div class="label">Height:</div>
+                <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
+            </div>
+            <input type="text" class="text" value="@GetFrameHtml(GetViewReplayRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetViewReplayRelativeUrl()" placeholder="https://..." disabled />
+        </div>
+        <iframe src="@GetViewReplayRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+    </div>
+    <h3>View skin</h3>
+    <div class="iframe-settings">
+        <div class="settings">
+            <div class="table">
+                @if (string.IsNullOrWhiteSpace(maniaParkId))
+                {
+                    <div class="label">ManiaPark ID:</div>
+                }
+                else
+                {
+                    <div class="label"><a href="https://maniapark.com/skin/@maniaParkId">ManiaPark ID</a>:</div>
+                }
+                <InputText class="text" @bind-Value="maniaParkId" placeholder="ID" />
+
+                <div class="label">Game:</div>
+                <InputSelect id="external-select" @bind-Value="selectedGame">
+                    <option value="">(optional)</option>
+                    <option value="TMF">TMF</option>
+                    <option value="TMT">TMT</option>
+                    <option value="MP4">MP4</option>
+                    <option value="TM2020">TM2020</option>
+                </InputSelect>
+
+                <div class="label">Vehicle name:</div>
+                <InputText class="text" @bind-Value="vehicleName" placeholder="StadiumCar" />
+
+                <div class="label">Width:</div>
+                <InputNumber class="text" @bind-Value="width" placeholder="800" style="width: 60px" />
+                <div class="label">Height:</div>
+                <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
+            </div>
+            <input type="text" class="text" value="@GetFrameHtml(GetViewSkinRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetViewSkinRelativeUrl())" placeholder="https://..." disabled />
+        </div>
+        <iframe src="@GetViewSkinRelativeUrl()" width="800" height="450" loading="lazy"></iframe>
+    </div>
+    <h3>Catalog</h3>
+    <div class="iframe-settings">
+        <div class="settings">
+            <div class="table">
+                <div class="label">Game:</div>
+                <InputSelect id="external-select" @bind-Value="selectedGame">
+                    <option value="TMSX">TMSX</option>
+                    <option value="TMNESWC">TMNESWC</option>
+                    <option value="TMF">TMF</option>
+                    <option value="TMT">TMT</option>
+                    <option value="MP4">MP4</option>
+                    <option value="TM2020">TM2020</option>
+                </InputSelect>
+
+                <div class="label">Content type:</div>
+                <InputSelect id="external-select" @bind-Value="selectedContentType">
+                    <option value="collections">Environment</option>
+                    <option value="vehicles">Vehicle</option>
+                </InputSelect>
+
+                <div class="label">Environment:</div>
+                <InputText class="text" @bind-Value="environment" placeholder="Stadium" />
+
+                <div class="label">Asset type:</div>
+                <InputSelect id="external-select" @bind-Value="selectedAssetType">
+                    <option value="blocks">Block</option>
+                    <option value="decorations">Decoration</option>
+                    <option value="items">Item</option>
+                    <option value="macroblocks">Macroblock</option>
+                </InputSelect>
+
+                <div class="label">Asset name:</div>
+                <InputText class="text" @bind-Value="assetName" placeholder="StadiumRoadMainCheckpoint" />
+
+                <div class="label">Scene name:</div>
+                <InputText class="text" @bind-Value="sceneName" placeholder="(optional)" />
+
+                <div class="label">Width:</div>
+                <InputNumber class="text" @bind-Value="width" placeholder="800" style="width: 60px" />
+                <div class="label">Height:</div>
+                <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
+            </div>
+            <input type="text" class="text" value="@GetFrameHtml(GetCatalogRelativeUrl(isFrame: true))" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetCatalogRelativeUrl(isFrame: false))" placeholder="https://..." disabled />
+        </div>
+        <iframe src="@GetCatalogRelativeUrl(isFrame: true)" width="800" height="450" loading="lazy"></iframe>
+    </div>
+</div>
+
+@code {
+
+}

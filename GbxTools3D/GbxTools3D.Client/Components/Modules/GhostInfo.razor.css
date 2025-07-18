@@ -1,0 +1,74 @@
+﻿.ghost-info {
+    padding: 10px;
+    width: 300px;
+    height: 500px;
+    gap: 6px;
+}
+
+    .ghost-info.closed {
+        transform: translateX(300px);
+    }
+
+.title {
+    text-align: center;
+    padding: 2px;
+}
+
+.sub-title {
+    text-align: center;
+    font-size: 85%;
+    font-weight: bold;
+    margin-top: auto;
+    padding-top: 5px;
+}
+
+.table {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    align-items: center;
+    gap: 3px 5px;
+    margin: 5px;
+    font-size: 80%;
+    white-space: nowrap;
+}
+
+.uid {
+    font-size: 60%;
+    color: #666;
+    text-align: center;
+    margin-top: 5px;
+}
+
+.basic {
+    overflow: auto;
+}
+
+.validation {
+    overflow: auto;
+}
+
+.minimenu {
+    display: flex;
+    font-size: 80%;
+    gap: 5px;
+}
+
+    .minimenu div {
+        flex: 1;
+    }
+
+.gas {
+    color: #0C0;
+}
+
+.brake {
+    color: #F44;
+}
+
+.release {
+    color: #FA0;
+}
+
+.turbo {
+    color: #FF0;
+}

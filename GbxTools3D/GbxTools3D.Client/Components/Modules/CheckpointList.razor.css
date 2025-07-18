@@ -1,0 +1,84 @@
+﻿.checkpoint-list {
+    padding: 10px;
+    top: 372px;
+    width: 300px;
+    height: 243px;
+}
+
+    .checkpoint-list.closed {
+        transform: translateX(-300px);
+    }
+
+.title {
+    text-align: center;
+    padding: 2px;
+}
+
+.list .checkpoint.lap {
+    background-color: #6403;
+}
+
+    .list .checkpoint.lap:hover {
+        background-color: #B803;
+    }
+
+    .list .checkpoint.lap.active {
+        background-color: #DA23;
+    }
+
+.list .checkpoint.finish {
+    background-color: #6103;
+}
+
+    .list .checkpoint.finish:hover {
+        background-color: #D103;
+    }
+
+    .list .checkpoint.finish.active {
+        background-color: #F323;
+    }
+
+.type {
+    display: flex;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+}
+
+.time {
+    padding: 4px 0;
+    flex: 1;
+    font-weight: bold;
+}
+
+.bonus {
+    font-size: 70%;
+}
+
+    .bonus.unchanged {
+        color: #666;
+    }
+
+.counter {
+    display: flex;
+    font-weight: bold;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.no-laps {
+    color: #666;
+}
+
+.checkpoint-num {
+    flex: 1;
+    font-size: 70%;
+    color: #666;
+}
+
+.counters {
+    display: flex;
+    height: 32px;
+}

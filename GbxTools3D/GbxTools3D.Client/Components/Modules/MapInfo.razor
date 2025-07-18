@@ -1,0 +1,42 @@
+﻿@inject IJSRuntime JS
+
+<div class="panel right map-info @(show ? "" : "closed")">
+    <div class="opener" @onclick="() => show = !show">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+    </div>
+    <div class="contents">
+        @if (Map is null && Uploadable)
+        {
+            <UploadArea Height="97" Extensions="extensions" FontSize="80" OnUpload="OnUploadAsync"></UploadArea>
+        }
+        else if (Map is not null)
+        {
+            <div class="details">
+                <div>
+                    <FormattedText Text="@Map.MapName"></FormattedText>
+                </div>
+                <div class="author">
+                    by <FormattedText Text="@(Map.AuthorNickname ?? Map.AuthorLogin)"></FormattedText>
+                </div>
+                <div class="mapuid">
+                    <small>@Map.MapUid</small>
+                    <img src="icons/ui/content_copy.svg" title="Copy MapUid" width="16" height="16" @onclick="CopyMapUidToClipboard" />
+                </div>
+                <div class="mode">
+                    <span>@(Map.Mode == GBX.NET.Engines.Game.CGameCtnChallenge.PlayMode.Script ? Map.MapType : Map.Mode.ToString())</span>
+                </div>
+            </div>
+            <div class="icons">
+                <img src="icons/env/@(Map.Collection).webp" title="Environment: @Map.Collection" width="32" height="32" />
+                <img src="icons/mood/@(Mood).webp" title="Mood: @Mood" width="32" height="32" />
+            </div>
+        }
+    </div>
+</div>

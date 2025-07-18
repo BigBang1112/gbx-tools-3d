@@ -1,0 +1,23 @@
+﻿@using System.Globalization
+
+@inject IJSRuntime JS
+
+<div class="panel right meter @(show ? "" : "closed")">
+    <div class="opener" @onclick="() => show = !show">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+    </div>
+    <div class="contents">
+        <div class="params mono">
+            <div class="gear" title="Gear (not stored in this ghost)">@(Gear?.ToString() ?? "?")</div>
+            <div class="speed" title="Speed">@Speed.ToString("0", CultureInfo.InvariantCulture)</div>
+        </div>
+        <progress max="11000" value="@RPM.ToString(CultureInfo.InvariantCulture)" title="RPM"></progress>
+    </div>
+</div>

@@ -1,0 +1,37 @@
+﻿<div class="panel left input-list @(show ? "" : "closed")">
+    <div class="opener" @onclick="() => show = !show">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+    </div>
+    <div class="title">
+        Inputs
+    </div>
+    <div class="list mono">
+        <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="28" @ref="virtualizeInputList">
+            <div @onclick="() => OnInputClick.InvokeAsync(input)" class="item input @(CurrentInput == input.Time ? "active" : "")">
+                <span>@input.Time.ToString(UseHundredths)</span>
+                <span>@input.GetType().Name</span>
+                @if (input is GBX.NET.Inputs.IInputReal inputReal)
+                {
+                    <span>@inputReal.Value</span>
+                }
+                else if (input is GBX.NET.Inputs.IInputState inputState)
+                {
+                    <span>@inputState.Pressed</span>
+                }
+            </div>
+        </Virtualize>
+    </div>
+    <div class="properties">
+        <label>
+            <input type="checkbox" @bind="onlyRespawns" />
+            Only respawns
+        </label>
+    </div>
+</div>

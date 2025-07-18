@@ -1,0 +1,30 @@
+﻿<div class="panel left render-info @(show ? "" : "closed")">
+    <div class="opener" @onclick="() => show = !show">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+    </div>
+    <div class="title">
+        Render
+    </div>
+    @if (RenderDetails is not null)
+    {
+        <div class="table">
+            <div>FPS:</div>
+            <div class="mono">@RenderDetails.FPS</div>
+            <div>Calls:</div>
+            <div class="mono">@RenderDetails.Calls</div>
+            <div>Triangles:</div>
+            <div class="mono">@RenderDetails.Triangles</div>
+            <div>Geometries:</div>
+            <div class="mono">@RenderDetails.Geometries</div>
+            <div>Textures:</div>
+            <div class="mono">@RenderDetails.Textures</div>
+        </div>
+    }
+</div>

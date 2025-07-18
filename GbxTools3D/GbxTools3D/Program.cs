@@ -1,36 +1,23 @@
-using GbxTools3D.Client.Pages;
-using GbxTools3D.Components;
+using GBX.NET;
+using GbxTools3D.Configuration;
+
+Gbx.LZO = new GBX.NET.LZO.Lzo();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents()
-    .AddInteractiveWebAssemblyComponents();
+builder.Services.AddDomainServices();
+builder.Services.AddDataServices(builder.Configuration);
+builder.Services.AddTelemetryServices(builder.Configuration, builder.Environment);
+builder.Services.AddWebServices();
+builder.Services.AddCacheServices();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (builder.Environment.IsDevelopment())
 {
-    app.UseWebAssemblyDebugging();
-}
-else
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    app.MigrateDatabase();
 }
 
-app.UseHttpsRedirection();
-
-
-app.UseAntiforgery();
-
-app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode()
-    .AddInteractiveWebAssemblyRenderMode()
-    .AddAdditionalAssemblies(typeof(GbxTools3D.Client._Imports).Assembly);
+app.UseMiddleware();
 
 app.Run();

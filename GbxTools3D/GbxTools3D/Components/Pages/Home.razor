@@ -1,11 +1,136 @@
 ﻿@page "/"
+@using GbxTools3D.Data
+@using GbxTools3D.External
+@using GbxTools3D.Models
+@using GbxTools3D.Services
+@using Microsoft.Extensions.Caching.Hybrid
 
-<PageTitle>3D Gbx Tools</PageTitle>
+@attribute [StreamRendering]
 
-<div>
-    <h1>There's still potential</h1>
+@inject ShowcaseService ShowcaseService
+@inject HybridCache Cache
 
-    <p>Dedicated to the forgotten Map Viewer Engine and Replay Viewer from Gbx Web Tools.</p>
+<PageTitle>Home - 3D Gbx Tools</PageTitle>
 
-    <p><b>2025</b></p>
-</div>
+<section class="scene">
+    <video autoplay muted loop><source src="intro.mp4" type="video/mp4"></video>
+    <div class="container">
+        <h1 class="brand-3d">3D</h1>
+        <h2 class="brand-gbx-tools">gbx.tools</h2>
+        <p class="home-text">Analyze maps, replays, and 3D objects from Nadeo games.</p>
+        <div class="primary-buttons">
+            <a href="view" class="button-blue">View a .Gbx file</a>
+            <a href="catalog" class="button-catalog">Open the catalog</a>
+        </div>
+    </div>
+</section>
+
+<section class="content">
+    <div class="container">
+        <h2>Latest world records</h2>
+        <div class="wrs">
+            <div class="wrs-category">
+                @if (tmnfWrShowcases.Count == 0)
+                {
+                    for (var i = 0; i < 5; i++)
+                    {
+                        <div class="showcase-button" style="justify-content: center;">
+                            <GbxTools3D.Client.Components.Loader></GbxTools3D.Client.Components.Loader>
+                        </div>
+                    }
+                }
+                else
+                {
+                    @foreach (var showcase in tmnfWrShowcases)
+                    {
+                        <a href="@showcase.GbxToolsUrl" class="showcase-button">
+                            <img src="@showcase.ThumbnailUrl" alt="@showcase.Name" height="96" loading="lazy" />
+                            <div class="info">
+                                <div class="name">@showcase.Name</div>
+                                <div class="author">by @showcase.Author</div>
+                            </div>
+                            <div class="game">@showcase.Game</div>
+                        </a>
+                    }
+                }
+            </div>
+            <div class="wrs-category">
+                @if (tmufWrShowcases.Count == 0)
+                {
+                    for (var i = 0; i < 5; i++)
+                    {
+                        <div class="showcase-button" style="justify-content: center;">
+                            <GbxTools3D.Client.Components.Loader></GbxTools3D.Client.Components.Loader>
+                        </div>
+                    }
+                }
+                else
+                {
+                    @foreach (var showcase in tmufWrShowcases)
+                    {
+                        <a href="@showcase.GbxToolsUrl" class="showcase-button">
+                            <img src="@showcase.ThumbnailUrl" alt="@showcase.Name" height="96" loading="lazy" />
+                            <div class="info">
+                                <div class="name">@showcase.Name</div>
+                                <div class="author">by @showcase.Author</div>
+                            </div>
+                            <div class="game">@showcase.Game</div>
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+        <h2>Map showcase of the day</h2>
+
+        @if (mapShowcases.Count == 0)
+        {
+            for (var i = 0; i < 5; i++)
+            {
+                <div class="showcase-button" style="justify-content: center;">
+                    <GbxTools3D.Client.Components.Loader></GbxTools3D.Client.Components.Loader>
+                </div>
+            }
+        }
+        else
+        {
+            @foreach (var showcase in mapShowcases)
+            {
+                <a href="@showcase.GbxToolsUrl" class="showcase-button">
+                    <img src="@showcase.ThumbnailUrl" alt="@showcase.Name" height="96" loading="lazy" />
+                    <div class="info">
+                        <div class="name">@showcase.Name</div>
+                        <div class="author">by @showcase.Author</div>
+                    </div>
+                    <div class="game">@showcase.Game</div>
+                </a>
+            }
+        }
+        <h2>Item showcase of the day</h2>
+        To come...
+    </div>
+</section>
+
+@code {
+    private static List<Showcase> tmnfWrShowcases = [];
+    private static List<Showcase> tmufWrShowcases = [];
+
+    private List<Showcase> mapShowcases = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        tmnfWrShowcases = await Cache.GetOrCreateAsync("showcase:wrs:tmnf", async (token) =>
+        {
+            return await ShowcaseService.CreateLatestWorldRecordsShowcaseAsync(ManiaAPI.TMX.TmxSite.TMNF, token);
+        }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromMinutes(5) });
+
+        tmufWrShowcases = await Cache.GetOrCreateAsync("showcase:wrs:tmuf", async (token) =>
+        {
+            return await ShowcaseService.CreateLatestWorldRecordsShowcaseAsync(ManiaAPI.TMX.TmxSite.TMUF, token);
+        }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromMinutes(5) });
+
+        mapShowcases = await Cache.GetOrCreateAsync("showcase:maps", async (token) =>
+        {
+            return await ShowcaseService.CreateDailyMapShowcaseAsync(token);
+        }, new HybridCacheEntryOptions { Expiration = DateTime.UtcNow.AddDays(1).Date - DateTime.UtcNow });
+    }
+}

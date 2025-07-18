@@ -1,0 +1,24 @@
+﻿<div class="panel left controls @(show ? "" : "closed")">
+    <div class="opener" @onclick="() => show = !show">
+        @if (show)
+        {
+            <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
+        }
+        else
+        {
+            <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
+        }
+    </div>
+    <div class="contents">
+        <div class="button-generic spaced camera @(cameraType == ReplayCameraType.Cam2 ? "active" : "")" @onclick="() => SwitchCameraTypeAsync(ReplayCameraType.Cam2)" title="Replica of Cam2">
+            <img src="icons/ui/videocam.svg" width="24" height="24" /><span>2</span>
+        </div>
+        <div class="button-generic spaced camera @(cameraType == ReplayCameraType.Orbital ? "active" : "")" @onclick="() => SwitchCameraTypeAsync(ReplayCameraType.Orbital)" title="Orbiting camera">
+            <img src="icons/ui/videocam.svg" width="24" height="24" /><span>O</span>
+        </div>
+        @*<div class="button-generic spaced camera @(cameraType == ReplayCameraType.Free ? "active" : "")" @onclick="() => SwitchCameraTypeAsync(ReplayCameraType.Free)" title="Free camera">
+            <img src="icons/ui/videocam.svg" width="24" height="24" /><span>F</span>
+        </div>*@
+        <div class="button-generic spaced @(collisionsEnabled ? "active" : "")" @onclick="ToggleCollisionsAsync">Collisions</div>
+    </div>
+</div>

@@ -1,50 +1,317 @@
-@font-face {
-    font-family: 'Mona Sans';
-    src: url('Mona-Sans.woff2') format('woff2 supports variations'), url('Mona-Sans.woff2') format('woff2-variations');
-    font-weight: 200 900;
-    font-stretch: 75% 125%;
+@font-face {  
+   font-family: 'Mona Sans';  
+   src: url('Mona-Sans.woff2') format('woff2 supports variations'), url('Mona-Sans.woff2') format('woff2-variations');  
+   font-weight: 200 900;  
+   font-stretch: 75% 125%;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=PT+Mono&display=swap');
+
+:root {
+    --blue-color: #08F;
+    --red-color: #D10;
+    --yellow-color: #CA0;
 }
 
 html, body {
     font-family: "Mona Sans";
-    background-color: #000;
-    font-size: 100%;
+    background-color: #111;
     font-weight: 400;
     margin: 0;
     padding: 0;
     font-size: 18px;
     color: white;
-    background-image: url('construction.jpg');
     background-size: cover;
     background-position: center center;
     background-attachment: fixed;
-    text-align: center;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+}
+
+.mono {
+    font-family: "PT Mono", monospace;
+    font-style: normal;
+}
+
+.black-background {
+    background-color: black;
     height: 100vh;
 }
 
-a, .btn-link {
-    color: #006bb7;
+.black-background-fade {
+    background-color: black;
+    height: 100vh;
+    animation: fadeToBlack 0.5s;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+.centered {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
 }
 
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+@keyframes fadeToBlack {
+    from {
+        background-color: transparent;
+    }
+
+    to {
+        background-color: black;
+    }
 }
+
+footer.fixed {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+h1 {
+    outline: none;
+}
+
+ul {
+    list-style-type: "- ";
+}
+
+    ul.no-bullet {
+        list-style-type: none;
+    }
+
+button {
+    all: unset;
+}
+
+section.scene {
+    width: 100%;
+    background: black;
+    border-bottom: 2px solid #333;
+}
+
+section.content {
+    width: 100%;
+    background: #111;
+}
+
+.container {
+    padding: 20px;
+    width: 75%;
+    margin-right: auto;
+    margin-left: auto;
+    transition: width 0.2s ease;
+}
+
+@media (max-width: 850px) {
+    .container {
+        width: calc(100% - 3rem);
+        text-align: center;
+    }
+}
+
+footer {
+    margin: 20px 0;
+    color: gray;
+    text-align: center;
+    padding: 10px;
+}
+
+
+.button-generic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    background: #2225;
+    border-bottom: 2px solid #FFF3;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background-color 0.05s ease;
+    padding: 10px 5px;
+    cursor: pointer;
+}
+
+    .button-generic:hover {
+        background-color: #3338;
+        color: white;
+        text-decoration: none;
+    }
+
+    .button-generic.active {
+        background-color: #333C;
+    }
+
+    .button-generic.disabled {
+        background-color: #3334;
+        color: #888;
+        cursor: not-allowed;
+    }
+
+    .button-generic.spaced {
+        padding: 10px 15px;
+    }
+
+.navbar-fake-margin {
+    height: 5.5rem;
+}
+
+input[type=text], input.text, select {
+    border: 1px solid #333;
+    font-family: inherit;
+    border-radius: 5px;
+    color: inherit;
+    padding: 2px 10px;
+    height: 32px;
+    background-color: #1A1A1A;
+    font-size: inherit;
+}
+
+    input[type=text]:hover, input.text:hover, select:hover {
+        border-color: #444;
+        background-color: #222;
+    }
+
+select {
+    height: 38px;
+    cursor: pointer;
+}
+
+.view-external {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.view-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+h2.view {
+    text-align: center;
+    margin: 10px 0 35px 0;
+}
+
+.panels {
+    position: fixed;
+    top: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    pointer-events: none;
+}
+
+@media (max-width: 450px) {
+    .panels {
+        transform: scale(0.55);
+    }
+}
+
+    .panels.left {
+        transform-origin: top left;
+    }
+
+    .panels.right {
+        transform-origin: top right;
+        right: 0;
+    }
+
+.panel {
+    box-sizing: border-box;
+    background-color: #111D;
+    backdrop-filter: blur(10px);
+    border: 2px solid #222D;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform 0.4s ease;
+    pointer-events: all;
+}
+
+    .panel .opener {
+        display: flex;
+        position: absolute;
+        background-color: #111D;
+        border: 2px solid #222D;
+        cursor: pointer;
+    }
+
+        .panel .opener:hover {
+            background-color: #222D;
+        }
+
+    .panel.left {
+        border-left: 0;
+        border-radius: 0 10px 10px 0;
+        left: 0;
+    }
+
+        .panel.left .opener {
+            left: 100%;
+            border-left: 0;
+            border-radius: 0 10px 10px 0;
+            margin-left: 2px;
+        }
+
+    .panel.right {
+        border-right: 0;
+        border-radius: 10px 0 0 10px;
+        right: 0;
+    }
+
+        .panel.right .opener {
+            right: 100%;
+            border-right: 0;
+            border-radius: 10px 0 0 10px;
+            margin-right: 2px;
+        }
+
+    .panel .list {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        background-color: #1A1A1ADD;
+        border: 1px solid #333;
+        border-radius: 5px;
+        overflow: hidden auto;
+    }
+
+    .panel .list .item {
+        display: flex;
+        padding: 0 6px;
+        gap: 8px;
+        align-items: center;
+        border-radius: 5px;
+        text-decoration: none;
+        color: white;
+        animation: fadeIn 0.3s;
+        cursor: pointer;
+    }
+
+        .panel .list .item:hover {
+            background-color: #333;
+        }
+
+        .panel .list .item.active {
+            background-color: #444;
+        }
+
+a {
+    color: #26A8FF;
+    text-decoration: none;
+}
+
+    a:hover {
+        color: #47B5FF;
+        text-decoration: underline;
+    }
 
 .content {
     padding-top: 1.1rem;
-}
-
-h1:focus {
-    outline: none;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -80,4 +347,14 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
