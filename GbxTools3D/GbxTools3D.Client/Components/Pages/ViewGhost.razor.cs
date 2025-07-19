@@ -145,18 +145,23 @@ public partial class ViewGhost
 
     private async Task AfterSceneLoadAsync()
     {
-        await TryLoadGhostAsync();
-
-        if (string.IsNullOrEmpty(MapUid) && string.IsNullOrEmpty(MapUrl))
-        {
-            return;
-        }
-
         await semaphore.WaitAsync();
 
-        Map = mapAfterGhost;
+        try
+        {
+            await TryLoadGhostAsync();
 
-        semaphore.Release();
+            if (string.IsNullOrEmpty(MapUid) && string.IsNullOrEmpty(MapUrl))
+            {
+                return;
+            }
+
+            Map = mapAfterGhost;
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
     private async ValueTask<bool> TryLoadGhostAsync()
