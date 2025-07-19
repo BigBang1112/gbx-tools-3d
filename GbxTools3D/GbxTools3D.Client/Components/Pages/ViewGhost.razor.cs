@@ -47,6 +47,8 @@ public partial class ViewGhost
 
     private CGameCtnChallenge? mapAfterGhost;
 
+    private readonly SemaphoreSlim semaphore = new(1, 1);
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
@@ -62,61 +64,70 @@ public partial class ViewGhost
             return;
         }
 
+        await semaphore.WaitAsync();
+
         var ghostResponseTask = default(Task<HttpResponseMessage>);
         var mapResponseTask = default(Task<HttpResponseMessage>);
 
-        if (!string.IsNullOrEmpty(Url))
+        try
         {
-            ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
-        }
-        else if (Type == "wrr")
-        {
-            if (MapUid is not null && Time.HasValue && Login is not null)
+            if (!string.IsNullOrEmpty(Url))
             {
                 ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
             }
-        }
-
-        if (!string.IsNullOrEmpty(MapUrl))
-        {
-            mapResponseTask = Http.GetAsync(MapUrl);
-        }
-        else if (MxSite is not null && MapUid is not null)
-        {
-            mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
-        }
-
-        if (ghostResponseTask is not null)
-        {
-            using var response = await ghostResponseTask;
-            if (response.IsSuccessStatusCode)
+            else if (Type == "wrr")
             {
-                await using var stream = await response.Content.ReadAsStreamAsync();
-                Ghost = await Gbx.ParseAsync<CGameCtnGhost>(stream);
-            }
-        }
-
-        if (mapResponseTask is not null)
-        {
-            using var response = await mapResponseTask;
-            if (response.IsSuccessStatusCode)
-            {
-                if (string.IsNullOrEmpty(MapUrl))
+                if (MapUid is not null && Time.HasValue && Login is not null)
                 {
-                    var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
-
-                    if (content is not null)
-                    {
-                        await using var ms = new MemoryStream(content.Content);
-                        mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
-                    }
+                    ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
                 }
-                else
+            }
+
+            if (!string.IsNullOrEmpty(MapUrl))
+            {
+                mapResponseTask = Http.GetAsync(MapUrl);
+            }
+            else if (MxSite is not null && MapUid is not null)
+            {
+                mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
+            }
+
+            if (ghostResponseTask is not null)
+            {
+                using var response = await ghostResponseTask;
+                if (response.IsSuccessStatusCode)
                 {
                     await using var stream = await response.Content.ReadAsStreamAsync();
-                    mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
+                    Ghost = await Gbx.ParseAsync<CGameCtnGhost>(stream);
                 }
             }
+
+            if (mapResponseTask is not null)
+            {
+                using var response = await mapResponseTask;
+                if (response.IsSuccessStatusCode)
+                {
+                    if (string.IsNullOrEmpty(MapUrl))
+                    {
+                        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
+
+                        if (content is not null)
+                        {
+                            await using var ms = new MemoryStream(content.Content);
+                            mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
+                        }
+                    }
+                    else
+                    {
+                        await using var stream = await response.Content.ReadAsStreamAsync();
+                        mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            semaphore.Release();
         }
     }
 
@@ -136,7 +147,16 @@ public partial class ViewGhost
     {
         await TryLoadGhostAsync();
 
+        if (string.IsNullOrEmpty(MapUid) && string.IsNullOrEmpty(MapUrl))
+        {
+            return;
+        }
+
+        await semaphore.WaitAsync();
+
         Map = mapAfterGhost;
+
+        semaphore.Release();
     }
 
     private async ValueTask<bool> TryLoadGhostAsync()
