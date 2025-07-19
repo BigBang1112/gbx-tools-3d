@@ -73,7 +73,7 @@ public partial class ViewGhost
         {
             if (!string.IsNullOrEmpty(Url))
             {
-                ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
+                ghostResponseTask = Http.GetAsync(Url);
             }
             else if (Type == "wrr")
             {
