@@ -78,8 +78,11 @@
                             <div class="mono">@carSample.SteerFront.ToString("0.000")</div>
                             <div class="@(carSample.TurboStrength > 0 ? "turbo" : "")">Turbo:</div>
                             <div class="mono @(carSample.TurboStrength > 0 ? "turbo" : "")">@carSample.TurboStrength</div>
-                            <div style="color: @(carSample.DirtBlend.HasValue ? InterpolateDirtBlend(carSample.DirtBlend.Value) : "inherit")">Dirt blend:</div>
-                            <div class="mono" style="color: @(carSample.DirtBlend.HasValue ? InterpolateDirtBlend(carSample.DirtBlend.Value) : "inherit")">@carSample.DirtBlend</div>
+                            @if (carSample.DirtBlend.HasValue)
+                            {
+                                <div style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">Dirt blend:</div>
+                                <div class="mono" style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">@carSample.DirtBlend</div>
+                            }
                             <div>Horn:</div>
                             <div class="mono" title="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
                             <div>U13:</div>
