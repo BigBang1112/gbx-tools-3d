@@ -917,7 +917,13 @@ public partial class View3D : ComponentBase
             return null;
         }
 
-        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
+        var tempGameVersion = GameVersion;
+        if (GameVersion == GameVersion.TMNESWC)
+        {
+            tempGameVersion = GameVersion.TMF; // temporary
+        }
+
+        var hash = $"GbxTools3D|Vehicle|{tempGameVersion}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
 
         using var meshResponse = await http.GetAsync($"/api/mesh/{hash}", cancellationToken);
 
