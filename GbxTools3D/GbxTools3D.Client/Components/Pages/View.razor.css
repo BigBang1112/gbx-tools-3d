@@ -52,6 +52,7 @@ h3.supported {
             margin: 10px 0 0 0;
             width: 100%;
             font-size: 175%;
+            text-align: center;
         }
 
         .view-type ::deep div.upload-area:last-child {

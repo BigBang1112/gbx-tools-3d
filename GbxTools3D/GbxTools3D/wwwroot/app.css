@@ -100,7 +100,7 @@ section.content {
     width: 75%;
     margin-right: auto;
     margin-left: auto;
-    transition: width 0.2s ease;
+    transition: width 0.2s ease, padding 0.2s ease;
 }
 
 @media (max-width: 850px) {
@@ -204,12 +204,6 @@ h2.view {
     pointer-events: none;
 }
 
-@media (max-width: 450px) {
-    .panels {
-        transform: scale(0.55);
-    }
-}
-
     .panels.left {
         transform-origin: top left;
     }
@@ -218,6 +212,30 @@ h2.view {
         transform-origin: top right;
         right: 0;
     }
+
+@media (max-height: 950px) {
+    .panels {
+        transform: scale(0.9);
+    }
+}
+
+@media (max-height: 875px) {
+    .panels {
+        transform: scale(0.7);
+    }
+}
+
+@media (max-width: 450px), (max-height: 800px) {
+    .panels {
+        transform: scale(0.55);
+    }
+}
+
+@media (max-height: 600px) {
+    .panels {
+        top: 100px;
+    }
+}
 
 .panel {
     box-sizing: border-box;
