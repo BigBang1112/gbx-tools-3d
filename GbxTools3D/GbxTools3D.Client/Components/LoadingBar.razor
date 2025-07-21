@@ -1,0 +1,18 @@
+﻿<div class="bg" style="@(NoNav ? "" : "top: 4.5rem;")">
+    @if (real)
+    {
+        <div class="progress" style="width: @((progress * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+    }
+    else
+    {
+        <div class="progress fake"></div>
+    }
+</div>
+
+@code {
+    private float progress = 0.3f;
+    private bool real;
+
+    [SupplyParameterFromQuery(Name = "nonav")]
+    private bool NoNav { get; set; }
+}

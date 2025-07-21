@@ -36,7 +36,11 @@ else
 {
     <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
 
-        @if (!RendererInfo.IsInteractive)
+        @if (RendererInfo.IsInteractive)
+        {
+            <LoadingBar></LoadingBar>
+        }
+        else
         {
             <div class="centered">
                 <Loader></Loader>
