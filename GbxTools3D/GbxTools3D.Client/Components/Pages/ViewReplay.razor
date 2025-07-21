@@ -73,7 +73,7 @@ else
         }
 
         <View3D Map="Replay?.Challenge" BeforeMapLoad="BeforeMapLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
-        <GhostControls View3D="view3d" Map="Replay?.Challenge" @ref="ghostControls"></GhostControls>
+        <GhostControls View3D="view3d" Map="Replay?.Challenge" @ref="ghostControls" TmxSite="@TmxSite" MxSite="@MxSite" ExchangeId="@MapId"></GhostControls>
     </div>
 }
 

@@ -12,7 +12,7 @@
         <Controls OnCameraTypeChanged="ChangeCameraType" OnCollisionsToggled="ToggleCollisions"></Controls>
     </div>
     <div class="panels right">
-        <MapInfo Map="Map" MapUploaded="OnMapUploadedAsync" Uploadable="MapUploadable"></MapInfo>
+        <MapInfo Map="Map" MapUploaded="OnMapUploadedAsync" Uploadable="MapUploadable" TmxSite="@TmxSite" MxSite="@MxSite" ExchangeId="@ExchangeId"></MapInfo>
         <GhostInfo Ghost="CurrentGhost" UseHundredths="UseHundredths" @ref="ghostInfo"></GhostInfo>
         <Speedometer @ref="speedometer"></Speedometer>
     </div>

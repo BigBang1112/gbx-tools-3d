@@ -56,6 +56,15 @@ public partial class GhostControls : ComponentBase
     [Parameter]
     public bool MapUploadable { get; set; }
 
+    [Parameter]
+    public string? TmxSite { get; set; }
+
+    [Parameter]
+    public string? MxSite { get; set; }
+
+    [Parameter]
+    public string? ExchangeId { get; set; }
+
     public RenderDetails? RenderDetails { get; set; }
 
     private async Task OnMapUploadedAsync(CGameCtnChallenge map)

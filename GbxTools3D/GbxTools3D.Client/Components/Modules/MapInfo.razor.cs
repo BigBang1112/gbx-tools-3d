@@ -27,6 +27,15 @@ public partial class MapInfo : ComponentBase
     [Parameter]
     public bool Uploadable { get; set; }
 
+    [Parameter]
+    public string? TmxSite { get; set; }
+
+    [Parameter]
+    public string? MxSite { get; set; }
+
+    [Parameter]
+    public string? ExchangeId { get; set; }
+
     public string? Mood
     {
         get

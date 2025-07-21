@@ -55,5 +55,28 @@
 .icons {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
+}
+
+    .icons div, .icons a {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+.tmx:hover {
+    filter: drop-shadow(0px 0px 3px rgba(217, 40, 40, 255));
+}
+
+.ix:hover {
+    filter: drop-shadow(0px 0px 3px rgba(255, 230, 1, 255));
+}
+
+.tm2020x:hover {
+    filter: drop-shadow(0px 0px 3px rgba(110, 250, 160, 255));
+}
+
+.mp:hover {
+    filter: drop-shadow(0px 0px 3px rgba(121, 213, 255, 255));
 }
