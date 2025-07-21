@@ -7,16 +7,16 @@
     }
 
 .kofi {
-    background-color: #FF6433DD !important;
+    background-color: #FF4F19DD !important;
     cursor: pointer;
 }
 
     .kofi:hover {
-        background-color: #FF8966DD !important;
+        background-color: #FF6433DD !important;
     }
 
     .kofi.open {
-        background-color: #FF9375DD !important;
+        background-color: #FF8966DD !important;
     }
 
 .navbar {
@@ -36,6 +36,11 @@
     display: none;
     position: absolute;
     width: 100%;
+}
+
+.navbar-none {
+    background-color: transparent;
+    border: none;
 }
 
 .container {
@@ -60,6 +65,11 @@ nav {
     margin-left: 0.5rem;
     margin-right: 2rem;
 }
+
+    .navbar-brand.nonav {
+        text-shadow: 2px 2px 4px #2228;
+        opacity: 0.5;
+    }
 
 .nav-item ::deep .nav-link {
     color: white;
@@ -136,4 +146,17 @@ nav {
         .burger ::deep .nav-link img.icon {
             display: block;
         }
+
+    .show {
+        background: #111A;
+        padding: 5px;
+        border-radius: 5px;
+        backdrop-filter: blur(5px);
+    }
+}
+
+@media (max-height: 600px) {
+    .container {
+        padding: 0.7rem;
+    }
 }
