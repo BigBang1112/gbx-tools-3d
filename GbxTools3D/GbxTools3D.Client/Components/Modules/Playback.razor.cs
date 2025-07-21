@@ -1,5 +1,4 @@
-﻿using GBX.NET;
-using GbxTools3D.Client.Models;
+﻿using GbxTools3D.Client.Models;
 using GbxTools3D.Client.Modules;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;

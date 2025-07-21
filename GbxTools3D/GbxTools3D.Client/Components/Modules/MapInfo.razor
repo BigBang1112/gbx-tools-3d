@@ -1,7 +1,8 @@
 ﻿@inject IJSRuntime JS
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <div class="panel right map-info @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />

@@ -1,5 +1,7 @@
-﻿<div class="panel left render-info @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+﻿@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<div class="panel left render-info @(show ? "" : "closed")">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />

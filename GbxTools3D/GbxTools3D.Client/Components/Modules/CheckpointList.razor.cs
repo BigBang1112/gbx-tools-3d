@@ -6,9 +6,11 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class CheckpointList : ComponentBase
 {
+    private const string ModuleCheckpointListHide = "ModuleCheckpointListHide";
+
     private record CheckpointInfo(int Index, CGameCtnGhost.Checkpoint Checkpoint, int Lap, bool IsFinish, bool HasBonusChanged);
 
-    private bool show = true;
+    private bool show;
 
     private TimeInt32? currentCheckpoint;
     private int currentCheckpointIndex = -1;
@@ -72,5 +74,19 @@ public partial class CheckpointList : ComponentBase
 
             yield return new CheckpointInfo(i, checkpoint, i / CheckpointsPerLap, isFinish, hasBonusChanged);
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            show = !await LocalStorage.GetItemAsync<bool>(ModuleCheckpointListHide);
+        }
+    }
+
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleCheckpointListHide, !show);
     }
 }

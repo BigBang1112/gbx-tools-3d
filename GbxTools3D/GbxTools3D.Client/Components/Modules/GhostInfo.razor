@@ -1,7 +1,9 @@
 ﻿@using TmEssentials
 
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
 <div class="panel right ghost-info @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
@@ -17,8 +19,8 @@
             <FormattedText Text="@(Ghost.GhostNickname ?? Ghost.GhostLogin)"></FormattedText>
         </div>
         <div class="minimenu">
-            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" @onclick="() => mode = MenuType.Samples">Samples</div>
-            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" @onclick="() => mode = MenuType.Details">Details</div>
+            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" @onclick="() => SwitchModeAsync(MenuType.Samples)">Samples</div>
+            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" @onclick="() => SwitchModeAsync(MenuType.Details)">Details</div>
         </div>
         @if (mode == MenuType.Samples)
         {
