@@ -63,19 +63,24 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
         else if (!string.IsNullOrEmpty(TmxSite))
         {
             endpoint = $"/api/replay/tmx/{TmxSite}/{ReplayId}";
+
+            if (!string.IsNullOrEmpty(MapId))
+            {
+                endpoint += $"/{MapId}";
+            }
         }
         else if (!string.IsNullOrEmpty(MxSite))
         {
             endpoint = $"/api/replay/mx/{MxSite}/{ReplayId}";
+
+            if (!string.IsNullOrEmpty(MapId))
+            {
+                endpoint += $"/{MapId}";
+            }
         }
         else
         {
             throw new Exception();
-        }
-
-        if (string.IsNullOrEmpty(MapId))
-        {
-            endpoint += $"/{MapId}";
         }
 
         using var response = await Http.GetAsync(endpoint);
