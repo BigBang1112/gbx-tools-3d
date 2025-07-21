@@ -2,12 +2,14 @@
     font-size: 12rem;
     margin: 30px 0 0 0;
     z-index: 1;
+    transition: font-size 0.2s ease;
 }
 
 .brand-gbx-tools {
     font-size: 6rem;
     margin: 0 0 50px 0;
     z-index: 1;
+    transition: font-size 0.2s ease;
 }
 
 .home-text {
@@ -115,6 +117,7 @@ video {
     text-decoration: none;
     margin-bottom: 10px;
     height: 100px;
+    transition: font-size 0.2s ease, height 0.2s ease;
 }
 
     .showcase-button:hover {
@@ -156,6 +159,10 @@ video {
     section.scene {
         text-align: center;
     }
+
+    h2 {
+        text-align: center;
+    }
 }
 
 @media (max-width: 600px) {
@@ -172,7 +179,10 @@ video {
 
 @media (max-width: 500px) {
     .showcase-button .game {
-        display: none;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        font-size: 100%;
     }
 }
 
