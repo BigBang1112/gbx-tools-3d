@@ -96,7 +96,7 @@ section.content {
 }
 
 .container {
-    padding: 20px;
+    padding: 1rem;
     width: 75%;
     margin-right: auto;
     margin-left: auto;
@@ -106,7 +106,6 @@ section.content {
 @media (max-width: 850px) {
     .container {
         width: calc(100% - 3rem);
-        text-align: center;
     }
 }
 
