@@ -776,7 +776,7 @@ public partial class View3D : ComponentBase
             var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == Map.Decoration.Id);
             // TODO with deco
 
-            await foreach (var _ in CreateDecorationAsync(Map.Collection ?? throw new Exception("Collection is null"), decoSize, optimized: true, cancellationToken)) { }
+            await foreach (var _ in CreateDecorationAsync(Map.Decoration.Collection, decoSize, optimized: true, cancellationToken)) { }
         }
 
         return true;
