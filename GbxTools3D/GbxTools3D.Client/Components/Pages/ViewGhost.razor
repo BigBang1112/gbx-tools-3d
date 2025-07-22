@@ -48,7 +48,7 @@ else
         }
 
         <View3D Map="Map" AfterSceneLoad="AfterSceneLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
-        <GhostControls View3D="view3d" Map="Map" @ref="ghostControls" MapUploaded="OnMapUploadedAsync" MapUploadable="true"></GhostControls>
+        <GhostControls View3D="view3d" Map="Map" @ref="ghostControls" MapUploaded="OnMapUploadedAsync" MapUploadable="true" MxSite="@MxSite" ExchangeId="@mapMxInfo?.Map?.MxId.ToString()"></GhostControls>
     </div>
 }
 

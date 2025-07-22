@@ -1,6 +1,7 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
 using GbxTools3D.Client.Components.Modules;
+using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.EventArgs;
 using GbxTools3D.Client.Models;
 using Microsoft.AspNetCore.Components;
@@ -46,6 +47,7 @@ public partial class ViewGhost
     public CGameCtnChallenge? Map { get; set; }
 
     private CGameCtnChallenge? mapAfterGhost;
+    private MapContentDto? mapMxInfo;
 
     private readonly SemaphoreSlim semaphore = new(1, 1);
 
@@ -109,11 +111,11 @@ public partial class ViewGhost
                 {
                     if (string.IsNullOrEmpty(MapUrl))
                     {
-                        var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
+                        mapMxInfo = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
 
-                        if (content is not null)
+                        if (mapMxInfo is not null)
                         {
-                            await using var ms = new MemoryStream(content.Content);
+                            await using var ms = new MemoryStream(mapMxInfo.Content);
                             mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
                         }
                     }
