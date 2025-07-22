@@ -215,7 +215,7 @@ public partial class View3D : ComponentBase
         {
             collectionsTask = collectionInfos.Count == 0 ? http.GetAsync($"/api/collections/{GameVersion}", cts.Token) : null;
             blockInfosTask = loadBlockInfos && blockInfos.Count == 0 ? http.GetAsync($"/api/blocks/{GameVersion}/{collection}", cts.Token) : null;
-            decorationTask = loadDecorations && decorations.Count == 0 ? http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
+            decorationTask = loadDecorations && decorations.Count == 0 ? http.GetAsync($"/api/decorations/{GameVersion}/{Map?.Decoration.Collection ?? collection}", cts.Token) : null;
         }
 
         var materialTask = loadMaterials && Materials.Count == 0 ? http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
