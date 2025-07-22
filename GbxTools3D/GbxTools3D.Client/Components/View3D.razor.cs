@@ -1590,11 +1590,6 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            if (blockInfo.TerrainModifier is not null)
-            {
-                terrainModifiers[block.Coord with { Y = 0 }] = new TerrainModifierInfo(blockInfo.TerrainModifier, null);
-            }
-
             var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
 
             if (!units.Any(x => x.TerrainModifier is not null))
@@ -1647,6 +1642,20 @@ public partial class View3D : ComponentBase
                 // this ensures the block is not modified by itself
                 // this is not exact, it should be checked against real block units and not just 0x0x0!!
                 terrainModifiers[unitCoord] = new TerrainModifierInfo(modifier, block);
+            }
+        }
+
+        // ensures the dirt modifiers are applied after fabric ones
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo))
+            {
+                continue;
+            }
+
+            if (blockInfo.TerrainModifier is not null)
+            {
+                terrainModifiers[block.Coord with { Y = 0 }] = new TerrainModifierInfo(blockInfo.TerrainModifier, null);
             }
         }
 
