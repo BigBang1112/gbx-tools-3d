@@ -31,6 +31,10 @@ video {
     height: 100%;
 }
 
+h2 {
+    margin-top: 2rem;
+}
+
 @media (max-width: 600px) {
     .brand-3d {
         font-size: 8rem;
