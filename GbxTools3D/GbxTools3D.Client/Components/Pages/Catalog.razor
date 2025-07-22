@@ -40,7 +40,7 @@
 
 @if (!NoCatalog)
 {
-    <div class="panels left">
+    <div class="panels big left">
         <div class="panel left catalog @(showCatalog ? "" : "closed")">
             <div class="opener" @onclick="ToggleCatalogAsync">
                 @if (showCatalog)
@@ -179,7 +179,7 @@
             }
         </div>
     </div>
-    <div class="panels right">
+    <div class="panels big right">
         <div class="panel right properties @(showProperties ? "" : "closed")">
             <div class="opener" @onclick="TogglePropertiesAsync">
                 @if (showProperties)

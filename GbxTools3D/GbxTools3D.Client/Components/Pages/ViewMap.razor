@@ -79,10 +79,10 @@ else
         <View3D Map="Map" OnRenderDetails="OnRenderDetails"></View3D>
         @if (RendererInfo.IsInteractive)
         {
-            <div class="panels left">
+            <div class="panels small left">
                 <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
             </div>
-            <div class="panels right">
+            <div class="panels small right">
                 <MapInfo Map="Map" TmxSite="@TmxSite" MxSite="@MxSite" ExchangeId="@MapId"></MapInfo>
             </div>
         }

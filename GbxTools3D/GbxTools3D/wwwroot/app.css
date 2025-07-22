@@ -214,19 +214,19 @@ h2.view {
     }
 
 @media (max-height: 950px) {
-    .panels {
+    .panels.small {
         transform: scale(0.9);
     }
 }
 
 @media (max-height: 875px) {
-    .panels {
+    .panels.small {
         transform: scale(0.7);
     }
 }
 
 @media (max-width: 450px), (max-height: 800px) {
-    .panels {
+    .panels.small {
         transform: scale(0.55);
     }
 }
