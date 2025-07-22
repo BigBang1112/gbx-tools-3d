@@ -1009,6 +1009,71 @@ public partial class View3D : ComponentBase
         await ToggleCollisionsAsync($"GbxTools3D|Decoration|{GameVersion}|{CollectionName}|{GbxPath.GetFileNameWithoutExtension(solid.FilePath)}|Je te hais".Hash(), solid, cancellationToken);
     }
 
+    internal async Task ToggleBlockObjectLinksAsync(
+        bool isGround, 
+        int variant, 
+        int subVariant, 
+        int objectLinkCount, 
+        bool hasWaypoint, 
+        Solid solid, 
+        CancellationToken cancellationToken = default)
+    {
+        if (Scene is null)
+        {
+            return;
+        }
+
+        if (solid.ObjectLinksEnabled)
+        {
+            solid.ToggleObjectLinks(Scene, objectLinks: []);
+            return;
+        }
+
+        Solid[] objectLinks;
+
+        if (hasWaypoint)
+        {
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|False|Way to go bois".Hash();
+
+            using var meshTriggerResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
+
+            if (!meshTriggerResponse.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            await using var stream = await meshTriggerResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+            var collisionSolid = await Solid.ParseAsync(stream, GameVersion, Materials, optimized: false, isTrigger: true);
+
+            objectLinks = [collisionSolid];
+        }
+        else
+        {
+            objectLinks = new Solid[objectLinkCount];
+
+            for (var i = 0; i < objectLinkCount; i++)
+            {
+                var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|Hella{isGround}|{variant}|{subVariant}|{i}|marosisPakPakGhidraGang".Hash();
+
+                using var meshTriggerResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
+
+                if (!meshTriggerResponse.IsSuccessStatusCode)
+                {
+                    return;
+                }
+
+                await using var stream = await meshTriggerResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+                var collisionSolid = await Solid.ParseAsync(stream, GameVersion, Materials, optimized: false, isTrigger: true);
+
+                objectLinks[i] = collisionSolid;
+            }
+        }
+
+        solid.ToggleObjectLinks(Scene, objectLinks);
+    }
+
     private async Task ProcessBlockResponsesAsync(
         Dictionary<UniqueVariant, Task<HttpResponseMessage>> responseTasks,
         int? maxRequestsToProcess,

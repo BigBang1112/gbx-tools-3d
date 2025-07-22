@@ -5,6 +5,7 @@ import { Earcut } from 'three/src/extras/Earcut.js';
 //import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
 const collisionMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 });
+const triggerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
 
 export function create(matrixAutoUpdate) {
     var obj = new THREE.Object3D();
@@ -244,7 +245,7 @@ export function createEllipsoid(radiusX, radiusY, radiusZ) {
     return new THREE.Mesh(geometry, collisionMaterial);
 }
 
-export function createCollisionMesh(vertData, indData) {
+export function createCollisionMesh(vertData, indData, isTrigger) {
     const verts = new Float32Array(vertData.length / 4);
     const vertDataView = new DataView(vertData.slice().buffer);
     for (let i = 0; i < vertData.length; i += 4) {
@@ -258,7 +259,7 @@ export function createCollisionMesh(vertData, indData) {
     geometry.setIndex(new THREE.Uint32BufferAttribute(inds, 1));
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
 
-    return new THREE.Mesh(geometry, collisionMaterial);
+    return new THREE.Mesh(geometry, isTrigger ? triggerMaterial : collisionMaterial);
 }
 
 export function triangulate(positions3d) {

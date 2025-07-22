@@ -120,7 +120,6 @@
                                                 <img src="icons/noicon.webp" width="24" height="24" />
                                             }
                                             @block.Name
-                                            <span>@TestGetSoundHash(block)</span>
                                         </NavLink>
                                     </Virtualize>
                                 }
@@ -377,6 +376,19 @@
                             <div class="button-generic @(currentSolid.CollisionsEnabled ? "active" : "")" @onclick="() => ToggleCollisionsAsync(currentSolid)" title="Collisions">
                                 <img src="icons/ui/minor_crash.svg" alt="Collisions" class="icon" width="32" height="32" />
                             </div>
+                            @if (block is not null)
+                            {
+                                var variants = blockIsGround ? block.GroundVariants : block.AirVariants;
+                                var currentVariant = variants.FirstOrDefault(x => x.Variant == blockVariant && x.SubVariant == blockSubVariant);
+                                var hasWaypoint = blockIsGround ? block.HasGroundWaypoint : block.HasAirWaypoint;
+
+                                @if (currentVariant?.ObjectLinks?.Count > 0 || hasWaypoint)
+                                {
+                                    <div class="button-generic @(currentSolid.ObjectLinksEnabled ? "active" : "")" @onclick="() => ToggleObjectLinksAsync(currentSolid, currentVariant?.ObjectLinks?.Count ?? 0, hasWaypoint)" title="Triggers and object links">
+                                        <img src="icons/ui/view_in_ar.svg" alt="Object links" class="icon" width="32" height="32" />
+                                    </div>
+                                }
+                            }
                             @if (view3d?.Scene is not null)
                             {
                                 <div class="button-generic @(currentSolid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => currentSolid.ToggleVertexNormalHelper(view3d.Scene)" title="Vertex normals">
