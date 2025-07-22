@@ -161,7 +161,7 @@ internal sealed class MaterialService
             // is shader-material!
             material.IsShader = true;
 
-            if (gameVersion != GameVersion.TMT && gameVersion != GameVersion.MP4) // some random StackOverflowException in TMT and MP4 when trying to access Shader1
+            if (gameVersion != GameVersion.TMT && gameVersion != GameVersion.MP4 && gameVersion != GameVersion.TM2020) // some random StackOverflowException in TMT and MP4 when trying to access Shader1
             {
                 // lookup into shader (SportCar situation)
                 var pc0 = node.DeviceMaterials[0].Shader1 as CPlugShaderApply;
