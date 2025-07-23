@@ -171,7 +171,7 @@ public static class MapApiEndpoint
         var http = httpFactory.CreateClient("exchange");
 
         using var mapInfoResponse = await http.GetAsync($"https://{siteUrl}/api/maps?uid={mapUid}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
-        
+
         if (mapInfoResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
             return TypedResults.NotFound();
@@ -229,5 +229,14 @@ public static class MapApiEndpoint
             Map = mapInfoDto,
             Content = mapData
         });
+    }
+
+    private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromManiaPlanetByUid(
+        HttpContext context,
+        IHttpClientFactory httpFactory,
+        string mapUid,
+        CancellationToken cancellationToken)
+    {
+        return TypedResults.NotFound();
     }
 }
