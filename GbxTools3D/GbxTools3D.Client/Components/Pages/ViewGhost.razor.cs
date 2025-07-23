@@ -7,6 +7,7 @@ using GbxTools3D.Client.Models;
 using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
 using System.Runtime.Versioning;
+using System.Web;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -35,6 +36,9 @@ public partial class ViewGhost
 
     [SupplyParameterFromQuery(Name = "mapmp")]
     private bool IsManiaPlanetMap { get; set; }
+
+    [SupplyParameterFromQuery(Name = "platform")]
+    private string? Platform { get; set; }
 
     [SupplyParameterFromQuery(Name = "url")]
     private string? Url { get; set; }
@@ -78,7 +82,14 @@ public partial class ViewGhost
         {
             if (!string.IsNullOrEmpty(Url))
             {
-                ghostResponseTask = Http.GetAsync(Url);
+                if (Type == "tmt")
+                {
+                    ghostResponseTask = Http.GetAsync($"/api/ghost/tmt/{HttpUtility.UrlEncode(Url)}");
+                }
+                else
+                {
+                    ghostResponseTask = Http.GetAsync(Url);
+                }
             }
             else if (Type == "wrr")
             {
@@ -97,6 +108,10 @@ public partial class ViewGhost
                 if (IsManiaPlanetMap)
                 {
                     mapResponseTask = Http.GetAsync($"/api/map/mp/{MapUid}");
+                }
+                else if (Type == "tmt" && !string.IsNullOrEmpty(Platform))
+                {
+                    mapResponseTask = Http.GetAsync($"/api/map/tmt/{Platform}/uid/{MapUid}");
                 }
                 else if (MxSite is not null)
                 {
@@ -119,7 +134,7 @@ public partial class ViewGhost
                 using var response = await mapResponseTask;
                 if (response.IsSuccessStatusCode)
                 {
-                    if (!string.IsNullOrEmpty(MapUrl) || (IsManiaPlanetMap && !string.IsNullOrEmpty(MapUid)))
+                    if (!string.IsNullOrEmpty(MapUrl) || (!string.IsNullOrEmpty(MapUid) && (IsManiaPlanetMap || Type == "tmt")))
                     {
                         await using var stream = await response.Content.ReadAsStreamAsync();
                         mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);

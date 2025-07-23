@@ -3,6 +3,7 @@ using GbxTools3D.Data;
 using GbxTools3D.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -57,15 +58,22 @@ public static class IconApiEndpoint
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetEnvironmentIconByCollectionName(
         AppDbContext db,
+        HybridCache cache,
         GameVersion gameVersion,
         string collectionName,
         HttpContext context,
         CancellationToken cancellationToken)
     {
-        var icon = await IconByCollectionNameAsync(db, gameVersion, collectionName);
+        var key = $"icon:env:{gameVersion}:{collectionName}";
+
+        var icon = await cache.GetOrCreateAsync(key, async token =>
+        {
+            return await IconByCollectionNameAsync(db, gameVersion, collectionName);
+        }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }, cancellationToken: cancellationToken);
 
         if (icon is null)
         {
+            await cache.RemoveAsync(key, cancellationToken);
             return TypedResults.NotFound();
         }
 
@@ -75,15 +83,22 @@ public static class IconApiEndpoint
 
     private static async Task<Results<FileContentHttpResult, NotFound>> GetSmallIconByCollectionName(
         AppDbContext db,
+        HybridCache cache,
         GameVersion gameVersion,
         string collectionName,
         HttpContext context,
         CancellationToken cancellationToken)
     {
-        var icon = await IconSmallByCollectionNameAsync(db, gameVersion, collectionName);
-        
+        var key = $"icon:small:{gameVersion}:{collectionName}";
+
+        var icon = await cache.GetOrCreateAsync(key, async token =>
+        {
+            return await IconSmallByCollectionNameAsync(db, gameVersion, collectionName);
+        }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }, cancellationToken: cancellationToken);
+
         if (icon is null)
         {
+            await cache.RemoveAsync(key, cancellationToken);
             return TypedResults.NotFound();
         }
 

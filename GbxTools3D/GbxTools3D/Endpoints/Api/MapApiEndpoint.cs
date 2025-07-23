@@ -21,6 +21,8 @@ public static class MapApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
         group.MapGet("/mp/{mapUid}", GetMapFromManiaPlanetByUid)
             .RequireRateLimiting("fixed-external-downloads");
+        group.MapGet("tmt/{platform}/uid/{mapUid}", GetMapFromTMTurboByUid)
+            .RequireRateLimiting("fixed-external-downloads");
     }
 
     private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromTmxById(
@@ -35,7 +37,7 @@ public static class MapApiEndpoint
         var http = httpFactory.CreateClient("exchange");
 
         var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackId%2CTrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
-        using var trackResponse = await http.GetAsync($"https://{siteUrl}/trackgbx/{trackId}", cancellationToken);
+        using var trackResponse = await http.GetAsync($"https://{siteUrl}/trackgbx/{trackId}", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (trackResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -104,7 +106,7 @@ public static class MapApiEndpoint
         var http = httpFactory.CreateClient("exchange");
 
         var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
-        using var mapResponse = await http.GetAsync($"https://{siteUrl}/mapgbx/{mapId}", cancellationToken);
+        using var mapResponse = await http.GetAsync($"https://{siteUrl}/mapgbx/{mapId}", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -172,7 +174,7 @@ public static class MapApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var mapInfoResponse = await http.GetAsync($"https://{siteUrl}/api/maps?uid={mapUid}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
+        using var mapInfoResponse = await http.GetAsync($"https://{siteUrl}/api/maps?uid={mapUid}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (mapInfoResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -202,7 +204,7 @@ public static class MapApiEndpoint
             // TODO: add authors
         };
 
-        using var mapResponse = await http.GetAsync($"https://{siteUrl}/mapgbx/{map.MapId}", cancellationToken);
+        using var mapResponse = await http.GetAsync($"https://{siteUrl}/mapgbx/{map.MapId}", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -256,10 +258,11 @@ public static class MapApiEndpoint
 
         var http = httpFactory.CreateClient("maniaplanet");
 
-        var mapResponse = await http.GetAsync(map.DownloadUrl, cancellationToken);
+        var mapResponse = await http.GetAsync(map.DownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
+            mapResponse.Dispose();
             return TypedResults.NotFound();
         }
 
@@ -274,7 +277,45 @@ public static class MapApiEndpoint
             stream,
             "application/gbx",
             mapResponse.Content.Headers.ContentDisposition?.FileName,
-            mapResponse.Content.Headers.LastModified
+            mapResponse.Content.Headers.LastModified,
+            mapResponse.Headers.ETag is null
+                ? null
+                : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(mapResponse.Headers.ETag.Tag, mapResponse.Headers.ETag.IsWeak)
+        );
+    }
+
+    private static async Task<Results<FileStreamHttpResult, NotFound>> GetMapFromTMTurboByUid(
+        HttpContext context,
+        IHttpClientFactory httpFactory,
+        TMTPlatform platform,
+        string mapUid,
+        CancellationToken cancellationToken)
+    {
+        var http = httpFactory.CreateClient("tmt");
+
+        var mapResponse = await http.GetAsync($"https://tmturbo-prod-{platform.ToString().ToLowerInvariant()}-maps.s3.eu-west-1.amazonaws.com/{mapUid}.Map.Gbx", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        
+        if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            mapResponse.Dispose();
+            return TypedResults.NotFound();
+        }
+
+        mapResponse.EnsureSuccessStatusCode();
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(mapResponse);
+
+        var stream = await mapResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        return TypedResults.File(
+            stream,
+            "application/gbx",
+            mapResponse.Content.Headers.ContentDisposition?.FileName,
+            mapResponse.Content.Headers.LastModified,
+            mapResponse.Headers.ETag is null
+                ? null
+                : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(mapResponse.Headers.ETag.Tag, mapResponse.Headers.ETag.IsWeak)
         );
     }
 }

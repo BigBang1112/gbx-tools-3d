@@ -39,6 +39,11 @@ public static class WebConfiguration
             client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("ManiaPlanet"));
         }).AddStandardResilienceHandler();
 
+        services.AddHttpClient("tmt", client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("TMTurbo"));
+        }).AddStandardResilienceHandler();
+
         services.AddTMX();
 
         services.AddManiaPlanetAPI(options =>
