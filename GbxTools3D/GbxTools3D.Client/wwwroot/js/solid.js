@@ -5,7 +5,7 @@ import { Earcut } from 'three/src/extras/Earcut.js';
 //import { InstancedMesh2 } from '@three.ez/instanced-mesh';
 
 const collisionMaterial = new THREE.MeshBasicMaterial({ wireframe: true, color: 0x00ff00 });
-const triggerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.6 });
+const triggerMaterial = new THREE.MeshBasicMaterial({ color: 0x00aaff, transparent: true, opacity: 0.4 });
 
 export function create(matrixAutoUpdate) {
     var obj = new THREE.Object3D();
