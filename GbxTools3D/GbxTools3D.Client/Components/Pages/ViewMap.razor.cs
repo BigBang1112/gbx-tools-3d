@@ -23,13 +23,19 @@ public partial class ViewMap : ComponentBase
     [SupplyParameterFromQuery(Name = "id")]
     private string? MapId { get; set; }
 
-    [SupplyParameterFromQuery(Name = "mpuid")]
-    private string? ManiaPlanetMapUid { get; set; }
+    [SupplyParameterFromQuery(Name = "mapuid")]
+    private string? MapUid { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mp")]
+    private bool IsManiaPlanetMap { get; set; }
+
+    [SupplyParameterFromQuery(Name = "platform")]
+    private string? Platform { get; set; }
 
     [SupplyParameterFromQuery(Name = "url")]
     private string? Url { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url) && string.IsNullOrEmpty(ManiaPlanetMapUid);
+    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url) && string.IsNullOrEmpty(MapUid);
 
     public CGameCtnChallenge? Map { get; set; }
 
@@ -60,9 +66,13 @@ public partial class ViewMap : ComponentBase
         {
             endpoint = Url;
         }
-        else if (!string.IsNullOrEmpty(ManiaPlanetMapUid))
+        else if (IsManiaPlanetMap)
         {
-            endpoint = $"/api/map/mp/{ManiaPlanetMapUid}";
+            endpoint = $"/api/map/mp/{MapUid}";
+        }
+        else if (!string.IsNullOrEmpty(Platform))
+        {
+            endpoint = $"/api/map/tmt/{Platform}/uid/{MapUid}";
         }
         else if (!string.IsNullOrEmpty(TmxSite))
         {
@@ -79,7 +89,7 @@ public partial class ViewMap : ComponentBase
 
         using var response = await Http.GetAsync(endpoint);
 
-        if (!string.IsNullOrEmpty(Url) || !string.IsNullOrEmpty(ManiaPlanetMapUid))
+        if (!string.IsNullOrEmpty(Url) || !string.IsNullOrEmpty(MapUid))
         {
             await using var stream = await response.Content.ReadAsStreamAsync();
             Map = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
