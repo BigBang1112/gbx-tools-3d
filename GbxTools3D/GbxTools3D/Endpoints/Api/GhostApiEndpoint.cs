@@ -31,6 +31,7 @@ public static class GhostApiEndpoint
         ghostResponse.EnsureSuccessStatusCode();
 
         context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(ghostResponse);
 
         var stream = await ghostResponse.Content.ReadAsStreamAsync(cancellationToken);
 

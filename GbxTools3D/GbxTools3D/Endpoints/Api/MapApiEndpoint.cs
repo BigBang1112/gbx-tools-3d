@@ -17,6 +17,8 @@ public static class MapApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
         group.MapGet("/mx/{site}/uid/{mapUid}", GetMapFromMxByUid)
             .RequireRateLimiting("fixed-external-downloads");
+        group.MapGet("/mp/{mapUid}", GetMapFromManiaPlanetByUid)
+            .RequireRateLimiting("fixed-external-downloads");
     }
 
     private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromTmxById(
@@ -30,7 +32,7 @@ public static class MapApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackId%2CTrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
+        var trackInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackId%2CTrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
         using var trackResponse = await http.GetAsync($"https://{siteUrl}/trackgbx/{trackId}", cancellationToken);
 
         if (trackResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -99,7 +101,7 @@ public static class MapApiEndpoint
 
         var http = httpFactory.CreateClient("exchange");
 
-        using var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
+        var mapInfoResponseTask = http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
         using var mapResponse = await http.GetAsync($"https://{siteUrl}/mapgbx/{mapId}", cancellationToken);
 
         if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
@@ -111,7 +113,7 @@ public static class MapApiEndpoint
 
         var mapContentLength = mapResponse.Content.Headers.ContentLength;
 
-        var etag =  Convert.ToBase64String(Encoding.ASCII.GetBytes($"{site}-{mapId}-{mapContentLength}"));
+        var etag = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{site}-{mapId}-{mapContentLength}"));
 
         context.Response.Headers.ETag = etag;
 

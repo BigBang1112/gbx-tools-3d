@@ -42,6 +42,7 @@ public static class SkinApiEndpoint
         }
 
         context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(skinResponse);
 
         var stream = await skinResponse.Content.ReadAsStreamAsync(cancellationToken);
 
