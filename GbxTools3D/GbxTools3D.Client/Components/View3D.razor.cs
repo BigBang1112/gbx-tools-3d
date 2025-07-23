@@ -1033,7 +1033,7 @@ public partial class View3D : ComponentBase
 
         if (hasWaypoint)
         {
-            var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|False|Way to go bois".Hash();
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}|Way to go bois".Hash();
 
             using var meshTriggerResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
 
