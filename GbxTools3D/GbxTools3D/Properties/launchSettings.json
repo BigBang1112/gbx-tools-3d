@@ -13,7 +13,7 @@
     "https": {
       "commandName": "Project",
       "launchBrowser": true,
-      "launchUrl": "view/replay?tmx=TMUF&id=6940644",
+      "launchUrl": "view/ghost?type=wrr&mapuid=EEycemQB5udebmyyHOPv18TA1k4&time=42998&login=sevaban&mapmp=true",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

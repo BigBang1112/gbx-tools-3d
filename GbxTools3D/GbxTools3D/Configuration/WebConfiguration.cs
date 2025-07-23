@@ -6,14 +6,19 @@ using Microsoft.AspNetCore.Authentication.BearerToken;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
+using ManiaAPI.ManiaPlanetAPI.Extensions.Hosting;
+using ManiaAPI.ManiaPlanetAPI;
 
 namespace GbxTools3D.Configuration;
 
 public static class WebConfiguration
 {
-    public static void AddWebServices(this IServiceCollection services)
+    public static void AddWebServices(this IServiceCollection services, IConfiguration config, IHostEnvironment environment)
     {
-        services.AddRazorComponents()
+        services.AddRazorComponents(options =>
+        {
+            options.DetailedErrors = environment.IsDevelopment();
+        })
             .AddInteractiveServerComponents()
             .AddInteractiveWebAssemblyComponents();
 
@@ -29,7 +34,25 @@ public static class WebConfiguration
             client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("WRR"));
         }).AddStandardResilienceHandler();
 
+        services.AddHttpClient("maniaplanet", client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("ManiaPlanet"));
+        }).AddStandardResilienceHandler();
+
         services.AddTMX();
+
+        services.AddManiaPlanetAPI(options =>
+        {
+            var clientId = config["ManiaPlanetAPI:ClientId"] ?? throw new Exception("ManiaPlanetAPI:ClientId is not configured.");
+            var clientSecret = config["ManiaPlanetAPI:ClientSecret"] ?? throw new Exception("ManiaPlanetAPI:ClientSecret is not configured.");
+
+            options.Credentials = new ManiaPlanetAPICredentials(clientId, clientSecret);
+        })
+            .ConfigureHttpClient(client =>
+            {
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("ManiaPlanet ManiaAPI"));
+            })
+            .AddStandardResilienceHandler();
 
         services.AddResponseCompression(options =>
         {

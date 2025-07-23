@@ -4,6 +4,8 @@ using GbxTools3D.Enums;
 using GbxTools3D.External;
 using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
+using ManiaAPI.ManiaPlanetAPI;
+using Microsoft.Extensions.Caching.Hybrid;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -231,12 +233,48 @@ public static class MapApiEndpoint
         });
     }
 
-    private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromManiaPlanetByUid(
+    private static async Task<Results<FileStreamHttpResult, NotFound>> GetMapFromManiaPlanetByUid(
         HttpContext context,
         IHttpClientFactory httpFactory,
+        HybridCache cache,
+        ManiaPlanetAPI mp,
         string mapUid,
         CancellationToken cancellationToken)
     {
-        return TypedResults.NotFound();
+        var key = $"map:maniaplanet:{mapUid}";
+
+        var map = await cache.GetOrCreateAsync(key, async token =>
+        {
+            return await mp.GetMapByUidAsync(mapUid, token);
+        }, new HybridCacheEntryOptions { Expiration = TimeSpan.FromHours(1) }, cancellationToken: cancellationToken);
+
+        if (map is null)
+        {
+            await cache.RemoveAsync(key, cancellationToken);
+            return TypedResults.NotFound();
+        }
+
+        var http = httpFactory.CreateClient("maniaplanet");
+
+        var mapResponse = await http.GetAsync(map.DownloadUrl, cancellationToken);
+
+        if (mapResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return TypedResults.NotFound();
+        }
+
+        mapResponse.EnsureSuccessStatusCode();
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(mapResponse);
+
+        var stream = await mapResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+        return TypedResults.File(
+            stream,
+            "application/gbx",
+            mapResponse.Content.Headers.ContentDisposition?.FileName,
+            mapResponse.Content.Headers.LastModified
+        );
     }
 }
