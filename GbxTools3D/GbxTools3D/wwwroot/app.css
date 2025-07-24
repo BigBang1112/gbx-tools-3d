@@ -375,13 +375,14 @@ a {
         position: fixed;
         top: 0;
         z-index: 10001;
-        width: 100%;
-        height: 100vh;
+        width: calc(100% - 4rem);
+        height: calc(100vh - 4rem);
         align-items: center;
         justify-content: center;
         animation: fadeIn 0.5s;
         flex-direction: column;
         gap: 20px;
+        padding: 2rem;
     }
 
 @keyframes fadeIn {
