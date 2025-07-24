@@ -70,7 +70,7 @@ public partial class View3D : ComponentBase
     public EventCallback BeforeMapLoad { get; set; }
 
     [Parameter]
-    public EventCallback<RenderDetails?> OnRenderDetails { get; set; }
+    public Action<RenderDetails?> OnRenderDetails { get; set; }
 
     [Parameter]
     public EventCallback OnFocusedSolidsChange { get; set; }
@@ -879,6 +879,20 @@ public partial class View3D : ComponentBase
         {
             var (name, isGround, variant, subVariant, terrainModifier) = uniqueGroup.Key;
 
+            if (!blockInfos.TryGetValue(name, out var blockInfo))
+            {
+                Console.WriteLine($"Block info for {name} not found.");
+                continue;
+            }
+
+            var variants = isGround ? blockInfo.GroundVariants : blockInfo.AirVariants;
+
+            if (!variants.Any(x => x.Variant == variant && x.SubVariant == subVariant))
+            {
+                Console.WriteLine($"Block variant {name} {(isGround ? "Ground" : "Air")}{variant}/{subVariant} not found in block info.");
+                continue;
+            }
+
             var hash = $"GbxTools3D|Solid|{GameVersion}|{collection}|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
 
             responseTasks.Add(uniqueGroup.Key, http.GetAsync($"/api/mesh/{hash}", cancellationToken));
@@ -1096,6 +1110,10 @@ public partial class View3D : ComponentBase
                 var solid = await Solid.ParseAsync(stream, GameVersion, Materials, variant.TerrainModifier, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
+            }
+            else
+            {
+                Console.WriteLine($"Failed to load block variant {variant.Name} (Ground: {variant.IsGround}, Variant: {variant.Variant}, SubVariant: {variant.SubVariant}). Status code: {response.StatusCode}");
             }
 
             tasksToRemove.Add(variant);
@@ -1757,7 +1775,7 @@ public partial class View3D : ComponentBase
 
         if (info is null)
         {
-            await OnRenderDetails.InvokeAsync(null);
+            OnRenderDetails.Invoke(null);
             return;
         }
 
@@ -1789,7 +1807,7 @@ public partial class View3D : ComponentBase
             textures = infoMemory.GetPropertyAsInt32("textures");
         }
 
-        await OnRenderDetails.InvokeAsync(new RenderDetails(fps, calls, triangles, geometries, textures));
+        OnRenderDetails.Invoke(new RenderDetails(fps, calls, triangles, geometries, textures));
     }
 
     public void ShowGrid() => Scene?.ShowGrid();

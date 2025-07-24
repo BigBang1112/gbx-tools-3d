@@ -29,7 +29,7 @@
                         <img src="icons/ui/sports_score.svg" width="20" height="20" />
                     }
                 </div>
-                <div class="time">
+                <div class="time" data-time="@(checkpointInfo.Checkpoint.Time?.TotalMilliseconds ?? -1)">
                     @checkpointInfo.Checkpoint.Time.ToTmString(UseHundredths)
                 </div>
                 <div class="checkpoint-num">

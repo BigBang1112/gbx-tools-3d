@@ -8,12 +8,11 @@ public partial class RenderInfo : ComponentBase
     private const string ModuleRenderInfoHide = "ModuleRenderInfoHide";
 
     private bool show;
+    private RenderDetails? renderDetails;
 
-    [Parameter, EditorRequired]
-    public RenderDetails? RenderDetails { get; set; }
-
-    public void Update()
+    public void Update(RenderDetails renderDetails)
     {
+        this.renderDetails = renderDetails;
         StateHasChanged();
     }
 

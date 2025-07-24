@@ -8,7 +8,7 @@
     <div class="panels small left">
         <InputList Ghost="CurrentGhost" OverrideInputs="overrideInputs" OnInputClick="OnInputListItemClick" @ref="inputList"></InputList>
         <CheckpointList Ghost="CurrentGhost" NumLaps="CurrentGhost?.GetNumberOfLaps(Map) ?? 1" OnCheckpointClick="OnCheckpointListItemClick" UseHundredths="UseHundredths" @ref="checkpointList"></CheckpointList>
-        <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+        <RenderInfo @ref="renderInfo"></RenderInfo>
         <Controls OnCameraTypeChanged="ChangeCameraType" OnCollisionsToggled="ToggleCollisions"></Controls>
     </div>
     <div class="panels small right">

@@ -39,8 +39,6 @@ public partial class ViewMap : ComponentBase
 
     public CGameCtnChallenge? Map { get; set; }
 
-    public RenderDetails? RenderDetails { get; set; }
-
     private string selectedExternal = "tmx";
     private string selectedTmx = "tmnf";
     private string selectedMx = "tm2020";
@@ -122,8 +120,7 @@ public partial class ViewMap : ComponentBase
 
     private void OnRenderDetails(RenderDetails details)
     {
-        RenderDetails = details;
-        renderInfo?.Update();
+        renderInfo?.Update(details);
     }
 
     public ValueTask DisposeAsync()

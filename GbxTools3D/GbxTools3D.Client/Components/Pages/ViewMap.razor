@@ -80,7 +80,7 @@ else
         @if (RendererInfo.IsInteractive)
         {
             <div class="panels small left">
-                <RenderInfo RenderDetails="RenderDetails" @ref="renderInfo"></RenderInfo>
+                <RenderInfo @ref="renderInfo"></RenderInfo>
             </div>
             <div class="panels small right">
                 <MapInfo Map="Map" TmxSite="@TmxSite" MxSite="@MxSite" ExchangeId="@MapId"></MapInfo>

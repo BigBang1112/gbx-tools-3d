@@ -65,8 +65,6 @@ public partial class GhostControls : ComponentBase
     [Parameter]
     public string? ExchangeId { get; set; }
 
-    public RenderDetails? RenderDetails { get; set; }
-
     private async Task OnMapUploadedAsync(CGameCtnChallenge map)
     {
         Map = map;
@@ -454,6 +452,7 @@ public partial class GhostControls : ComponentBase
                         if (inputList is not null)
                         {
                             inputList.CurrentInput = input.Time;
+                            inputList.CurrentInputIndex = nextInputTime == double.MaxValue ? (mid - 1) : mid;
                         }
                         break;
                     }
@@ -467,6 +466,7 @@ public partial class GhostControls : ComponentBase
                             if (inputList is not null)
                             {
                                 inputList.CurrentInput = null;
+                                inputList.CurrentInputIndex = -1;
                             }
                         }
                     }
@@ -629,7 +629,6 @@ public partial class GhostControls : ComponentBase
 
     public void UpdateRenderInfo(RenderDetails details)
     {
-        RenderDetails = details;
-        renderInfo?.Update();
+        renderInfo?.Update(details);
     }
 }

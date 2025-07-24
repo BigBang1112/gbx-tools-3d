@@ -2,6 +2,7 @@
 using GBX.NET.Inputs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.JSInterop;
 using System.Collections.Immutable;
 using TmEssentials;
 
@@ -12,6 +13,7 @@ public partial class InputList : ComponentBase
     private const string ModuleInputListHide = "ModuleInputListHide";
     private const string ModuleInputListOnlyRespawns = "ModuleInputListOnlyRespawns";
 
+    private ElementReference inputList;
     private Virtualize<IInput>? virtualizeInputList;
 
     private bool show;
@@ -49,6 +51,8 @@ public partial class InputList : ComponentBase
         }
     }
 
+    public int CurrentInputIndex { get; set; }
+
     private ImmutableList<IInput>? inputs;
     private ImmutableList<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
 
@@ -74,6 +78,8 @@ public partial class InputList : ComponentBase
 
             inputs = Inputs;
         }
+
+        await JS.InvokeVoidAsync("scrollToIndex", inputList, CurrentInputIndex);
     }
 
     private ValueTask<ItemsProviderResult<IInput>> LoadInputsAsync(ItemsProviderRequest request)
