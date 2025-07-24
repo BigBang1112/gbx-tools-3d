@@ -38,6 +38,8 @@ public partial class InputList : ComponentBase
         {
             onlyRespawns = value;
             SyncLocalStorage.SetItem(ModuleInputListOnlyRespawns, value);
+            virtualizeInputList?.RefreshDataAsync();
+            StateHasChanged();
         }
     }
 
@@ -84,10 +86,25 @@ public partial class InputList : ComponentBase
 
     private ValueTask<ItemsProviderResult<IInput>> LoadInputsAsync(ItemsProviderRequest request)
     {
-        var numInputs = Math.Min(request.Count, Inputs.Count - request.StartIndex);
-        var inputs = Inputs.Where(x => !onlyRespawns || x is Respawn { Pressed: true } or RespawnTM2020).Skip(request.StartIndex).Take(numInputs);
-
-        return ValueTask.FromResult(new ItemsProviderResult<IInput>(inputs, Inputs.Count));
+        if (onlyRespawns)
+        {
+            var respawnInputs = Inputs.Where(x => x is Respawn { Pressed: true } or RespawnTM2020).ToList();
+            var totalInputCount = respawnInputs.Count;
+            var numInputs = Math.Min(request.Count, totalInputCount - request.StartIndex);
+            var inputsSubset = respawnInputs.Skip(request.StartIndex)
+                .Take(numInputs)
+                .ToList();
+            return ValueTask.FromResult(new ItemsProviderResult<IInput>(inputsSubset, totalInputCount));
+        }
+        else
+        {
+            var totalInputCount = Inputs.Count;
+            var numInputs = Math.Min(request.Count, totalInputCount - request.StartIndex);
+            var inputsSubset = Inputs.Skip(request.StartIndex)
+                .Take(numInputs)
+                .ToList();
+            return ValueTask.FromResult(new ItemsProviderResult<IInput>(inputsSubset, totalInputCount));
+        }
     }
 
     private async Task ToggleShowAsync()

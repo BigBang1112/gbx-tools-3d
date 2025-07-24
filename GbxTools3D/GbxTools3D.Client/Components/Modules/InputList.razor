@@ -17,7 +17,7 @@
         Inputs
     </div>
     <div class="list mono" @ref="inputList">
-        <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="14" @ref="virtualizeInputList" OverscanCount="30">
+        <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="14" @ref="virtualizeInputList" OverscanCount="20">
             <div @onclick="() => OnInputClick.InvokeAsync(input)" class="item input @(CurrentInput == input.Time ? "active" : "")" data-time="@input.Time.TotalMilliseconds">
                 <span>@input.Time.ToString(UseHundredths)</span>
                 <span>@input.GetType().Name</span>
