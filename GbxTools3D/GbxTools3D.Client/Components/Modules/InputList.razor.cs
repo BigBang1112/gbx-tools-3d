@@ -81,7 +81,7 @@ public partial class InputList : ComponentBase
             inputs = Inputs;
         }
 
-        await JS.InvokeVoidAsync("scrollToIndex", inputList, CurrentInputIndex);
+        //await JS.InvokeVoidAsync("scrollToIndex", inputList, CurrentInputIndex);
     }
 
     private ValueTask<ItemsProviderResult<IInput>> LoadInputsAsync(ItemsProviderRequest request)
