@@ -13,6 +13,10 @@
     --yellow-color: #CA0;
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 html, body {
     font-family: "Mona Sans";
     background-color: #111;
