@@ -1,4 +1,4 @@
-﻿<div class="bg" style="@(NoNav ? "" : "top: 4.5rem;")">
+﻿<div class="bg @(NoNav ? "" : "shifted")" style="">
     @if (real)
     {
         <div class="progress" style="width: @((progress * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"></div>
