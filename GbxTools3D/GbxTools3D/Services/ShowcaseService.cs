@@ -104,19 +104,24 @@ internal sealed class ShowcaseService
     {
         var trackId = (await responseTask).RequestMessage?.RequestUri?.Segments.LastOrDefault();
         var siteUrl = ExternalUtils.GetSiteUrl(site);
-        var trackInfoResponse = await http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackId%2CTrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
-        var trackInfos = await trackInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxTrackInfo, cancellationToken);
-        
-        if (trackInfos?.Results.Length > 0)
+
+        using var trackInfoResponse = await http.GetAsync($"https://{siteUrl}/api/tracks?id={trackId}&fields=TrackId%2CTrackName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2CUnlimiterVersion", cancellationToken);
+
+        if (trackInfoResponse.IsSuccessStatusCode)
         {
-            var siteStr = site.ToString();
-            var trackInfo = trackInfos.Results[0];
-            return new Showcase(
-                siteStr,
-                trackInfo.TrackName, 
-                trackInfo.Uploader.Name, 
-                $"view/map?tmx={siteStr}&id={trackId}", 
-                $"https://{siteStr.ToLowerInvariant()}.exchange/trackshow/{trackId}/image/1");
+            var trackInfos = await trackInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseTmxTrackInfo, cancellationToken);
+
+            if (trackInfos?.Results.Length > 0)
+            {
+                var siteStr = site.ToString();
+                var trackInfo = trackInfos.Results[0];
+                return new Showcase(
+                    siteStr,
+                    trackInfo.TrackName,
+                    trackInfo.Uploader.Name,
+                    $"view/map?tmx={siteStr}&id={trackId}",
+                    $"https://{siteStr.ToLowerInvariant()}.exchange/trackshow/{trackId}/image/1");
+            }
         }
 
         return null;
@@ -126,19 +131,24 @@ internal sealed class ShowcaseService
     {
         var mapId = (await responseTask).RequestMessage?.RequestUri?.Segments.LastOrDefault();
         var siteUrl = ExternalUtils.GetSiteUrl(site);
+
         using var mapInfoResponse = await http.GetAsync($"https://{siteUrl}/api/maps?id={mapId}&fields=MapId%2CName%2CUploader.UserId%2CUploader.Name%2CAuthors%5B%5D%2CUpdatedAt%2COnlineMapId", cancellationToken);
-        var mapInfos = await mapInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseMxMapInfo, cancellationToken);
-        
-        if (mapInfos?.Results.Length > 0)
+
+        if (mapInfoResponse.IsSuccessStatusCode)
         {
-            var siteStr = site.ToString();
-            var mapInfo = mapInfos.Results[0];
-            return new Showcase(
-                siteStr, 
-                mapInfo.Name,
-                mapInfo.Uploader.Name, 
-                $"view/map?mx={siteStr}&id={mapId}", 
-                $"https://{prefix}.exchange/mapimage/{mapId}/1");
+            var mapInfos = await mapInfoResponse.Content.ReadFromJsonAsync(AppJsonContext.Default.MxResponseMxMapInfo, cancellationToken);
+
+            if (mapInfos?.Results.Length > 0)
+            {
+                var siteStr = site.ToString();
+                var mapInfo = mapInfos.Results[0];
+                return new Showcase(
+                    siteStr,
+                    mapInfo.Name,
+                    mapInfo.Uploader.Name,
+                    $"view/map?mx={siteStr}&id={mapId}",
+                    $"https://{prefix}.exchange/mapimage/{mapId}/1");
+            }
         }
 
         return null;
@@ -150,24 +160,31 @@ internal sealed class ShowcaseService
         
         var showcases = new List<Showcase>();
 
-        var wrs = await exchange.SearchTracksAsync(new()
+        try
         {
-            Count = 5,
-            LbType = LeaderboardType.Nadeo,
-            Order1 = TrackOrder.WorldRecordSetMostRecent,
-            PrimaryType = TrackType.Race,
-        }, cancellationToken);
+            var wrs = await exchange.SearchTracksAsync(new()
+            {
+                Count = 5,
+                LbType = LeaderboardType.Nadeo,
+                Order1 = TrackOrder.WorldRecordSetMostRecent,
+                PrimaryType = TrackType.Race,
+            }, cancellationToken);
 
-        var siteStr = site.ToString();
+            var siteStr = site.ToString();
 
-        foreach (var wr in wrs.Results)
+            foreach (var wr in wrs.Results)
+            {
+                showcases.Add(new Showcase(
+                    siteStr,
+                    $"{wr.WRReplay?.ReplayTime.ToString(useHundredths: true)} on {wr.TrackName}",
+                    wr.WRReplay?.User.Name ?? "",
+                    $"view/replay?tmx={site}&id={wr.WRReplay?.ReplayId}&mapid={wr.TrackId}",
+                    $"https://{siteStr.ToLowerInvariant()}.exchange/trackshow/{wr.TrackId}/image/1"));
+            }
+        }
+        catch (Exception ex)
         {
-            showcases.Add(new Showcase(
-                siteStr, 
-                $"{wr.WRReplay?.ReplayTime.ToString(useHundredths: true)} on {wr.TrackName}", 
-                wr.WRReplay?.User.Name ?? "", 
-                $"view/replay?tmx={site}&id={wr.WRReplay?.ReplayId}&mapid={wr.TrackId}",
-                $"https://{siteStr.ToLowerInvariant()}.exchange/trackshow/{wr.TrackId}/image/1"));
+            logger.LogError(ex, "Failed to create latest world records showcase for {Site}", site);
         }
 
         return showcases;
