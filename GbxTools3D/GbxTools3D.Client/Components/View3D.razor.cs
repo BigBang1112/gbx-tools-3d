@@ -70,7 +70,7 @@ public partial class View3D : ComponentBase
     public EventCallback BeforeMapLoad { get; set; }
 
     [Parameter]
-    public Action<RenderDetails?> OnRenderDetails { get; set; }
+    public Action<RenderDetails?>? OnRenderDetails { get; set; }
 
     [Parameter]
     public EventCallback OnFocusedSolidsChange { get; set; }
@@ -1775,7 +1775,7 @@ public partial class View3D : ComponentBase
 
         if (info is null)
         {
-            OnRenderDetails.Invoke(null);
+            OnRenderDetails?.Invoke(null);
             return;
         }
 
@@ -1807,7 +1807,7 @@ public partial class View3D : ComponentBase
             textures = infoMemory.GetPropertyAsInt32("textures");
         }
 
-        OnRenderDetails.Invoke(new RenderDetails(fps, calls, triangles, geometries, textures));
+        OnRenderDetails?.Invoke(new RenderDetails(fps, calls, triangles, geometries, textures));
     }
 
     public void ShowGrid() => Scene?.ShowGrid();
