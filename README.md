@@ -15,7 +15,7 @@ Written using the Blazor Web App framework.
 - View replays and ghosts with checkpoints, input list, and ghost sample parameters
 - Have an overview of a map with the new map viewer
 - Visualize skins from ZIP files or ManiaPark (Pack.Gbx not yet supported)
-- Catalog for overview of block variants, collisions, and other technical parameters
+- Catalog for an overview of block variants, collisions, and other technical parameters
 - Embed the tools into your websites using Widgets
 - TMF/TM2/TMT/SM/TMNESWC/TMSX support
 
@@ -49,11 +49,11 @@ The dataset folder has a simple structure:
 - `[GameVersion]` (ID is taken from `GBX.NET.GameVersion`)
   - *contents* of the GameData folder of `GameVersion`
 
-for as many `GameVersion` as there is supported: TMSX, TMNESWC, TMF, TMT, MP4, TM2020. If the folder is not found, the import for this game version is skipped (an empty `GameVersion` folder cannot exist otherwise there will be error).
+for as many `GameVersion` as there is supported: TMSX, TMNESWC, TMF, TMT, MP4, TM2020. If the folder is not found, the import for this game version is skipped (an empty `GameVersion` folder cannot exist otherwise there will be an error).
 
 To extract data from games:
 
-- TMF - https://io.gbx.tools/pak-to-zip
+- TMF - https://io.gbx.tools/pak-to-zip (for corrupted crucial Gbx files - hit me up on Discord)
 - other - TBD (OpenPlanet or GBX.NET.PAK)
 
 To run the import, call the endpoint:
