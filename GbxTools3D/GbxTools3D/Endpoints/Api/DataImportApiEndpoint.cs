@@ -23,7 +23,7 @@ public abstract class DataImportApiEndpoint
         ILogger<DataImportApiEndpoint> logger,
         CancellationToken cancellationToken)
     {
-        if (key != "GE1zo5awcJDBm6j")
+        if (key != config["DatasetImportKey"])
         {
             return TypedResults.Unauthorized();
         }
