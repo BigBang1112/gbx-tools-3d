@@ -25,7 +25,7 @@ Make sure to have **.NET 9** and **.NET WebAssembly Build Tools** installed to b
 
 You also need a MariaDB or a MySQL database. The default development connection is available in the `appsettings.Development.json`, the database will be created automatically when running. You can setup the database service manually or using Docker with port publishing.
 
-**For production deployment, secure the database together with the connection string.**
+**For production deployment, secure the database together with the connection string.** You also need to manually apply the migration, via the `Script-Migration` command for example.
 
 ### Visual Studio 2022
 
