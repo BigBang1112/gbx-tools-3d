@@ -32,7 +32,7 @@
                 </div>
             }
         }
-       <div class="progress-value" style="width: @((CurrentTime.TotalSeconds / Duration.TotalSeconds * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+       <div class="progress-value" style="width: @((Duration.TotalSeconds > 0 ? (CurrentTime.TotalSeconds / Duration.TotalSeconds * 100) : 0).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"></div>
    </div>
    <div class="controls">
        <button class="button-control" @onclick="PlayAsync">

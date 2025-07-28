@@ -419,6 +419,14 @@ public partial class Catalog : ComponentBase
         }
     }
 
+    private async Task ToggleObjectLinksAsync(Solid solid, int objectLinkCount, bool hasWaypoint)
+    {
+        if (view3d is not null)
+        {
+            await view3d.ToggleBlockObjectLinksAsync(blockIsGround, blockVariant, blockSubVariant, objectLinkCount, hasWaypoint, solid);
+        }
+    }
+
     private void ToggleSelectMode()
     {
         selectMode = !selectMode;

@@ -2,6 +2,7 @@
 using GbxTools3D.Data.Entities;
 using GbxTools3D.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -11,16 +12,22 @@ public abstract class DataImportApiEndpoint
 
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapPost("/", ImportData).RequireAuthorization();
+        group.MapPost("/", ImportData);
         group.MapGet("/status", ImportDataStatus).RequireAuthorization();
     }
 
-    private static Results<Accepted, Conflict> ImportData(
+    private static Results<Accepted, Conflict, UnauthorizedHttpResult> ImportData(
+        [FromHeader(Name = "X-Key")] string key,
         IServiceProvider serviceProvider, 
         IConfiguration config, 
-        ILogger<DataImportApiEndpoint> logger, 
+        ILogger<DataImportApiEndpoint> logger,
         CancellationToken cancellationToken)
     {
+        if (key != "GE1zo5awcJDBm6j")
+        {
+            return TypedResults.Unauthorized();
+        }
+
         var datasetPath = config["DatasetPath"];
 
         if (string.IsNullOrEmpty(datasetPath))

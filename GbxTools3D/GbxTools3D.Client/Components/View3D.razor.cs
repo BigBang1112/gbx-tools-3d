@@ -70,7 +70,7 @@ public partial class View3D : ComponentBase
     public EventCallback BeforeMapLoad { get; set; }
 
     [Parameter]
-    public EventCallback<RenderDetails?> OnRenderDetails { get; set; }
+    public Action<RenderDetails?>? OnRenderDetails { get; set; }
 
     [Parameter]
     public EventCallback OnFocusedSolidsChange { get; set; }
@@ -215,7 +215,7 @@ public partial class View3D : ComponentBase
         {
             collectionsTask = collectionInfos.Count == 0 ? http.GetAsync($"/api/collections/{GameVersion}", cts.Token) : null;
             blockInfosTask = loadBlockInfos && blockInfos.Count == 0 ? http.GetAsync($"/api/blocks/{GameVersion}/{collection}", cts.Token) : null;
-            decorationTask = loadDecorations && decorations.Count == 0 ? http.GetAsync($"/api/decorations/{GameVersion}/{collection}", cts.Token) : null;
+            decorationTask = loadDecorations && decorations.Count == 0 ? http.GetAsync($"/api/decorations/{GameVersion}/{Map?.Decoration.Collection ?? collection}", cts.Token) : null;
         }
 
         var materialTask = loadMaterials && Materials.Count == 0 ? http.GetAsync($"/api/materials/{GameVersion}", cts.Token) : null;
@@ -776,7 +776,7 @@ public partial class View3D : ComponentBase
             var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == Map.Decoration.Id);
             // TODO with deco
 
-            await foreach (var _ in CreateDecorationAsync(Map.Collection ?? throw new Exception("Collection is null"), decoSize, optimized: true, cancellationToken)) { }
+            await foreach (var _ in CreateDecorationAsync(Map.Decoration.Collection, decoSize, optimized: true, cancellationToken)) { }
         }
 
         return true;
@@ -879,6 +879,20 @@ public partial class View3D : ComponentBase
         {
             var (name, isGround, variant, subVariant, terrainModifier) = uniqueGroup.Key;
 
+            if (!blockInfos.TryGetValue(name, out var blockInfo))
+            {
+                Console.WriteLine($"Block info for {name} not found.");
+                continue;
+            }
+
+            var variants = isGround ? blockInfo.GroundVariants : blockInfo.AirVariants;
+
+            if (!variants.Any(x => x.Variant == variant && x.SubVariant == subVariant))
+            {
+                Console.WriteLine($"Block variant {name} {(isGround ? "Ground" : "Air")}{variant}/{subVariant} not found in block info.");
+                continue;
+            }
+
             var hash = $"GbxTools3D|Solid|{GameVersion}|{collection}|{name}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
 
             responseTasks.Add(uniqueGroup.Key, http.GetAsync($"/api/mesh/{hash}", cancellationToken));
@@ -917,7 +931,13 @@ public partial class View3D : ComponentBase
             return null;
         }
 
-        var hash = $"GbxTools3D|Vehicle|{GameVersion}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
+        var tempGameVersion = GameVersion;
+        if (GameVersion == GameVersion.TMNESWC)
+        {
+            tempGameVersion = GameVersion.TMF; // temporary
+        }
+
+        var hash = $"GbxTools3D|Vehicle|{tempGameVersion}|{vehicleName}|WhyDidYouNotHelpMe?".Hash();
 
         using var meshResponse = await http.GetAsync($"/api/mesh/{hash}", cancellationToken);
 
@@ -1003,6 +1023,71 @@ public partial class View3D : ComponentBase
         await ToggleCollisionsAsync($"GbxTools3D|Decoration|{GameVersion}|{CollectionName}|{GbxPath.GetFileNameWithoutExtension(solid.FilePath)}|Je te hais".Hash(), solid, cancellationToken);
     }
 
+    internal async Task ToggleBlockObjectLinksAsync(
+        bool isGround, 
+        int variant, 
+        int subVariant, 
+        int objectLinkCount, 
+        bool hasWaypoint, 
+        Solid solid, 
+        CancellationToken cancellationToken = default)
+    {
+        if (Scene is null)
+        {
+            return;
+        }
+
+        if (solid.ObjectLinksEnabled)
+        {
+            solid.ToggleObjectLinks(Scene, objectLinks: []);
+            return;
+        }
+
+        Solid[] objectLinks;
+
+        if (hasWaypoint)
+        {
+            var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}|Way to go bois".Hash();
+
+            using var meshTriggerResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
+
+            if (!meshTriggerResponse.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            await using var stream = await meshTriggerResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+            var collisionSolid = await Solid.ParseAsync(stream, GameVersion, Materials, optimized: false, isTrigger: true);
+
+            objectLinks = [collisionSolid];
+        }
+        else
+        {
+            objectLinks = new Solid[objectLinkCount];
+
+            for (var i = 0; i < objectLinkCount; i++)
+            {
+                var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|Hella{isGround}|{variant}|{subVariant}|{i}|marosisPakPakGhidraGang".Hash();
+
+                using var meshTriggerResponse = await http.GetAsync($"/api/mesh/{hash}?collision=true", cancellationToken);
+
+                if (!meshTriggerResponse.IsSuccessStatusCode)
+                {
+                    return;
+                }
+
+                await using var stream = await meshTriggerResponse.Content.ReadAsStreamAsync(cancellationToken);
+
+                var collisionSolid = await Solid.ParseAsync(stream, GameVersion, Materials, optimized: false, isTrigger: true);
+
+                objectLinks[i] = collisionSolid;
+            }
+        }
+
+        solid.ToggleObjectLinks(Scene, objectLinks);
+    }
+
     private async Task ProcessBlockResponsesAsync(
         Dictionary<UniqueVariant, Task<HttpResponseMessage>> responseTasks,
         int? maxRequestsToProcess,
@@ -1025,6 +1110,10 @@ public partial class View3D : ComponentBase
                 var solid = await Solid.ParseAsync(stream, GameVersion, Materials, variant.TerrainModifier, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
+            }
+            else
+            {
+                Console.WriteLine($"Failed to load block variant {variant.Name} (Ground: {variant.IsGround}, Variant: {variant.Variant}, SubVariant: {variant.SubVariant}). Status code: {response.StatusCode}");
             }
 
             tasksToRemove.Add(variant);
@@ -1584,11 +1673,6 @@ public partial class View3D : ComponentBase
                 continue;
             }
 
-            if (blockInfo.TerrainModifier is not null)
-            {
-                terrainModifiers[block.Coord with { Y = 0 }] = new TerrainModifierInfo(blockInfo.TerrainModifier, null);
-            }
-
             var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
 
             if (!units.Any(x => x.TerrainModifier is not null))
@@ -1644,6 +1728,20 @@ public partial class View3D : ComponentBase
             }
         }
 
+        // ensures the dirt modifiers are applied after fabric ones
+        foreach (var block in Map.GetBlocks())
+        {
+            if (!blockInfos.TryGetValue(block.Name, out var blockInfo))
+            {
+                continue;
+            }
+
+            if (blockInfo.TerrainModifier is not null)
+            {
+                terrainModifiers[block.Coord with { Y = 0 }] = new TerrainModifierInfo(blockInfo.TerrainModifier, null);
+            }
+        }
+
         return terrainModifiers.ToImmutable();
     }
 
@@ -1677,7 +1775,7 @@ public partial class View3D : ComponentBase
 
         if (info is null)
         {
-            await OnRenderDetails.InvokeAsync(null);
+            OnRenderDetails?.Invoke(null);
             return;
         }
 
@@ -1709,7 +1807,7 @@ public partial class View3D : ComponentBase
             textures = infoMemory.GetPropertyAsInt32("textures");
         }
 
-        await OnRenderDetails.InvokeAsync(new RenderDetails(fps, calls, triangles, geometries, textures));
+        OnRenderDetails?.Invoke(new RenderDetails(fps, calls, triangles, geometries, textures));
     }
 
     public void ShowGrid() => Scene?.ShowGrid();

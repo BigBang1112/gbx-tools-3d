@@ -599,45 +599,91 @@ public class MeshSerializer
                     w.Write(v.Y);
                     w.Write(v.Z);
                 }
-                
-                w.Write7BitEncodedInt(mesh.CookedTriangles?.Length ?? 0);
 
-                var maxIndex = 0;
-                foreach (var tri in mesh.CookedTriangles ?? [])
+                if (mesh.CookedTriangles?.Length > 0)
                 {
-                    if (tri.U02.X > maxIndex) maxIndex = tri.U02.X;
-                    if (tri.U02.Y > maxIndex) maxIndex = tri.U02.Y;
-                    if (tri.U02.Z > maxIndex) maxIndex = tri.U02.Z;
-                }
-                
-                byte intSize = maxIndex switch
-                {
-                    < 256 => 1,
-                    < 65536 => 2,
-                    _ => 4
-                };
-                w.Write(intSize);
+                    w.Write7BitEncodedInt(mesh.CookedTriangles.Length);
 
-                foreach (var tri in mesh.CookedTriangles ?? [])
-                {
-                    w.Write((byte)materials[tri.U03]);
-                    switch (intSize)
+                    var maxIndex = 0;
+                    foreach (var tri in mesh.CookedTriangles)
                     {
-                        case 1:
-                            w.Write((byte)tri.U02.X);
-                            w.Write((byte)tri.U02.Y);
-                            w.Write((byte)tri.U02.Z);
-                            break;
-                        case 2:
-                            w.Write((ushort)tri.U02.X);
-                            w.Write((ushort)tri.U02.Y);
-                            w.Write((ushort)tri.U02.Z);
-                            break;
-                        case 4:
-                            w.Write(tri.U02.X);
-                            w.Write(tri.U02.Y);
-                            w.Write(tri.U02.Z);
-                            break;
+                        if (tri.U02.X > maxIndex) maxIndex = tri.U02.X;
+                        if (tri.U02.Y > maxIndex) maxIndex = tri.U02.Y;
+                        if (tri.U02.Z > maxIndex) maxIndex = tri.U02.Z;
+                    }
+
+                    byte intSize = maxIndex switch
+                    {
+                        < 256 => 1,
+                        < 65536 => 2,
+                        _ => 4
+                    };
+                    w.Write(intSize);
+
+                    foreach (var tri in mesh.CookedTriangles)
+                    {
+                        w.Write((byte)materials[tri.U03]);
+                        switch (intSize)
+                        {
+                            case 1:
+                                w.Write((byte)tri.U02.X);
+                                w.Write((byte)tri.U02.Y);
+                                w.Write((byte)tri.U02.Z);
+                                break;
+                            case 2:
+                                w.Write((ushort)tri.U02.X);
+                                w.Write((ushort)tri.U02.Y);
+                                w.Write((ushort)tri.U02.Z);
+                                break;
+                            case 4:
+                                w.Write(tri.U02.X);
+                                w.Write(tri.U02.Y);
+                                w.Write(tri.U02.Z);
+                                break;
+                        }
+                    }
+                }
+                else if (mesh.Triangles?.Length > 0)
+                {
+                    w.Write7BitEncodedInt(mesh.Triangles.Length);
+
+                    var maxIndex = 0;
+                    foreach (var tri in mesh.Triangles)
+                    {
+                        if (tri.U01.X > maxIndex) maxIndex = tri.U01.X;
+                        if (tri.U01.Y > maxIndex) maxIndex = tri.U01.Y;
+                        if (tri.U01.Z > maxIndex) maxIndex = tri.U01.Z;
+                    }
+
+                    byte intSize = maxIndex switch
+                    {
+                        < 256 => 1,
+                        < 65536 => 2,
+                        _ => 4
+                    };
+                    w.Write(intSize);
+
+                    foreach (var tri in mesh.Triangles)
+                    {
+                        w.Write((byte)materials[tri.U04]);
+                        switch (intSize)
+                        {
+                            case 1:
+                                w.Write((byte)tri.U01.X);
+                                w.Write((byte)tri.U01.Y);
+                                w.Write((byte)tri.U01.Z);
+                                break;
+                            case 2:
+                                w.Write((ushort)tri.U01.X);
+                                w.Write((ushort)tri.U01.Y);
+                                w.Write((ushort)tri.U01.Z);
+                                break;
+                            case 4:
+                                w.Write(tri.U01.X);
+                                w.Write(tri.U01.Y);
+                                w.Write(tri.U01.Z);
+                                break;
+                        }
                     }
                 }
                 break;

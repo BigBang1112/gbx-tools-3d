@@ -2,6 +2,7 @@
 using GBX.NET.Inputs;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web.Virtualization;
+using Microsoft.JSInterop;
 using System.Collections.Immutable;
 using TmEssentials;
 
@@ -9,10 +10,13 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class InputList : ComponentBase
 {
+    private const string ModuleInputListHide = "ModuleInputListHide";
+    private const string ModuleInputListOnlyRespawns = "ModuleInputListOnlyRespawns";
+
+    private ElementReference inputList;
     private Virtualize<IInput>? virtualizeInputList;
 
-    private bool show = true;
-    private bool onlyRespawns = false;
+    private bool show;
     private TimeInt32? currentInput;
 
     [Parameter, EditorRequired]
@@ -26,6 +30,19 @@ public partial class InputList : ComponentBase
 
     public static bool UseHundredths => false; // inputs can sometimes be millisecond-based in older TM games
 
+    private bool onlyRespawns;
+    private bool OnlyRespawns
+    {
+        get => onlyRespawns;
+        set
+        {
+            onlyRespawns = value;
+            SyncLocalStorage.SetItem(ModuleInputListOnlyRespawns, value);
+            virtualizeInputList?.RefreshDataAsync();
+            StateHasChanged();
+        }
+    }
+
     public TimeInt32? CurrentInput
     {
         get => currentInput;
@@ -36,8 +53,21 @@ public partial class InputList : ComponentBase
         }
     }
 
+    public int CurrentInputIndex { get; set; }
+
     private ImmutableList<IInput>? inputs;
     private ImmutableList<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        show = !await LocalStorage.GetItemAsync<bool>(ModuleInputListHide);
+        onlyRespawns = await LocalStorage.GetItemAsync<bool>(ModuleInputListOnlyRespawns);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -50,13 +80,36 @@ public partial class InputList : ComponentBase
 
             inputs = Inputs;
         }
+
+        //await JS.InvokeVoidAsync("scrollToIndex", inputList, CurrentInputIndex);
     }
 
     private ValueTask<ItemsProviderResult<IInput>> LoadInputsAsync(ItemsProviderRequest request)
     {
-        var numInputs = Math.Min(request.Count, Inputs.Count - request.StartIndex);
-        var inputs = Inputs.Where(x => !onlyRespawns || x is Respawn { Pressed: true } or RespawnTM2020).Skip(request.StartIndex).Take(numInputs);
+        if (onlyRespawns)
+        {
+            var respawnInputs = Inputs.Where(x => x is Respawn { Pressed: true } or RespawnTM2020).ToList();
+            var totalInputCount = respawnInputs.Count;
+            var numInputs = Math.Min(request.Count, totalInputCount - request.StartIndex);
+            var inputsSubset = respawnInputs.Skip(request.StartIndex)
+                .Take(numInputs)
+                .ToList();
+            return ValueTask.FromResult(new ItemsProviderResult<IInput>(inputsSubset, totalInputCount));
+        }
+        else
+        {
+            var totalInputCount = Inputs.Count;
+            var numInputs = Math.Min(request.Count, totalInputCount - request.StartIndex);
+            var inputsSubset = Inputs.Skip(request.StartIndex)
+                .Take(numInputs)
+                .ToList();
+            return ValueTask.FromResult(new ItemsProviderResult<IInput>(inputsSubset, totalInputCount));
+        }
+    }
 
-        return ValueTask.FromResult(new ItemsProviderResult<IInput>(inputs, Inputs.Count));
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleInputListHide, !show);
     }
 }

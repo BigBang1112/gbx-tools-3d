@@ -5,7 +5,9 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class Controls : ComponentBase
 {
-    private bool show = true;
+    private const string ModuleControlsHide = "ModuleControlsHide";
+
+    private bool show;
     private ReplayCameraType cameraType;
     private bool collisionsEnabled;
 
@@ -14,6 +16,14 @@ public partial class Controls : ComponentBase
 
     [Parameter]
     public EventCallback<bool> OnCollisionsToggled { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            show = !await LocalStorage.GetItemAsync<bool>(ModuleControlsHide);
+        }
+    }
 
     private async Task SwitchCameraTypeAsync(ReplayCameraType type)
     {
@@ -25,5 +35,11 @@ public partial class Controls : ComponentBase
     {
         collisionsEnabled = !collisionsEnabled;
         await OnCollisionsToggled.InvokeAsync(collisionsEnabled);
+    }
+
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleControlsHide, !show);
     }
 }

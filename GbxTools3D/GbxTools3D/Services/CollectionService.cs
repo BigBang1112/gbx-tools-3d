@@ -578,6 +578,8 @@ internal sealed class CollectionService
                 blockInfo.HasAirHelper = blockInfoNode.AirHelperMobil is not null;
                 blockInfo.HasGroundHelper = blockInfoNode.GroundHelperMobil is not null;
                 blockInfo.HasConstructionModeHelper = blockInfoNode.ConstructionModeHelperMobil is not null;
+                blockInfo.HasGroundWaypoint = blockInfoNode.VariantBaseGround?.WaypointTriggerSolid is not null;
+                blockInfo.HasAirWaypoint = blockInfoNode.VariantBaseAir?.WaypointTriggerSolid is not null;
                 blockInfo.IsRoad = blockInfoNode is CGameCtnBlockInfoRoad;
 
                 if (zoneDict.TryGetValue(blockName, out var zone) && zone is not null)
@@ -611,7 +613,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromMobilAsync(blockInfoNode.AirHelperMobil,
                         gamePath, 
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|False|You're not helper here >:(",
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|False|You're not helper here >:(",
                         cancellationToken);
                 }
                 else if (blockInfoNode.VariantBaseAir?.HelperSolidFid is not null)
@@ -620,7 +622,7 @@ internal sealed class CollectionService
                         blockInfoNode.VariantBaseAir.HelperSolidFid,
                         blockInfoNode.VariantBaseAir.HelperSolidFidFile,
                         gamePath,
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|False|You're not helper here >:(",
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|False|You're not helper here >:(",
                         cancellationToken);
                 }
 
@@ -628,7 +630,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromMobilAsync(blockInfoNode.GroundHelperMobil,
                         gamePath,
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|True|You're not helper here >:(",
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|True|You're not helper here >:(",
                         cancellationToken);
                 }
                 else if (blockInfoNode.VariantBaseGround?.HelperSolidFid is not null)
@@ -637,16 +639,34 @@ internal sealed class CollectionService
                         blockInfoNode.VariantBaseGround.HelperSolidFid,
                         blockInfoNode.VariantBaseGround.HelperSolidFidFile,
                         gamePath,
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|True|You're not helper here >:(",
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|True|You're not helper here >:(",
                         cancellationToken);
                 }
-
 
                 if (blockInfoNode.ConstructionModeHelperMobil is not null)
                 {
                     await GetOrCreateMeshFromMobilAsync(blockInfoNode.ConstructionModeHelperMobil,
                         gamePath,
-                        $"GbxTools3D|Solid|{gameFolder}|{blockName}|Auris or Aurimas? WirtuaL. Adrien wtf is this timing",
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|Auris or Aurimas? WirtuaL. Adrien wtf is this timing",
+                        cancellationToken);
+                }
+
+                if (blockInfoNode.VariantBaseAir?.WaypointTriggerSolid is CPlugSolid waypointTriggerSolidAir)
+                {
+                    await GetOrCreateMeshFromSolidFidAsync(
+                        waypointTriggerSolidAir,
+                        blockInfoNode.VariantBaseAir.WaypointTriggerSolidFile,
+                        gamePath,
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|False|Way to go bois",
+                        cancellationToken);
+                }
+                if (blockInfoNode.VariantBaseGround?.WaypointTriggerSolid is CPlugSolid waypointTriggerSolidGround)
+                {
+                    await GetOrCreateMeshFromSolidFidAsync(
+                        waypointTriggerSolidGround,
+                        blockInfoNode.VariantBaseGround.WaypointTriggerSolidFile,
+                        gamePath,
+                        $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|True|Way to go bois",
                         cancellationToken);
                 }
 

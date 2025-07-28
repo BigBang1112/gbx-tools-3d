@@ -16,24 +16,31 @@
         <div class="navbar-fake-margin"></div>
         <h2 class="view">View a ghost</h2>
         <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
-        <div class="view-external">
-            <EditForm Model="@this" class="view-form">
-                <DataAnnotationsValidator />
-                <label for="external-select">External:</label>
-                <InputSelect id="external-select" @bind-Value="selectedExternal">
-                    <option value="tmio">TM.IO</option>
-                    <option value="url">URL</option>
-                </InputSelect>
-                <button type="submit" class="button-generic">Load</button>
-            </EditForm>
-        </div>
+        @if (viewExternal)
+        {
+            <div class="view-external">
+                <EditForm Model="@this" class="view-form">
+                    <DataAnnotationsValidator />
+                    <label for="external-select">External:</label>
+                    <InputSelect id="external-select" @bind-Value="selectedExternal">
+                        <option value="tmio">TM.IO</option>
+                        <option value="url">URL</option>
+                    </InputSelect>
+                    <button type="submit" class="button-generic">Load</button>
+                </EditForm>
+            </div>
+        }
     </div>
 }
 else
 {
     <div class="@(RendererInfo.IsInteractive ? "black-background" : "black-background-fade")">
 
-        @if (!RendererInfo.IsInteractive)
+        @if (RendererInfo.IsInteractive)
+        {
+            <LoadingBar></LoadingBar>
+        }
+        else
         {
             <div class="centered">
                 <Loader></Loader>
@@ -41,6 +48,10 @@ else
         }
 
         <View3D Map="Map" AfterSceneLoad="AfterSceneLoadAsync" OnRenderDetails="OnRenderDetails" @ref="view3d"></View3D>
-        <GhostControls View3D="view3d" Map="Map" @ref="ghostControls" MapUploaded="OnMapUploadedAsync" MapUploadable="true"></GhostControls>
+        <GhostControls View3D="view3d" Map="Map" @ref="ghostControls" MapUploaded="OnMapUploadedAsync" MapUploadable="true" MxSite="@MxSite" ExchangeId="@mapMxInfo?.Map?.MxId.ToString()"></GhostControls>
     </div>
+}
+
+@code {
+    private static readonly bool viewExternal = false;
 }

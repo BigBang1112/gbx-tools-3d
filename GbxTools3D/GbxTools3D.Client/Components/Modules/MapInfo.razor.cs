@@ -1,7 +1,6 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
 using GbxTools3D.Client.EventArgs;
-using GbxTools3D.Client.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System.Text.RegularExpressions;
@@ -10,7 +9,9 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class MapInfo : ComponentBase
 {
-    private bool show = true;
+    private const string ModuleMapInfoHide = "ModuleMapInfoHide";
+
+    private bool show;
 
     private readonly string[] extensions = ["Challenge.Gbx", "Map.Gbx"];
 
@@ -25,6 +26,15 @@ public partial class MapInfo : ComponentBase
 
     [Parameter]
     public bool Uploadable { get; set; }
+
+    [Parameter]
+    public string? TmxSite { get; set; }
+
+    [Parameter]
+    public string? MxSite { get; set; }
+
+    [Parameter]
+    public string? ExchangeId { get; set; }
 
     public string? Mood
     {
@@ -64,5 +74,19 @@ public partial class MapInfo : ComponentBase
             Map = map.Node;
             await MapUploaded.InvokeAsync(Map);
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            show = !await LocalStorage.GetItemAsync<bool>(ModuleMapInfoHide);
+        }
+    }
+
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleMapInfoHide, !show);
     }
 }

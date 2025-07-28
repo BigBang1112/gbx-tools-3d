@@ -16,24 +16,27 @@
         <div class="navbar-fake-margin"></div>
         <h2 class="view">View an item (or a custom block)</h2>
         <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
-        <div class="view-external">
-            <EditForm Model="@this" class="view-form">
-                <DataAnnotationsValidator />
-                <label for="external-select">External:</label>
-                <InputSelect id="external-select" @bind-Value="selectedExternal">
-                    <option value="ix">IX</option>
-                    <option value="url">URL</option>
-                </InputSelect>
-                @switch (selectedExternal)
-                {
-                    case "ix":
-                        <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
-                        break;
+        @if (viewExternal)
+        {
+            <div class="view-external">
+                <EditForm Model="@this" class="view-form">
+                    <DataAnnotationsValidator />
+                    <label for="external-select">External:</label>
+                    <InputSelect id="external-select" @bind-Value="selectedExternal">
+                        <option value="ix">IX</option>
+                        <option value="url">URL</option>
+                    </InputSelect>
+                    @switch (selectedExternal)
+                    {
+                        case "ix":
+                            <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
+                            break;
 
-                }
-                <button type="submit" class="button-generic">Load</button>
-            </EditForm>
-        </div>
+                    }
+                    <button type="submit" class="button-generic">Load</button>
+                </EditForm>
+            </div>
+        }
     </div>
 }
 else
@@ -49,4 +52,8 @@ else
 
         <View3D GameVersion="item?.GameVersion ?? GameVersion.MP4" Item="item" IsCatalog="true"></View3D>
     </div>
+}
+
+@code {
+    private static readonly bool viewExternal = false;
 }

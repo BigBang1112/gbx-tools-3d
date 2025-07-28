@@ -70,6 +70,8 @@ public sealed class BlockClientService : IBlockClientService
         HasAirHelper = blockInfo.HasAirHelper,
         HasGroundHelper = blockInfo.HasGroundHelper,
         HasConstructionModeHelper = blockInfo.HasConstructionModeHelper,
+        HasAirWaypoint = blockInfo.HasAirWaypoint,
+        HasGroundWaypoint = blockInfo.HasGroundWaypoint,
         AirVariants = blockInfo.Variants.Where(x => !x.Ground).Select(x => MapVariant(x, detailed)).ToList(),
         GroundVariants = blockInfo.Variants.Where(x => x.Ground).Select(x => MapVariant(x, detailed)).ToList(),
         Height = blockInfo.Height,

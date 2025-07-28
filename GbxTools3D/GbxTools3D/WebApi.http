@@ -2,5 +2,6 @@
 
 ### GetMaterials
 POST {{RootUrl}}/api/dataimport
+X-Key: GE1zo5awcJDBm6j
 
 ###

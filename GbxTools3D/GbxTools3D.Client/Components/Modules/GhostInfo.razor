@@ -1,7 +1,9 @@
 ﻿@using TmEssentials
 
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
 <div class="panel right ghost-info @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
@@ -17,8 +19,8 @@
             <FormattedText Text="@(Ghost.GhostNickname ?? Ghost.GhostLogin)"></FormattedText>
         </div>
         <div class="minimenu">
-            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" @onclick="() => mode = MenuType.Samples">Samples</div>
-            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" @onclick="() => mode = MenuType.Details">Details</div>
+            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" @onclick="() => SwitchModeAsync(MenuType.Samples)">Samples</div>
+            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" @onclick="() => SwitchModeAsync(MenuType.Details)">Details</div>
         </div>
         @if (mode == MenuType.Samples)
         {
@@ -78,8 +80,11 @@
                             <div class="mono">@carSample.SteerFront.ToString("0.000")</div>
                             <div class="@(carSample.TurboStrength > 0 ? "turbo" : "")">Turbo:</div>
                             <div class="mono @(carSample.TurboStrength > 0 ? "turbo" : "")">@carSample.TurboStrength</div>
-                            <div style="color: @(carSample.DirtBlend.HasValue ? InterpolateDirtBlend(carSample.DirtBlend.Value) : "inherit")">Dirt blend:</div>
-                            <div class="mono" style="color: @(carSample.DirtBlend.HasValue ? InterpolateDirtBlend(carSample.DirtBlend.Value) : "inherit")">@carSample.DirtBlend</div>
+                            @if (carSample.DirtBlend.HasValue)
+                            {
+                                <div style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">Dirt blend:</div>
+                                <div class="mono" style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">@carSample.DirtBlend</div>
+                            }
                             <div>Horn:</div>
                             <div class="mono" title="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
                             <div>U13:</div>

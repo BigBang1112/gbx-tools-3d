@@ -1,5 +1,7 @@
-﻿<div class="panel left render-info @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+﻿@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<div class="panel left render-info @(show ? "" : "closed")">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
@@ -12,19 +14,19 @@
     <div class="title">
         Render
     </div>
-    @if (RenderDetails is not null)
+    @if (renderDetails is not null)
     {
         <div class="table">
             <div>FPS:</div>
-            <div class="mono">@RenderDetails.FPS</div>
+            <div class="mono">@renderDetails.FPS</div>
             <div>Calls:</div>
-            <div class="mono">@RenderDetails.Calls</div>
+            <div class="mono">@renderDetails.Calls</div>
             <div>Triangles:</div>
-            <div class="mono">@RenderDetails.Triangles</div>
+            <div class="mono">@renderDetails.Triangles</div>
             <div>Geometries:</div>
-            <div class="mono">@RenderDetails.Geometries</div>
+            <div class="mono">@renderDetails.Geometries</div>
             <div>Textures:</div>
-            <div class="mono">@RenderDetails.Textures</div>
+            <div class="mono">@renderDetails.Textures</div>
         </div>
     }
 </div>

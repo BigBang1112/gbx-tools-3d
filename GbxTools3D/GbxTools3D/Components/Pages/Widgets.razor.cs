@@ -47,6 +47,8 @@ public partial class Widgets
             sb.Append(mapId);
         }
 
+        sb.Append("&nonav=true");
+
         return sb.ToString();
     }
 
@@ -80,6 +82,8 @@ public partial class Widgets
             sb.Append(mapId);
         }
 
+        sb.Append("&nonav=true");
+
         return sb.ToString();
     }
 
@@ -101,6 +105,8 @@ public partial class Widgets
             sb.Append("&vehicle=");
             sb.Append(vehicleName);
         }
+
+        sb.Append("&nonav=true");
 
         return sb.ToString();
     }
@@ -125,8 +131,10 @@ public partial class Widgets
 
         if (isFrame)
         {
-            sb.Append($"&nocatalog=true");
+            sb.Append("&nocatalog=true");
         }
+
+        sb.Append("&nonav=true");
 
         return sb.ToString();
     }

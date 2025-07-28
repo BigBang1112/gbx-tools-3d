@@ -1,5 +1,9 @@
-﻿<div class="panel left input-list @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+﻿@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject Blazored.LocalStorage.ISyncLocalStorageService SyncLocalStorage
+@inject IJSRuntime JS
+
+<div class="panel left input-list @(show ? "" : "closed")">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_left.svg" width="32" height="32" />
@@ -12,9 +16,9 @@
     <div class="title">
         Inputs
     </div>
-    <div class="list mono">
-        <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="28" @ref="virtualizeInputList">
-            <div @onclick="() => OnInputClick.InvokeAsync(input)" class="item input @(CurrentInput == input.Time ? "active" : "")">
+    <div class="list mono" @ref="inputList">
+        <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="14" @ref="virtualizeInputList" OverscanCount="20">
+            <div @onclick="() => OnInputClick.InvokeAsync(input)" class="item input @(CurrentInput == input.Time ? "active" : "")" data-time="@input.Time.TotalMilliseconds">
                 <span>@input.Time.ToString(UseHundredths)</span>
                 <span>@input.GetType().Name</span>
                 @if (input is GBX.NET.Inputs.IInputReal inputReal)
@@ -30,7 +34,7 @@
     </div>
     <div class="properties">
         <label>
-            <input type="checkbox" @bind="onlyRespawns" />
+            <input type="checkbox" @bind="OnlyRespawns" />
             Only respawns
         </label>
     </div>

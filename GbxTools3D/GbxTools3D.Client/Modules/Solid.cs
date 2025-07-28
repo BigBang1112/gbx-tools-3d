@@ -29,6 +29,9 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
     private Solid? collision;
     public bool CollisionsEnabled => collision is not null;
 
+    private Solid[] objectLinks = [];
+    public bool ObjectLinksEnabled => objectLinks.Length > 0;
+
     public JSObject Object { get; } = obj;
     public string? FilePath { get; } = filePath;
 
@@ -191,7 +194,8 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
     [JSImport("createCollisionMesh", nameof(Solid))]
     private static partial JSObject CreateCollisionMesh(
         [JSMarshalAs<JSType.MemoryView>] Span<byte> vertexData,
-        [JSMarshalAs<JSType.MemoryView>] Span<int> indices);
+        [JSMarshalAs<JSType.MemoryView>] Span<int> indices,
+        bool isTrigger);
 
     [JSImport("triangulate", nameof(Solid))]
     private static partial int[] Triangulate(double[] positions3d);
@@ -208,7 +212,8 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         bool optimized = true, 
         bool receiveShadow = true,
         bool castShadow = true,
-        bool noLights = false)
+        bool noLights = false,
+        bool isTrigger = false)
     {
         using var rd = new AdjustedBinaryReader(stream);
 
@@ -241,7 +246,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         {
             var geometries = new List<JSObject>();
             var materials = new List<JSObject>();
-            await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials, terrainModifier, noLights);
+            await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot: Mat3.Identity, pos: Vector3.Zero, geometries, materials, availableMaterials, terrainModifier, noLights, isTrigger);
             
             switch (geometries.Count)
             {
@@ -265,7 +270,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         }
         else
         {
-            tree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights);
+            tree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights, isTrigger);
             Log(tree); // TODO: temporary
         }
 
@@ -292,7 +297,8 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         List<JSObject> materials,
         Dictionary<string, MaterialDto>? availableMaterials,
         string? terrainModifier,
-        bool noLights)
+        bool noLights,
+        bool isTrigger)
     {
         var childrenCount = r.Read7BitEncodedInt();
 
@@ -359,7 +365,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
                 var distance = storedDistance;
                 storedDistance = r.ReadSingle();
 
-                await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials, terrainModifier, noLights);
+                await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot, pos, i == 0 ? geometries : [], i == 0 ? materials : [], availableMaterials, terrainModifier, noLights, isTrigger);
 
                 //AddLod(lod, lodTree, distance);
             }
@@ -367,7 +373,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
             //Add(tree, lod);
         }
 
-        var surface = ReadSurface(r);
+        var surface = ReadSurface(r, isTrigger);
 
         if (version >= 2)
         {
@@ -378,7 +384,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot, pos, geometries, materials, availableMaterials, terrainModifier, noLights);
+            await ReadTreeAsSingleGeometryAsync(r, gameVersion, version, rot, pos, geometries, materials, availableMaterials, terrainModifier, noLights, isTrigger);
         }
     }
 
@@ -391,7 +397,8 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         bool castShadow,
         Dictionary<string, MaterialDto>? availableMaterials,
         string? terrainModifier,
-        bool noLights)
+        bool noLights,
+        bool isTrigger)
     {
         var tree = Create(matrixAutoUpdate: true);
 
@@ -439,7 +446,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
             {
                 var distance = r.ReadSingle();
 
-                var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights);
+                var lodTree = await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights, isTrigger);
 
                 AddLod(lod, lodTree, distance);
             }
@@ -447,7 +454,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
             Add(tree, lod);
         }
 
-        var surface = ReadSurface(r);
+        var surface = ReadSurface(r, isTrigger);
 
         if (surface is not null)
         {
@@ -470,7 +477,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
 
         for (var i = 0; i < childrenCount; i++)
         {
-            Add(tree, await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights));
+            Add(tree, await ReadTreeAsNestedObjectsAsync(r, gameVersion, version, expectedMeshCount, receiveShadow, castShadow, availableMaterials, terrainModifier, noLights, isTrigger));
         }
 
         return tree;
@@ -565,7 +572,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         return CreateGeometry(vertexData, normalData, indices, uvData);
     }
 
-    private static JSObject? ReadSurface(AdjustedBinaryReader r)
+    private static JSObject? ReadSurface(AdjustedBinaryReader r, bool isTrigger)
     {
         if (!r.ReadBoolean())
         {
@@ -624,7 +631,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
                         break;
                 }
 
-                return CreateCollisionMesh(vertices, indices);
+                return CreateCollisionMesh(vertices, indices, isTrigger);
             default:
                 throw new InvalidDataException("Unknown surface type");
         }
@@ -986,6 +993,28 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         scene.Add(collision.Object);
     }
 
+    public void ToggleObjectLinks(Scene scene, Solid[] objectLinks)
+    {
+        if (objectLinks.Length == 0)
+        {
+            if (this.objectLinks.Length > 0)
+            {
+                foreach (var link in this.objectLinks)
+                {
+                    scene.Remove(link.Object);
+                }
+                this.objectLinks = [];
+            }
+            return;
+        }
+
+        this.objectLinks = objectLinks;
+        foreach (var link in objectLinks)
+        {
+            scene.Add(link.Object);
+        }
+    }
+
     public void ToggleWireframe()
     {
         if (wireframeMemorizedMaterials.Count > 0)
@@ -1054,6 +1083,11 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         {
             scene.Remove(collision);
             collision = null;
+        }
+
+        foreach (var link in objectLinks)
+        {
+            scene.Remove(link.Object);
         }
 
         scene.Remove(Object);

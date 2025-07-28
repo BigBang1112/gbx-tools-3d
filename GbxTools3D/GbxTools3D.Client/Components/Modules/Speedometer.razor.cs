@@ -4,7 +4,9 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class Speedometer : ComponentBase
 {
-    private bool show = true;
+    private const string ModuleSpeedometerHide = "ModuleSpeedometerHide";
+
+    private bool show;
 
     private int? gear;
     private float speed;
@@ -50,5 +52,19 @@ public partial class Speedometer : ComponentBase
             rpm = value;
             StateHasChanged();
         }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            show = !await LocalStorage.GetItemAsync<bool>(ModuleSpeedometerHide);
+        }
+    }
+
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleSpeedometerHide, !show);
     }
 }

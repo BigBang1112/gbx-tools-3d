@@ -47,10 +47,16 @@ namespace GbxTools3D.Migrations
                     b.Property<bool>("HasAirHelper")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("HasAirWaypoint")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<bool>("HasConstructionModeHelper")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("HasGroundHelper")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("HasGroundWaypoint")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<byte?>("Height")

@@ -1,0 +1,37 @@
+﻿.bg {
+    width: 100%;
+    position: fixed;
+    z-index: 20;
+    pointer-events: none;
+}
+
+.progress {
+    height: 2px;
+    background-color: #1E72CC;
+}
+
+    .progress.fake {
+        animation: animateFake 2s forwards;
+    }
+
+.shifted {
+    top: 4.5rem;
+}
+
+@media (max-height: 600px) {
+    .shifted {
+        top: 4rem;
+    }
+}
+
+@keyframes animateFake {
+    0% {
+        width: 0%;
+    }
+    99.9% {
+        width: 100%;
+    }
+    100% {
+        width: 0%;
+    }
+}

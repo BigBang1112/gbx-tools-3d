@@ -5,7 +5,10 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class GhostInfo : ComponentBase
 {
-    private bool show = true;
+    private const string ModuleGhostInfoHide = "ModuleGhostInfoHide";
+    private const string ModuleGhostInfoMode = "ModuleGhostInfoMode";
+
+    private bool show;
     private MenuType mode;
     private CGameGhost.Data.Sample? currentSample;
     private CGameGhost.Data.Sample? currentSampleInterpolated;
@@ -32,6 +35,17 @@ public partial class GhostInfo : ComponentBase
         _ => null
     };
 
+    protected override async Task OnInitializedAsync()
+    {
+        if (!RendererInfo.IsInteractive)
+        {
+            return;
+        }
+
+        show = !await LocalStorage.GetItemAsync<bool>(ModuleGhostInfoHide);
+        mode = await LocalStorage.GetItemAsync<MenuType>(ModuleGhostInfoMode);
+    }
+
     public void SetCurrentSample(CGameGhost.Data.Sample? sample)
     {
         if (currentSample == sample)
@@ -48,7 +62,7 @@ public partial class GhostInfo : ComponentBase
         Details
     }
 
-    private string InterpolateDirtBlend(float t)
+    private static string InterpolateDirtBlend(float t)
     {
         t = Math.Clamp(t, 0f, 1f);
 
@@ -60,5 +74,23 @@ public partial class GhostInfo : ComponentBase
         int b = (int)(bStart + (bEnd - bStart) * t);
 
         return $"#{r:X2}{g:X2}{b:X2}";
+    }
+
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleGhostInfoHide, !show);
+    }
+
+    private async Task SwitchModeAsync(MenuType newMode)
+    {
+        if (mode == newMode)
+        {
+            return;
+        }
+
+        mode = newMode;
+
+        await LocalStorage.SetItemAsync(ModuleGhostInfoMode, mode);
     }
 }

@@ -2,12 +2,14 @@
     font-size: 12rem;
     margin: 30px 0 0 0;
     z-index: 1;
+    transition: font-size 0.2s ease;
 }
 
 .brand-gbx-tools {
     font-size: 6rem;
     margin: 0 0 50px 0;
     z-index: 1;
+    transition: font-size 0.2s ease;
 }
 
 .home-text {
@@ -27,6 +29,10 @@ video {
     position: absolute;
     right: 0;
     height: 100%;
+}
+
+h2 {
+    margin-top: 2rem;
 }
 
 @media (max-width: 600px) {
@@ -104,17 +110,18 @@ video {
 .showcase-button {
     display: flex;
     align-items: center;
-    padding: 10px;
+    padding: 0.5rem;
     position: relative;
     background-color: #3333;
     border-bottom: 2px solid #FFF3;
     border-radius: 4px;
     cursor: pointer;
-    gap: 25px;
+    gap: 1rem;
     color: white;
     text-decoration: none;
     margin-bottom: 10px;
     height: 100px;
+    transition: font-size 0.2s ease, height 0.2s ease;
 }
 
     .showcase-button:hover {
@@ -123,6 +130,7 @@ video {
 
     .showcase-button .info {
         flex: 1;
+        padding: 0.5rem;
     }
 
         .showcase-button .info .name {
@@ -133,7 +141,7 @@ video {
     .showcase-button .game {
         font-size: 200%;
         font-weight: bold;
-        padding: 20px;
+        padding: 1rem;
     }
 
 .wrs {
@@ -148,6 +156,37 @@ video {
 @media (max-width: 1400px) {
     .wrs {
         flex-direction: column;
+    }
+}
+
+@media (max-width: 850px) {
+    section.scene {
+        text-align: center;
+    }
+
+    h2 {
+        text-align: center;
+    }
+}
+
+@media (max-width: 600px) {
+    .showcase-button {
+        font-size: 80%;
+        height: 80px;
+        gap: 0.5rem;
+    }
+
+        .showcase-button img {
+            height: 80px;
+        }
+}
+
+@media (max-width: 500px) {
+    .showcase-button .game {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        font-size: 100%;
     }
 }
 

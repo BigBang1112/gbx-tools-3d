@@ -5,13 +5,28 @@ namespace GbxTools3D.Client.Components.Modules;
 
 public partial class RenderInfo : ComponentBase
 {
-    private bool show = true;
+    private const string ModuleRenderInfoHide = "ModuleRenderInfoHide";
 
-    [Parameter, EditorRequired]
-    public RenderDetails? RenderDetails { get; set; }
+    private bool show;
+    private RenderDetails? renderDetails;
 
-    public void Update()
+    public void Update(RenderDetails renderDetails)
     {
+        this.renderDetails = renderDetails;
         StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RendererInfo.IsInteractive)
+        {
+            show = !await LocalStorage.GetItemAsync<bool>(ModuleRenderInfoHide);
+        }
+    }
+
+    private async Task ToggleShowAsync()
+    {
+        show = !show;
+        await LocalStorage.SetItemAsync(ModuleRenderInfoHide, !show);
     }
 }

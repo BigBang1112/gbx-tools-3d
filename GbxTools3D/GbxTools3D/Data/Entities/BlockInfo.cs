@@ -23,7 +23,9 @@ public sealed class BlockInfo
     public bool HasAirHelper { get; set; }
     public bool HasGroundHelper { get; set; }
     public bool HasConstructionModeHelper { get; set; }
-    
+    public bool HasGroundWaypoint { get; set; }
+    public bool HasAirWaypoint { get; set; }
+
     public byte? Height { get; set; }
 
     public int? IconId { get; set; }

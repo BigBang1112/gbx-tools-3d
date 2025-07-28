@@ -1,11 +1,13 @@
 ﻿using GBX.NET;
 using GBX.NET.Engines.Game;
 using GbxTools3D.Client.Components.Modules;
+using GbxTools3D.Client.Dtos;
 using GbxTools3D.Client.EventArgs;
 using GbxTools3D.Client.Models;
 using Microsoft.AspNetCore.Components;
 using System.Net.Http.Json;
 using System.Runtime.Versioning;
+using System.Web;
 
 namespace GbxTools3D.Client.Components.Pages;
 
@@ -32,6 +34,12 @@ public partial class ViewGhost
     [SupplyParameterFromQuery(Name = "login")]
     private string? Login { get; set; }
 
+    [SupplyParameterFromQuery(Name = "mapmp")]
+    private bool IsManiaPlanetMap { get; set; }
+
+    [SupplyParameterFromQuery(Name = "platform")]
+    private string? Platform { get; set; }
+
     [SupplyParameterFromQuery(Name = "url")]
     private string? Url { get; set; }
 
@@ -46,6 +54,9 @@ public partial class ViewGhost
     public CGameCtnChallenge? Map { get; set; }
 
     private CGameCtnChallenge? mapAfterGhost;
+    private MapContentDto? mapMxInfo;
+
+    private readonly SemaphoreSlim semaphore = new(1, 1);
 
     protected override async Task OnInitializedAsync()
     {
@@ -62,61 +73,88 @@ public partial class ViewGhost
             return;
         }
 
+        await semaphore.WaitAsync();
+
         var ghostResponseTask = default(Task<HttpResponseMessage>);
         var mapResponseTask = default(Task<HttpResponseMessage>);
 
-        if (!string.IsNullOrEmpty(Url))
+        try
         {
-            ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
-        }
-        else if (Type == "wrr")
-        {
-            if (MapUid is not null && Time.HasValue && Login is not null)
+            if (!string.IsNullOrEmpty(Url))
             {
-                ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
-            }
-        }
-
-        if (!string.IsNullOrEmpty(MapUrl))
-        {
-            mapResponseTask = Http.GetAsync(MapUrl);
-        }
-        else if (MxSite is not null && MapUid is not null)
-        {
-            mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
-        }
-
-        if (ghostResponseTask is not null)
-        {
-            using var response = await ghostResponseTask;
-            if (response.IsSuccessStatusCode)
-            {
-                await using var stream = await response.Content.ReadAsStreamAsync();
-                Ghost = await Gbx.ParseAsync<CGameCtnGhost>(stream);
-            }
-        }
-
-        if (mapResponseTask is not null)
-        {
-            using var response = await mapResponseTask;
-            if (response.IsSuccessStatusCode)
-            {
-                if (string.IsNullOrEmpty(MapUrl))
+                if (Type == "tmt")
                 {
-                    var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
-
-                    if (content is not null)
-                    {
-                        await using var ms = new MemoryStream(content.Content);
-                        mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
-                    }
+                    ghostResponseTask = Http.GetAsync($"/api/ghost/tmt/{HttpUtility.UrlEncode(Url)}");
                 }
                 else
                 {
-                    await using var stream = await response.Content.ReadAsStreamAsync();
-                    mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
+                    ghostResponseTask = Http.GetAsync(Url);
                 }
             }
+            else if (Type == "wrr")
+            {
+                if (MapUid is not null && Time.HasValue && Login is not null)
+                {
+                    ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
+                }
+            }
+
+            if (!string.IsNullOrEmpty(MapUrl))
+            {
+                mapResponseTask = Http.GetAsync(MapUrl);
+            }
+            else if (MapUid is not null)
+            {
+                if (IsManiaPlanetMap)
+                {
+                    mapResponseTask = Http.GetAsync($"/api/map/mp/{MapUid}");
+                }
+                else if (Type == "tmt" && !string.IsNullOrEmpty(Platform))
+                {
+                    mapResponseTask = Http.GetAsync($"/api/map/tmt/{Platform}/uid/{MapUid}");
+                }
+                else if (MxSite is not null)
+                {
+                    mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
+                }
+            }
+
+            if (ghostResponseTask is not null)
+            {
+                using var response = await ghostResponseTask;
+                if (response.IsSuccessStatusCode)
+                {
+                    await using var stream = await response.Content.ReadAsStreamAsync();
+                    Ghost = await Gbx.ParseAsync<CGameCtnGhost>(stream);
+                }
+            }
+
+            if (mapResponseTask is not null)
+            {
+                using var response = await mapResponseTask;
+                if (response.IsSuccessStatusCode)
+                {
+                    if (!string.IsNullOrEmpty(MapUrl) || (!string.IsNullOrEmpty(MapUid) && (IsManiaPlanetMap || Type == "tmt")))
+                    {
+                        await using var stream = await response.Content.ReadAsStreamAsync();
+                        mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
+                    }
+                    else
+                    {
+                        mapMxInfo = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.MapContentDto);
+
+                        if (mapMxInfo is not null)
+                        {
+                            await using var ms = new MemoryStream(mapMxInfo.Content);
+                            mapAfterGhost = Gbx.ParseNode<CGameCtnChallenge>(ms);
+                        }
+                    }
+                }
+            }
+        }
+        finally
+        {
+            semaphore.Release();
         }
     }
 
@@ -134,9 +172,23 @@ public partial class ViewGhost
 
     private async Task AfterSceneLoadAsync()
     {
-        await TryLoadGhostAsync();
+        await semaphore.WaitAsync();
 
-        Map = mapAfterGhost;
+        try
+        {
+            await TryLoadGhostAsync();
+
+            if (string.IsNullOrEmpty(MapUid) && string.IsNullOrEmpty(MapUrl))
+            {
+                return;
+            }
+
+            Map = mapAfterGhost;
+        }
+        finally
+        {
+            semaphore.Release();
+        }
     }
 
     private async ValueTask<bool> TryLoadGhostAsync()

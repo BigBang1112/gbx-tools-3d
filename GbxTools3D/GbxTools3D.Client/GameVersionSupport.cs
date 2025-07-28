@@ -39,6 +39,11 @@ public static class GameVersionSupport
     {
         var gameVersion = ghost.GameVersion;
 
+        if (gameVersion == (GameVersion.TMT | GameVersion.MP4 | GameVersion.TM2020))
+        {
+            gameVersion = GameVersion.TMT;
+        }
+
         if (gameVersion == (GameVersion.MP4 | GameVersion.TM2020))
         {
             gameVersion = GameVersion.MP4;

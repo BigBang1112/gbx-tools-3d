@@ -86,7 +86,7 @@
 .chevron {  
    min-width: 24px;  
    height: 32px;  
-   background-color: #666;  
+   background-color: #DDD;  
    clip-path: polygon(100% 75%, 50% 100%, 0 75%, 0 0, 100% 0); 
    opacity: 0.8;  
    transition: opacity 0.1s ease;

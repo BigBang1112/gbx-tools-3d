@@ -1,7 +1,8 @@
 ﻿@inject IJSRuntime JS
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <div class="panel right map-info @(show ? "" : "closed")">
-    <div class="opener" @onclick="() => show = !show">
+    <div class="opener" @onclick="ToggleShowAsync">
         @if (show)
         {
             <img src="icons/ui/keyboard_arrow_right.svg" width="32" height="32" />
@@ -34,8 +35,19 @@
                 </div>
             </div>
             <div class="icons">
-                <img src="icons/env/@(Map.Collection).webp" title="Environment: @Map.Collection" width="32" height="32" />
-                <img src="icons/mood/@(Mood).webp" title="Mood: @Mood" width="32" height="32" />
+                <div>
+                    <img src="icons/env/@(Map.Collection).webp" title="Environment: @Map.Collection" width="28" height="28" />
+                </div>
+                <div>
+                    <img src="icons/mood/@(Mood).webp" title="Mood: @Mood" width="28" height="28" />
+                </div>
+
+                @if ((!string.IsNullOrEmpty(TmxSite) || !string.IsNullOrEmpty(MxSite)) && !string.IsNullOrEmpty(ExchangeId))
+                {
+                    <a href="https://@TmxUtils.GetExchangeSite(TmxSite, MxSite, ExchangeId)" target="_blank" class="@TmxUtils.GetExchangeGlowClass(TmxSite, MxSite)">
+                        <img src="icons/@(TmxUtils.GetExchangeImage(TmxSite, MxSite)).png" width="24" height="24" />
+                    </a>
+                }
             </div>
         }
     </div>

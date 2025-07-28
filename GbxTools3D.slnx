@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
+  <Project Path="GbxTools3D/GbxTools3D.Client/GbxTools3D.Client.csproj" />
+  <Project Path="GbxTools3D/GbxTools3D/GbxTools3D.csproj" />
+</Solution>

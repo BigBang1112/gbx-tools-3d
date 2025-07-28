@@ -30,8 +30,8 @@ public class ItemApiEndpoint
     {
         var http = httpFactory.CreateClient("exchange");
 
-        using var itemInfoResponseTask = http.GetAsync($"https://item.exchange/api/item/get_item_info/multi/{id}", cancellationToken);
-        using var itemResponse = await http.GetAsync($"https://item.exchange/item/download/{id}", cancellationToken);
+        var itemInfoResponseTask = http.GetAsync($"https://item.exchange/api/item/get_item_info/multi/{id}", cancellationToken);
+        using var itemResponse = await http.GetAsync($"https://item.exchange/item/download/{id}", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
 
         if (itemResponse.StatusCode == System.Net.HttpStatusCode.NotFound)
         {

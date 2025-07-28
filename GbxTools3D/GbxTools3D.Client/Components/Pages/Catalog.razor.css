@@ -58,6 +58,8 @@
     top: 120px;
     bottom: 100px;
     width: 500px;
+    min-height: 600px;
+    transform-origin: top left;
 }
 
     .catalog .opener {
@@ -65,7 +67,7 @@
     }
 
     .catalog.closed {
-        transform: translateX(-500px);
+        transform: translateX(-100%);
     }
 
     .catalog .games {
@@ -174,6 +176,8 @@
     top: 120px;
     bottom: 100px;
     width: 500px;
+    min-height: 600px;
+    transform-origin: top right;
 }
 
     .properties .opener {
@@ -181,7 +185,7 @@
     }
 
     .properties.closed {
-        transform: translateX(500px);
+        transform: translateX(100%);
     }
 
     .properties .asset-name {
@@ -239,12 +243,14 @@
                 background-color: black;
             }
 
-@media (max-width: 580px) {
-    .catalog {
-        width: calc(100% - 4rem);
+@media (max-width: 650px) {
+    .panel {
+        transform: scale(0.7);
     }
+}
 
-        .catalog.closed {
-            left: calc(-100% + 4rem);
-        }
+@media (max-width: 450px) {
+    .panel {
+        transform: scale(0.55);
+    }
 }

@@ -13,6 +13,10 @@
     --yellow-color: #CA0;
 }
 
+html {
+    scrollbar-gutter: stable;
+}
+
 html, body {
     font-family: "Mona Sans";
     background-color: #111;
@@ -96,17 +100,16 @@ section.content {
 }
 
 .container {
-    padding: 20px;
+    padding: 1rem;
     width: 75%;
     margin-right: auto;
     margin-left: auto;
-    transition: width 0.2s ease;
+    transition: width 0.2s ease, padding 0.2s ease;
 }
 
 @media (max-width: 850px) {
     .container {
         width: calc(100% - 3rem);
-        text-align: center;
     }
 }
 
@@ -205,12 +208,6 @@ h2.view {
     pointer-events: none;
 }
 
-@media (max-width: 450px) {
-    .panels {
-        transform: scale(0.55);
-    }
-}
-
     .panels.left {
         transform-origin: top left;
     }
@@ -219,6 +216,30 @@ h2.view {
         transform-origin: top right;
         right: 0;
     }
+
+@media (max-height: 950px) {
+    .panels.small {
+        transform: scale(0.9);
+    }
+}
+
+@media (max-height: 875px) {
+    .panels.small {
+        transform: scale(0.7);
+    }
+}
+
+@media (max-width: 450px), (max-height: 800px) {
+    .panels.small {
+        transform: scale(0.55);
+    }
+}
+
+@media (max-height: 600px) {
+    .panels {
+        top: 100px;
+    }
+}
 
 .panel {
     box-sizing: border-box;
@@ -310,10 +331,6 @@ a {
         text-decoration: underline;
     }
 
-.content {
-    padding-top: 1.1rem;
-}
-
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
 }
@@ -348,6 +365,29 @@ a {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+#components-reconnect-modal {
+    display: none;
+}
+
+    #components-reconnect-modal.components-reconnect-show,
+    #components-reconnect-modal.components-reconnect-failed,
+    #components-reconnect-modal.components-reconnect-rejected {
+        display: flex;
+        background-color: #111C;
+        text-align: center;
+        position: fixed;
+        top: 0;
+        z-index: 10001;
+        width: calc(100% - 4rem);
+        height: calc(100vh - 4rem);
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.5s;
+        flex-direction: column;
+        gap: 20px;
+        padding: 2rem;
+    }
 
 @keyframes fadeIn {
     from {

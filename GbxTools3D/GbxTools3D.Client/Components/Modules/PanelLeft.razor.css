@@ -4,6 +4,7 @@
     top: 120px;
     bottom: 100px;
     width: 500px;
+    transform-origin: top left;
 }
 
     .catalog .opener {
@@ -11,5 +12,17 @@
     }
 
     .catalog.closed {
-        transform: translateX(-500px);
+        transform: translateX(-100%);
     }
+
+@media (max-width: 650px) {
+    .panel {
+        transform: scale(0.7);
+    }
+}
+
+@media (max-width: 450px) {
+    .panel {
+        transform: scale(0.55);
+    }
+}
