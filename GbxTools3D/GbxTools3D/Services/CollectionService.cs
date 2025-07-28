@@ -66,6 +66,12 @@ internal sealed class CollectionService
         var gameFolder = gameVersion.ToString();
         var gamePath = Path.Combine(datasetPath, gameFolder);
 
+        if (!Directory.Exists(gamePath))
+        {
+            logger.LogWarning("Game folder {GameFolder} does not exist in dataset path {DatasetPath}. Skipping collection import for this version.", gameFolder, datasetPath);
+            return;
+        }
+
         foreach (var collectionFilePath in Directory.EnumerateFiles(
                      Path.Combine(datasetPath, gameFolder, "Collections"), "*.Gbx"))
         {

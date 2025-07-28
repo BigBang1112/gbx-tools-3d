@@ -60,6 +60,12 @@ internal sealed class VehicleService
         var gameFolder = gameVersion.ToString();
         var gamePath = Path.Combine(datasetPath, gameFolder);
 
+        if (!Directory.Exists(gamePath))
+        {
+            logger.LogWarning("Game folder {GameFolder} does not exist in dataset path {DatasetPath}, skipping vehicle creation.", gameFolder, datasetPath);
+            return;
+        }
+
         var usedMaterials = new Dictionary<string, CPlugMaterial?>();
 
         var vehicleFilePaths = gameVersion switch
