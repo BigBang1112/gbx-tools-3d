@@ -23,9 +23,9 @@ Written using the Blazor Web App framework.
 
 Make sure to have **.NET 9** and **.NET WebAssembly Build Tools** installed to be able to build the project.
 
-You also need a MariaDB or a MySQL database. The default development connection is available in the `appsettings.Development.json`, the database will be created automatically when running. You can setup the database service manually or using Docker with port publishing.
+You also need a **MariaDB** or a MySQL database. The default development connection is available in the `appsettings.Development.json`, the database will be created automatically when running. You can setup the database service manually or using Docker with port publishing.
 
-**For production deployment, secure the database together with the connection string.** You also need to manually apply the migration, via the `Script-Migration` command for example.
+**For production deployment, secure the database together with the connection string.** You also need to manually apply the migration, via the `Script-Migration` command or bundles for example.
 
 ### Visual Studio 2022
 
