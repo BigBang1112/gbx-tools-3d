@@ -1,4 +1,6 @@
-﻿@inject StateService StateService
+﻿@implements IDisposable
+
+@inject StateService StateService
 @inject ILogger<LoadingBar> Logger
 @inject IJSRuntime Js
 
@@ -16,7 +18,6 @@
     // doing through js to avoid entire component rerender
     // which allows to make progress smooth 
     window.updateProgress = (elem, progress) => {
-        console.log(elem.style.width, progress)
         elem.style.width = `${progress}%`
     }
 
