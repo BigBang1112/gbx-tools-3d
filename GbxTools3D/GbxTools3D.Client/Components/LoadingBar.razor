@@ -13,6 +13,8 @@
     }
 </div>
 <script>
+    // doing through js to avoid entire component rerender
+    // which allows to make progress smooth 
     window.updateProgress = (elem, progress) => {
         console.log(elem.style.width, progress)
         elem.style.width = `${progress}%`
@@ -23,6 +25,7 @@
             elem.remove()
         }, 1000) // timeout to wait for css animation to finish
     }
+
 </script>
 
 @code {

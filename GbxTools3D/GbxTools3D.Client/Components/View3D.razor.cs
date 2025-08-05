@@ -356,9 +356,9 @@ public partial class View3D : ComponentBase
         await OnFocusedSolidsChange.InvokeAsync();
 
         var hash = $"GbxTools3D|Solid|{GameVersion}|{CollectionName}|{BlockName}|{isGround}MyGuy|{variant}|{subVariant}|PleaseDontAbuseThisThankYou:*".Hash();
-        
+
         using var meshResponse = await http.GetAsync($"/api/mesh/{hash}", cancellationToken);
-        
+
         if (!meshResponse.IsSuccessStatusCode)
         {
             return false;
@@ -659,7 +659,7 @@ public partial class View3D : ComponentBase
         }
 
         var mainBody = SkinZip.Entries
-            .FirstOrDefault(x => string.Equals(x.Name, "MainBodyHigh.Solid.Gbx", StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault(x => string.Equals(x.Name, "MainBodyHigh.Solid.Gbx", StringComparison.OrdinalIgnoreCase))
             ?? SkinZip.Entries
                 .FirstOrDefault(x => string.Equals(x.Name, "MainBody.Solid.Gbx", StringComparison.OrdinalIgnoreCase));
 
@@ -780,9 +780,7 @@ public partial class View3D : ComponentBase
             var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == Map.Decoration.Id);
             // TODO with deco
 
-            await foreach (var _ in CreateDecorationAsync(Map.Decoration.Collection, decoSize, optimized: true, cancellationToken)) {
-                Console.WriteLine();
-            }
+            await foreach (var _ in CreateDecorationAsync(Map.Decoration.Collection, decoSize, optimized: true, cancellationToken)) {}
         }
 
         return true;
@@ -804,7 +802,7 @@ public partial class View3D : ComponentBase
         var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
 
         var sceneObjects = decoSize.Scene.Where(x => x.Solid is not null).ToList();
-        
+
         foreach (var sceneObject in sceneObjects)
         {
             if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
@@ -825,7 +823,7 @@ public partial class View3D : ComponentBase
                 // has weird texturing
                 /*if (normalizedPath == "Island/Media/Solid/Other/IslandSkyDome")
                 {
-                    
+
                 }*/
             }
 
@@ -873,15 +871,15 @@ public partial class View3D : ComponentBase
             .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
             .Concat(clipBlocks)
             .ToLookup(x => new UniqueVariant(
-                x.Name, 
-                x.IsGround, 
-                x.Variant, 
-                x.Name.EndsWith("Pillar") ? 0 : x.SubVariant, // because TMF sometimes has billion subvariants for pillars and it kills performance
+            x.Name,
+            x.IsGround,
+            x.Variant,
+            x.Name.EndsWith("Pillar") ? 0 : x.SubVariant, // because TMF sometimes has billion subvariants for pillars and it kills performance
 
-                // terrain modifier with check that ensures the block is not modified by itself
-                // this is not exact, it should be checked against real block units and not just 0x0x0!!
-                terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is TerrainModifierInfo info && info.ModifiedBy != x ? info.TerrainModifier : null));
-        
+            // terrain modifier with check that ensures the block is not modified by itself
+            // this is not exact, it should be checked against real block units and not just 0x0x0!!
+            terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is TerrainModifierInfo info && info.ModifiedBy != x ? info.TerrainModifier : null));
+
         stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Blocks, uniqueBlockVariants.Count));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
@@ -1038,12 +1036,12 @@ public partial class View3D : ComponentBase
     }
 
     internal async Task ToggleBlockObjectLinksAsync(
-        bool isGround, 
-        int variant, 
-        int subVariant, 
-        int objectLinkCount, 
-        bool hasWaypoint, 
-        Solid solid, 
+        bool isGround,
+        int variant,
+        int subVariant,
+        int objectLinkCount,
+        bool hasWaypoint,
+        Solid solid,
         CancellationToken cancellationToken = default)
     {
         if (Scene is null)
@@ -1124,7 +1122,7 @@ public partial class View3D : ComponentBase
                 var solid = await Solid.ParseAsync(stream, GameVersion, Materials, variant.TerrainModifier, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
-                
+
                 stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
             }
             else
@@ -1163,13 +1161,13 @@ public partial class View3D : ComponentBase
             var groundUnits = blockInfo.GroundUnits;
             blockCoordSize = variant.IsGround
                 ? (groundUnits.Length > 1 ? new Int3(
-                    groundUnits.Max(unit => unit.Offset.X) + 1,
-                    groundUnits.Max(unit => unit.Offset.Y) + 1,
-                    groundUnits.Max(unit => unit.Offset.Z) + 1) : blockCoordSize)
+                groundUnits.Max(unit => unit.Offset.X) + 1,
+                groundUnits.Max(unit => unit.Offset.Y) + 1,
+                groundUnits.Max(unit => unit.Offset.Z) + 1) : blockCoordSize)
                 : (airUnits.Length > 1 ? new Int3(
-                    airUnits.Max(unit => unit.Offset.X) + 1,
-                    airUnits.Max(unit => unit.Offset.Y) + 1,
-                    airUnits.Max(unit => unit.Offset.Z) + 1) : blockCoordSize);
+                airUnits.Max(unit => unit.Offset.X) + 1,
+                airUnits.Max(unit => unit.Offset.Y) + 1,
+                airUnits.Max(unit => unit.Offset.Z) + 1) : blockCoordSize);
             height = blockInfo.Height ?? 0;
         }
 
@@ -1177,7 +1175,7 @@ public partial class View3D : ComponentBase
         {
             height = 0;
         }
-        
+
         var instanceInfos = new List<JSObject>();
 
         foreach (var block in blocks)
@@ -1334,7 +1332,7 @@ public partial class View3D : ComponentBase
             {
                 continue;
             }
-            
+
             foreach (var clipBlock in CreateClipBlocks(block, blockInfo, clipBlockDict, alreadyPlacedClips))
             {
                 yield return clipBlock;
@@ -1372,13 +1370,13 @@ public partial class View3D : ComponentBase
     }
 
     private static IEnumerable<CGameCtnBlock> CreateClipBlocks(
-        CGameCtnBlock block, 
-        BlockInfoDto blockInfo, 
-        Dictionary<Int3, CGameCtnBlock> clipBlockDict, 
+        CGameCtnBlock block,
+        BlockInfoDto blockInfo,
+        Dictionary<Int3, CGameCtnBlock> clipBlockDict,
         HashSet<(Int3, Direction)> alreadyPlacedClips)
     {
         var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
-        
+
         if (units.All(x => x.Clips is null or { Length: 0 }))
         {
             yield break;
@@ -1439,7 +1437,7 @@ public partial class View3D : ComponentBase
         var pylonInfos = pylonDict.Values.Distinct().ToList();
 
         var pylonMeshResponseTasks = new Dictionary<Task<HttpResponseMessage>, PylonInfo>();
-        
+
         stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Pylons, pylonInfos.Count));
 
         foreach (var pylonInfo in pylonInfos)
@@ -1532,7 +1530,7 @@ public partial class View3D : ComponentBase
             }
 
             var units = block.IsGround ? blockInfo.GroundUnits : blockInfo.AirUnits;
-            
+
             if (units.All(x => x.PlacePylons is null or 0))
             {
                 continue;
@@ -1558,7 +1556,7 @@ public partial class View3D : ComponentBase
         }
 
         return pylonDict;
-        
+
         static void PopulateAvoidPylonSet(HashSet<Int3> avoidPylonSet, CGameCtnBlock block, ReadOnlySpan<BlockUnit> units)
         {
             Span<Int3> rotatedUnits = stackalloc Int3[units.Length];
@@ -1583,10 +1581,10 @@ public partial class View3D : ComponentBase
 
         static void PopulatePylonsFromBlock(
             Int3 blockSize,
-            Dictionary<Int3, PylonInfo?> zonePylonDict, 
-            BlockInfoDto? baseZoneBlock, 
-            Dictionary<(Int3, Direction), PylonInfo> pylonDict, 
-            CGameCtnBlock block, 
+            Dictionary<Int3, PylonInfo?> zonePylonDict,
+            BlockInfoDto? baseZoneBlock,
+            Dictionary<(Int3, Direction), PylonInfo> pylonDict,
+            CGameCtnBlock block,
             ReadOnlySpan<BlockUnit> units,
             int baseHeight,
             HashSet<Int3> avoidPylonSet)
@@ -1806,7 +1804,7 @@ public partial class View3D : ComponentBase
 
         var infoRender = info.GetPropertyAsJSObject("render");
 
-        if (infoRender is not null) 
+        if (infoRender is not null)
         {
             var framesNow = infoRender.GetPropertyAsInt32("frame");
 
