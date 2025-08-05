@@ -1,18 +1,90 @@
-﻿<div class="bg @(NoNav ? "" : "shifted")" style="">
+﻿@inject StateService StateService
+@inject ILogger<LoadingBar> Logger
+@inject IJSRuntime Js
+
+<div class="bg @(NoNav ? "" : "shifted")" style="">
     @if (real)
     {
-        <div class="progress" style="width: @((progress * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+        <div @ref="progressRef" class="progress real" style="width: 0"></div>
     }
     else
     {
         <div class="progress fake"></div>
     }
 </div>
+<script>
+    window.updateProgress = (elem, progress) => {
+        console.log(elem.style.width, progress)
+        elem.style.width = `${progress}%`
+    }
+
+    window.removeProgress = (elem) => {
+        window.setTimeout(() => {
+            elem.remove()
+        }, 1000) // timeout to wait for css animation to finish
+    }
+</script>
 
 @code {
-    private float progress = 0.3f;
-    private bool real;
+    [Parameter]
+    public View3dType ViewType { get; set; }
 
     [SupplyParameterFromQuery(Name = "nonav")]
     private bool NoNav { get; set; }
+
+    private ElementReference progressRef;
+
+    private double progress = 0f;
+    private bool real = false;
+    private HashSet<LoadingStage> loadingStages = null!;
+    private int totalWeight;
+    private Dictionary<LoadingStage, double> tasks = new();
+
+
+    protected override void OnInitialized()
+    {
+        loadingStages = [..ViewType.GetMetadata().LoadingStages];
+        if (loadingStages.Count == 0) { return; }
+        real = true;
+        totalWeight = loadingStages.Cast<int>().Sum();
+        StateService.OnTasksDefined += OnTasksDefined;
+        StateService.OnTasksChanged += OnTasksChanged;
+
+    }
+
+    private void OnTasksDefined(LoadingStageDto message)
+    {
+        if (!loadingStages.Contains(message.LoadingStage)) { return; }
+        if (message.Amount == 0)
+        {
+            progress += (double)(int)message.LoadingStage / totalWeight;
+            UpdateProgress();
+            return;
+        }
+        tasks[message.LoadingStage] = (double)(int)message.LoadingStage / message.Amount / totalWeight;
+    }
+
+
+    private void OnTasksChanged(LoadingStageDto message)
+    {
+        if (!loadingStages.Contains(message.LoadingStage)) { return; }
+        var localWeight = tasks[message.LoadingStage] * message.Amount;
+        progress += localWeight;
+        UpdateProgress();
+    }
+
+    private void UpdateProgress()
+    {
+        Js.InvokeVoidAsync("updateProgress", progressRef, (progress * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
+        if (Math.Abs(progress - 1) < 0.0001)
+        {
+            Js.InvokeVoidAsync("removeProgress", progressRef);
+        }
+    }
+
+    public void Dispose()
+    {
+        StateService.OnTasksDefined -= OnTasksDefined;
+        StateService.OnTasksChanged -= OnTasksChanged;
+    }
 }

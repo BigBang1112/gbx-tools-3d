@@ -21,18 +21,19 @@
         <h3 class="supported">Supported 3D content types:</h3>
 
         <div class="view-types">
-            @foreach (var viewType in viewTypes)
+            @foreach (View3dType viewType in Enum.GetValues(typeof(View3dType)))
             {
+                var metadata = viewType.GetMetadata();
                 <div class="view-type">
-                    <a href="view/@viewType.Link" class="view-link"></a>
-                    <h3>@viewType.Name</h3>
+                    <a href="view/@metadata.Link" class="view-link"></a>
+                    <h3>@metadata.Name</h3>
                     <ul>
-                        @foreach (var point in viewType.Points)
+                        @foreach (var point in metadata.Points)
                         {
                             <li>@point</li>
                         }
                     </ul>
-                    <UploadArea OnUpload="(args) => OnUploadAsync(args, viewType.Link)" Extensions="@viewType.Extensions" FontSize="100"></UploadArea>
+                    <UploadArea OnUpload="(args) => OnUploadAsync(args, viewType)" Extensions="@metadata.Extensions" FontSize="100"></UploadArea>
                 </div>
             }
         </div>
@@ -40,61 +41,7 @@
 </section>
 
 @code {
-    private static ViewType[] viewTypes =
-    [
-        new ViewType(
-    Name: "Replay",
-    Points: [
-    "See the replay almost instantly and anywhere",
-                "Checkpoints and inputs that you cannot see in MediaTracker",
-                "Drifts, speed, brakes, and other vehicle parameters"
-    ],
-    Link: "replay",
-    Extensions: ["Replay.Gbx"]),
-        new ViewType(
-            Name: "Map",
-            Points: [
-                "See how the map actually looks like",
-                "No need to rely on thumbnails anymore",
-                "Look into various map parameters in context"
-            ],
-            Link: "map",
-            Extensions: ["Challenge.Gbx", "Map.Gbx"]),
-        new ViewType(
-            Name: "Ghost",
-            Points: [
-                "Only have a Ghost.Gbx? Put it here and import the map additionally",
-                "Same experience as with Replay viewing"
-            ],
-            Link: "ghost",
-            Extensions: ["Ghost.Gbx"]),
-        new ViewType(
-            Name: "Skin",
-            Points: [
-                "Check out the skins before you equip them",
-                "Open doors or bonnets, if you wish so (soon)"
-            ],
-            Link: "skin",
-            Extensions: ["zip"]),
-        new ViewType(
-            Name: "Item",
-            Points: [
-                "See the item in a real shape without relying on icons or screenshots",
-                "Find out their mesh parameters or the placement metadata"
-            ],
-            Link: "item",
-            Extensions: ["Item.Gbx", "Block.Gbx"]),
-        new ViewType(
-            Name: "Mesh",
-            Points: [
-                "If you only have the mesh piece in Gbx format",
-                "Similar overview to Item viewing"
-            ],
-            Link: "mesh",
-            Extensions: ["Mesh.Gbx", "Solid.Gbx", "Solid2.Gbx", "Prefab.Gbx"]),
-    ];
-
-    private async Task OnUploadAsync(UploadEventArgs e, string? type)
+    private async Task OnUploadAsync(UploadEventArgs e, View3dType? type)
     {
         try
         {
@@ -104,25 +51,25 @@
             switch (gbx)
             {
                 case Gbx<CGameCtnChallenge> map:
-                    if (type is not null && type != "map") return;
+                    if (type is not null && type != View3dType.Map) return;
                     NavManager.NavigateTo("/view/map");
                     break;
                 case Gbx<CGameCtnReplayRecord> replay:
-                    if (type is not null && type != "replay") return;
+                    if (type is not null && type != View3dType.Replay) return;
                     NavManager.NavigateTo("/view/replay");
                     break;
                 case Gbx<CGameCtnGhost> ghost:
-                    if (type is not null && type != "ghost") return;
+                    if (type is not null && type != View3dType.Ghost) return;
                     NavManager.NavigateTo("/view/ghost");
                     break;
                 case Gbx<CGameItemModel> item:
-                    if (type is not null && type != "item") return;
+                    if (type is not null && type != View3dType.Item) return;
                     NavManager.NavigateTo("/view/item");
                     break;
                 case Gbx<CPlugSolid>:
                 case Gbx<CPlugSolid2Model>:
                 case Gbx<CPlugPrefab>:
-                    if (type is not null && type != "mesh") return;
+                    if (type is not null && type != View3dType.Mesh) return;
                     NavManager.NavigateTo("/view/mesh");
                     break;
                 default:

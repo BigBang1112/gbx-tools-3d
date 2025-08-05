@@ -10,9 +10,13 @@
     background-color: #1E72CC;
 }
 
-    .progress.fake {
-        animation: animateFake 2s forwards;
-    }
+.progress.fake {
+    animation: animateFake 2s forwards;
+}
+
+.progress.real {
+    transition: width 1s ease;  
+}
 
 .shifted {
     top: 4.5rem;

@@ -15,6 +15,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Text.Json;
+using GbxTools3D.Client.Enums;
+using GbxTools3D.Client.Services;
 
 namespace GbxTools3D.Client.Components;
 
@@ -23,6 +25,7 @@ public partial class View3D : ComponentBase
 {
     private readonly HttpClient http;
     private readonly IJSRuntime js;
+    private readonly StateService stateService;
 
     private JSObject? rendererModule;
     private JSObject? sceneModule;
@@ -111,10 +114,11 @@ public partial class View3D : ComponentBase
 
     private const int PillarOffset = 12;
 
-    public View3D(HttpClient http, IJSRuntime js)
+    public View3D(HttpClient http, IJSRuntime js, StateService stateService)
     {
         this.http = http;
         this.js = js;
+        this.stateService = stateService;
     }
 
     protected override void OnInitialized()
@@ -776,7 +780,9 @@ public partial class View3D : ComponentBase
             var deco = decoSize.Decorations.FirstOrDefault(x => x.Name == Map.Decoration.Id);
             // TODO with deco
 
-            await foreach (var _ in CreateDecorationAsync(Map.Decoration.Collection, decoSize, optimized: true, cancellationToken)) { }
+            await foreach (var _ in CreateDecorationAsync(Map.Decoration.Collection, decoSize, optimized: true, cancellationToken)) {
+                Console.WriteLine();
+            }
         }
 
         return true;
@@ -797,7 +803,9 @@ public partial class View3D : ComponentBase
     {
         var tasks = new Dictionary<Task<HttpResponseMessage>, Iso4>();
 
-        foreach (var sceneObject in decoSize.Scene.Where(x => x.Solid is not null))
+        var sceneObjects = decoSize.Scene.Where(x => x.Solid is not null).ToList();
+        
+        foreach (var sceneObject in sceneObjects)
         {
             if (Path.GetFileNameWithoutExtension(sceneObject.Solid)?.Contains("FarClip") == true)
             {
@@ -825,6 +833,7 @@ public partial class View3D : ComponentBase
 
             tasks.Add(http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
         }
+        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Decos, tasks.Count));
 
         await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
         {
@@ -832,6 +841,7 @@ public partial class View3D : ComponentBase
 
             if (!meshResponse.IsSuccessStatusCode)
             {
+                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Decos, 1));
                 continue;
             }
 
@@ -839,7 +849,7 @@ public partial class View3D : ComponentBase
             var solid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: optimized, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             Scene?.Add(solid);
-            
+            stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Decos, 1));
             yield return solid;
         }
     }
@@ -871,6 +881,8 @@ public partial class View3D : ComponentBase
                 // terrain modifier with check that ensures the block is not modified by itself
                 // this is not exact, it should be checked against real block units and not just 0x0x0!!
                 terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is TerrainModifierInfo info && info.ModifiedBy != x ? info.TerrainModifier : null));
+        
+        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Blocks, uniqueBlockVariants.Count));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
 
@@ -882,6 +894,7 @@ public partial class View3D : ComponentBase
             if (!blockInfos.TryGetValue(name, out var blockInfo))
             {
                 Console.WriteLine($"Block info for {name} not found.");
+                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
                 continue;
             }
 
@@ -890,6 +903,7 @@ public partial class View3D : ComponentBase
             if (!variants.Any(x => x.Variant == variant && x.SubVariant == subVariant))
             {
                 Console.WriteLine($"Block variant {name} {(isGround ? "Ground" : "Air")}{variant}/{subVariant} not found in block info.");
+                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
                 continue;
             }
 
@@ -1110,6 +1124,8 @@ public partial class View3D : ComponentBase
                 var solid = await Solid.ParseAsync(stream, GameVersion, Materials, variant.TerrainModifier, expectedCount);
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
+                
+                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
             }
             else
             {
@@ -1423,6 +1439,8 @@ public partial class View3D : ComponentBase
         var pylonInfos = pylonDict.Values.Distinct().ToList();
 
         var pylonMeshResponseTasks = new Dictionary<Task<HttpResponseMessage>, PylonInfo>();
+        
+        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Pylons, pylonInfos.Count));
 
         foreach (var pylonInfo in pylonInfos)
         {
@@ -1459,6 +1477,7 @@ public partial class View3D : ComponentBase
 
             solid.Instantiate(instanceInfos);
             Scene?.Add(solid);
+            stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Pylons, 1));
         }
     }
 
