@@ -12,12 +12,14 @@ using System.Collections.Immutable;
 using System.Runtime.InteropServices.JavaScript;
 using System.Runtime.Versioning;
 using System.Text;
+using GbxTools3D.Client.Dtos;
+using GbxTools3D.Client.Services;
 using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Modules;
 
 [SupportedOSPlatform("browser")]
-public partial class GhostControls : ComponentBase
+public partial class GhostControls(StateService stateService) : ComponentBase
 {
     private Playback? playback;
     private RenderInfo? renderInfo;
@@ -109,7 +111,9 @@ public partial class GhostControls : ComponentBase
             return false;
         }
 
+        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Vehicle, 1));
         ghostSolid = await View3D.LoadGhostAsync(ghost);
+        stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Vehicle, 1));
 
         if (ghostSolid is null)
         {
