@@ -41,6 +41,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
     private readonly Dictionary<string, JSObject> actions = [];
 
     public CGameCtnGhost? CurrentGhost { get; set; }
+    public Dictionary<int, TimeInt32>? LastRespawnByCp {get; set;}
 
     private ImmutableList<IInput>? overrideInputs;
 
@@ -312,8 +313,10 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         var numLaps = ghost.GetNumberOfLaps(Map) ?? 1;
         var perLap = checkpoints.Length / numLaps;
         var respawns = (overrideInputs ?? ghost.Inputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs ?? [])
-            .Where(x => x is Respawn { Pressed: true } or RespawnTM2020);
+            .Where(x => x is Respawn { Pressed: true } or RespawnTM2020).ToList();
 
+        InitLastRespawnByCp(respawns);
+        
         playback?.SetMarkers(checkpoints.Where(c => c.Time.HasValue).Select((c, i) =>
             new PlaybackMarker
             {
@@ -334,6 +337,39 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         StateHasChanged();
 
         return true;
+    }
+    private void InitLastRespawnByCp(IEnumerable<IInput> respawns)
+    {
+        var checkpointTimes = CurrentGhost?.Checkpoints?.Where(c => c.Time.HasValue).Select(cp => cp.Time!.Value).ToList() ?? [];
+        var actionTimes = respawns.Select(r => r.Time).ToList();
+        
+        LastRespawnByCp = new Dictionary<int, TimeInt32>(); 
+
+        var checkpointIndex = 0;
+        foreach (var actionTime in actionTimes)
+        {
+            while (checkpointIndex + 1 < checkpointTimes.Count &&
+                actionTime >= checkpointTimes[checkpointIndex + 1])
+            {
+                checkpointIndex++;
+            }
+
+            if (actionTime >= checkpointTimes[checkpointIndex] &&
+                (checkpointIndex + 1 == checkpointTimes.Count || actionTime < checkpointTimes[checkpointIndex + 1]))
+            {
+                LastRespawnByCp[checkpointIndex] = actionTime;
+            }
+        }
+    }
+    
+    private void SkipToLastRespawn(int cpIndex, double time)
+    {
+        if ((inputList?.SkipRespawns ?? false) 
+            && (LastRespawnByCp?.TryGetValue(cpIndex, out var lastRespawnTime) ?? false) 
+            && lastRespawnTime.TotalSeconds > time)
+        {
+            playback?.Seek(lastRespawnTime, seekPause: false);
+        }
     }
 
     private double prevTime;
@@ -378,7 +414,10 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                             if (checkpointList is not null)
                             {
                                 checkpointList.CurrentCheckpoint = cp.Time;
-                                checkpointList.CurrentCheckpointIndex = nextCpTime == double.MaxValue ? (mid - 1) : mid;
+                                var cpIndex = nextCpTime == double.MaxValue ? (mid - 1) : mid;
+                                checkpointList.CurrentCheckpointIndex = cpIndex;
+                                
+                                SkipToLastRespawn(cpIndex, time);
                             }
                             prevCheckpointPassedIndex = mid;
                         }
