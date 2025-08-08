@@ -111,9 +111,9 @@ public partial class GhostControls(StateService stateService) : ComponentBase
             return false;
         }
 
-        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Vehicle, 1));
+        stateService.NotifyLoadingDefined(new Models.LoadingStage(Enums.LoadingStageKind.Vehicle, 1));
         ghostSolid = await View3D.LoadGhostAsync(ghost);
-        stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Vehicle, 1));
+        stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Vehicle, 1));
 
         if (ghostSolid is null)
         {

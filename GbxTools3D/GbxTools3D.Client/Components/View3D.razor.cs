@@ -831,7 +831,7 @@ public partial class View3D : ComponentBase
 
             tasks.Add(http.GetAsync($"/api/mesh/{hash}", cancellationToken), sceneObject.Location);
         }
-        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Decos, tasks.Count));
+        stateService.NotifyLoadingDefined(new Models.LoadingStage(Enums.LoadingStageKind.Decos, tasks.Count));
 
         await foreach (var meshResponseTask in Task.WhenEach(tasks.Keys).WithCancellation(cancellationToken))
         {
@@ -839,7 +839,7 @@ public partial class View3D : ComponentBase
 
             if (!meshResponse.IsSuccessStatusCode)
             {
-                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Decos, 1));
+                stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Decos, 1));
                 continue;
             }
 
@@ -847,7 +847,7 @@ public partial class View3D : ComponentBase
             var solid = await Solid.ParseAsync(stream, GameVersion, Materials, expectedMeshCount: null, optimized: optimized, receiveShadow: false, castShadow: false);
             solid.Location = tasks[meshResponseTask];
             Scene?.Add(solid);
-            stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Decos, 1));
+            stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Decos, 1));
             yield return solid;
         }
     }
@@ -880,7 +880,7 @@ public partial class View3D : ComponentBase
             // this is not exact, it should be checked against real block units and not just 0x0x0!!
             terrainModifiers.GetValueOrDefault(x.Coord with { Y = 0 }) is TerrainModifierInfo info && info.ModifiedBy != x ? info.TerrainModifier : null));
 
-        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Blocks, uniqueBlockVariants.Count));
+        stateService.NotifyLoadingDefined(new Models.LoadingStage(Enums.LoadingStageKind.Blocks, uniqueBlockVariants.Count));
 
         var responseTasks = new Dictionary<UniqueVariant, Task<HttpResponseMessage>>();
 
@@ -892,7 +892,7 @@ public partial class View3D : ComponentBase
             if (!blockInfos.TryGetValue(name, out var blockInfo))
             {
                 Console.WriteLine($"Block info for {name} not found.");
-                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
+                stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Blocks, 1));
                 continue;
             }
 
@@ -901,7 +901,7 @@ public partial class View3D : ComponentBase
             if (!variants.Any(x => x.Variant == variant && x.SubVariant == subVariant))
             {
                 Console.WriteLine($"Block variant {name} {(isGround ? "Ground" : "Air")}{variant}/{subVariant} not found in block info.");
-                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
+                stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Blocks, 1));
                 continue;
             }
 
@@ -1123,7 +1123,7 @@ public partial class View3D : ComponentBase
 
                 PlaceBlocks(solid, variant, uniqueBlockVariantLookup[variant], blockSize, yOffset);
 
-                stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Blocks, 1));
+                stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Blocks, 1));
             }
             else
             {
@@ -1438,7 +1438,7 @@ public partial class View3D : ComponentBase
 
         var pylonMeshResponseTasks = new Dictionary<Task<HttpResponseMessage>, PylonInfo>();
 
-        stateService.NotifyTasksDefined(new LoadingStageDto(LoadingStage.Pylons, pylonInfos.Count));
+        stateService.NotifyLoadingDefined(new Models.LoadingStage(Enums.LoadingStageKind.Pylons, pylonInfos.Count));
 
         foreach (var pylonInfo in pylonInfos)
         {
@@ -1475,7 +1475,7 @@ public partial class View3D : ComponentBase
 
             solid.Instantiate(instanceInfos);
             Scene?.Add(solid);
-            stateService.NotifyTasksChanged(new LoadingStageDto(LoadingStage.Pylons, 1));
+            stateService.NotifyLoadingChanged(new Models.LoadingStage(Enums.LoadingStageKind.Pylons, 1));
         }
     }
 

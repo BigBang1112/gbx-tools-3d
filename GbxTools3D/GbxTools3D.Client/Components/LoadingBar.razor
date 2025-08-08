@@ -18,7 +18,9 @@
     // doing through js to avoid entire component rerender
     // which allows to make progress smooth 
     window.updateProgress = (elem, progress) => {
-        elem.style.width = `${progress}%`
+        if (elem) {
+            elem.style.width = `${progress}%`
+        }
     }
 
     window.removeProgress = (elem) => {
@@ -40,9 +42,9 @@
 
     private double progress = 0f;
     private bool real = false;
-    private HashSet<LoadingStage> loadingStages = null!;
+    private HashSet<LoadingStageKind> loadingStages = [];
     private int totalWeight;
-    private Dictionary<LoadingStage, double> tasks = new();
+    private Dictionary<LoadingStageKind, double> tasks = new();
 
 
     protected override void OnInitialized()
@@ -51,28 +53,28 @@
         if (loadingStages.Count == 0) { return; }
         real = true;
         totalWeight = loadingStages.Cast<int>().Sum();
-        StateService.OnTasksDefined += OnTasksDefined;
-        StateService.OnTasksChanged += OnTasksChanged;
+        StateService.OnLoadingDefined += OnLoadingDefined;
+        StateService.OnLoadingChanged += OnLoadingChanged;
 
     }
 
-    private void OnTasksDefined(LoadingStageDto message)
+    private void OnLoadingDefined(LoadingStage message)
     {
-        if (!loadingStages.Contains(message.LoadingStage)) { return; }
+        if (!loadingStages.Contains(message.Kind)) { return; }
         if (message.Amount == 0)
         {
-            progress += (double)(int)message.LoadingStage / totalWeight;
+            progress += (double)(int)message.Kind / totalWeight;
             UpdateProgress();
             return;
         }
-        tasks[message.LoadingStage] = (double)(int)message.LoadingStage / message.Amount / totalWeight;
+        tasks[message.Kind] = (double)(int)message.Kind / message.Amount / totalWeight;
     }
 
 
-    private void OnTasksChanged(LoadingStageDto message)
+ private void OnLoadingChanged(LoadingStage message)
     {
-        if (!loadingStages.Contains(message.LoadingStage)) { return; }
-        var localWeight = tasks[message.LoadingStage] * message.Amount;
+        if (!loadingStages.Contains(message.Kind)) { return; }
+        var localWeight = tasks[message.Kind] * message.Amount;
         progress += localWeight;
         UpdateProgress();
     }
@@ -88,7 +90,7 @@
 
     public void Dispose()
     {
-        StateService.OnTasksDefined -= OnTasksDefined;
-        StateService.OnTasksChanged -= OnTasksChanged;
+        StateService.OnLoadingDefined -= OnLoadingDefined;
+        StateService.OnLoadingChanged -= OnLoadingChanged;
     }
 }

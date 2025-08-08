@@ -1,6 +1,6 @@
 ﻿namespace GbxTools3D.Client.Enums;
 
-public enum LoadingStage
+public enum LoadingStageKind
 {
     Default = 0, // weight
     Vehicle = 10,

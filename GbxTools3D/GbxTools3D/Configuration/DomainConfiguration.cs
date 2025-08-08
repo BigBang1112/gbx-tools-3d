@@ -18,6 +18,7 @@ public static class DomainConfiguration
         services.AddScoped<MeshService>();
         services.AddScoped<SoundService>();
         services.AddScoped<ShowcaseService>();
+        services.AddSingleton<StateService>();
 
         // client-sided services
         services.AddSingleton<GbxService>();

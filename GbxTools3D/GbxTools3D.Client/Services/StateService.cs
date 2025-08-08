@@ -1,20 +1,20 @@
-﻿using GbxTools3D.Client.Dtos;
+﻿using GbxTools3D.Client.Models;
 
 namespace GbxTools3D.Client.Services;
 
 public class StateService
 {
-    public event Action<LoadingStageDto>? OnTasksDefined;
+    public event Action<LoadingStage>? OnLoadingDefined;
 
-    public void NotifyTasksDefined(LoadingStageDto message)
+    public void NotifyLoadingDefined(LoadingStage message)
     {
-        OnTasksDefined?.Invoke(message);
+        OnLoadingDefined?.Invoke(message);
     }
     
-    public event Action<LoadingStageDto>? OnTasksChanged;
+    public event Action<LoadingStage>? OnLoadingChanged;
 
-    public void NotifyTasksChanged(LoadingStageDto message)
+    public void NotifyLoadingChanged(LoadingStage message)
     {
-        OnTasksChanged?.Invoke(message);
+        OnLoadingChanged?.Invoke(message);
     }
 }

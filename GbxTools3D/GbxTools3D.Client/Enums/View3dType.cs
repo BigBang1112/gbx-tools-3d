@@ -15,10 +15,10 @@ public enum View3dType
     link: "replay",
     extensions: ["Replay.Gbx"],
     loadingStages: [
-        LoadingStage.Vehicle, 
-        LoadingStage.Blocks ,
-        LoadingStage.Pylons, 
-        LoadingStage.Decos
+        LoadingStageKind.Vehicle, 
+        LoadingStageKind.Blocks ,
+        LoadingStageKind.Pylons, 
+        LoadingStageKind.Decos
     ])]
     Replay,
 
@@ -33,9 +33,9 @@ public enum View3dType
     link: "map",
     extensions: ["Challenge.Gbx", "Map.Gbx"],
     loadingStages: [
-        LoadingStage.Blocks ,
-        LoadingStage.Pylons, 
-        LoadingStage.Decos
+        LoadingStageKind.Blocks ,
+        LoadingStageKind.Pylons, 
+        LoadingStageKind.Decos
     ])]
     Map,
     
