@@ -3,8 +3,11 @@ name: CI
 on:
   push:
     branches: [ "main", "dev" ]
+    paths: [ ".github/workflows/ci.yml", "GbxTools3D/**", "GbxTools3D.slnx", "nuget.config" ]
   pull_request:
     branches: [ "main", "dev" ]
+    paths: [ ".github/workflows/ci.yml", "GbxTools3D/**", "GbxTools3D.slnx", "nuget.config" ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,10 +26,10 @@ jobs:
       run: dotnet workload install wasm-tools
         
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore GbxTools3D.slnx
       
     - name: Build
-      run: dotnet build --no-restore /p:ContinuousIntegrationBuild=true
+      run: dotnet build GbxTools3D.slnx --no-restore /p:ContinuousIntegrationBuild=true
       
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test GbxTools3D.slnx --no-build --verbosity normal
