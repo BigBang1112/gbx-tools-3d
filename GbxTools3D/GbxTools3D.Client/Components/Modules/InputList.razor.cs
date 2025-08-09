@@ -12,6 +12,7 @@ public partial class InputList : ComponentBase
 {
     private const string ModuleInputListHide = "ModuleInputListHide";
     private const string ModuleInputListOnlyRespawns = "ModuleInputListOnlyRespawns";
+    private const string ModuleInputListSkipRespawns = "ModuleInputListSkipRespawns";
 
     private ElementReference inputList;
     private Virtualize<IInput>? virtualizeInputList;
@@ -43,6 +44,17 @@ public partial class InputList : ComponentBase
         }
     }
 
+    private bool skipRespawns;
+    public bool SkipRespawns
+    {
+        get => skipRespawns;
+        private set
+        {
+            skipRespawns = value;
+            SyncLocalStorage.SetItem(ModuleInputListSkipRespawns, value);
+        }
+    }
+
     public TimeInt32? CurrentInput
     {
         get => currentInput;
@@ -67,6 +79,7 @@ public partial class InputList : ComponentBase
 
         show = !await LocalStorage.GetItemAsync<bool>(ModuleInputListHide);
         onlyRespawns = await LocalStorage.GetItemAsync<bool>(ModuleInputListOnlyRespawns);
+        skipRespawns = await LocalStorage.GetItemAsync<bool>(ModuleInputListSkipRespawns);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

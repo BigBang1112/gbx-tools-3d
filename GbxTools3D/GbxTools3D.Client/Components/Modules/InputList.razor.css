@@ -21,3 +21,9 @@
 .properties {
     text-align: center;
 }
+
+.settings-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin: auto;
+}

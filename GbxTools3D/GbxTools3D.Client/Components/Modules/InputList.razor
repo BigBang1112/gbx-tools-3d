@@ -32,10 +32,14 @@
             </div>
         </Virtualize>
     </div>
-    <div class="properties">
+    <div class="settings-wrapper">
         <label>
             <input type="checkbox" @bind="OnlyRespawns" />
             Only respawns
+        </label>
+        <label title="@((MarkupString)"Does not affect displayed inputs.\nUsed to skip failed attempts on a checkpoint during playback.")">
+            <input type="checkbox" @bind="SkipRespawns"/>
+            Skip respawns
         </label>
     </div>
 </div>
