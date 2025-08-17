@@ -141,7 +141,7 @@
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
             <input type="text" class="text" value="@GetFrameHtml(GetViewReplayRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
-            <input type="text" class="text" value="@GetViewReplayRelativeUrl()" placeholder="https://..." disabled />
+            <input type="text" class="text" value="@GetFullUrl(GetViewReplayRelativeUrl())" placeholder="https://..." disabled />
         </div>
         <iframe src="@GetViewReplayRelativeUrl()" loading="lazy"></iframe>
     </div>
