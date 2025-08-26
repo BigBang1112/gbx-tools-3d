@@ -117,6 +117,10 @@ public partial class ViewGhost
                 {
                     mapResponseTask = Http.GetAsync($"/api/map/mx/{MxSite}/uid/{MapUid}");
                 }
+                else
+                {
+                    mapResponseTask = Http.GetAsync($"/api/map/uid/{MapUid}");
+                }
             }
 
             if (ghostResponseTask is not null)
@@ -134,7 +138,7 @@ public partial class ViewGhost
                 using var response = await mapResponseTask;
                 if (response.IsSuccessStatusCode)
                 {
-                    if (!string.IsNullOrEmpty(MapUrl) || (!string.IsNullOrEmpty(MapUid) && (IsManiaPlanetMap || Type == "tmt")))
+                    if (!string.IsNullOrEmpty(MapUrl) || (!string.IsNullOrEmpty(MapUid) && MxSite is null))
                     {
                         await using var stream = await response.Content.ReadAsStreamAsync();
                         mapAfterGhost = await Gbx.ParseAsync<CGameCtnChallenge>(stream);
