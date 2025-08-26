@@ -49,9 +49,14 @@ public abstract class DataImportApiEndpoint
 
                 var vehicleService = scope.ServiceProvider.GetRequiredService<VehicleService>();
                 var collectionService = scope.ServiceProvider.GetRequiredService<CollectionService>();
+                var campaignService = scope.ServiceProvider.GetRequiredService<CampaignService>();
 
+                await campaignService.CreateOrUpdateCampaignsAsync(datasetPath, GBX.NET.GameVersion.TMF, CancellationToken.None);
                 await vehicleService.CreateOrUpdateVehiclesAsync(datasetPath, CancellationToken.None);
                 await collectionService.CreateOrUpdateCollectionsAsync(datasetPath, CancellationToken.None);
+
+                // TODO: find all ConstructionCampaign.Gbx or GameCtnCampaign.Gbx in Tracks/Campaigns folder, and for each mapuid find all underlying tracks
+                // probably precreate a dictionary of mapuid->filepath
 
                 await db.DataImports.AddAsync(new DataImport());
                 await db.SaveChangesAsync();

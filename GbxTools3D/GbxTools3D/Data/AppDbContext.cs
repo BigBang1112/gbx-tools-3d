@@ -40,6 +40,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public required DbSet<Vehicle> Vehicles { get; set; }
     public required DbSet<Sound> Sounds { get; set; }
     public required DbSet<TerrainModifier> TerrainModifiers { get; set; }
+    public required DbSet<Campaign> Campaigns { get; set; }
+    public required DbSet<MapGroup> MapGroups { get; set; }
+    public required DbSet<Map> Maps { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
