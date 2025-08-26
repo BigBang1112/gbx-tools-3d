@@ -6,6 +6,7 @@ using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
 using ManiaAPI.ManiaPlanetAPI;
 using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.EntityFrameworkCore;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -23,6 +24,7 @@ public static class MapApiEndpoint
             .RequireRateLimiting("fixed-external-downloads");
         group.MapGet("tmt/{platform}/uid/{mapUid}", GetMapFromTMTurboByUid)
             .RequireRateLimiting("fixed-external-downloads");
+        group.MapGet("uid/{mapUid}", GetLocalMapByUid);
     }
 
     private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromTmxById(
@@ -316,6 +318,31 @@ public static class MapApiEndpoint
             mapResponse.Headers.ETag is null
                 ? null
                 : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(mapResponse.Headers.ETag.Tag, mapResponse.Headers.ETag.IsWeak)
+        );
+    }
+
+    private static async Task<Results<FileContentHttpResult, NotFound>> GetLocalMapByUid(
+        HttpContext context,
+        AppDbContext db,
+        string mapUid,
+        CancellationToken cancellationToken)
+    {
+        var map = await db.Maps
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.MapUid == mapUid, cancellationToken);
+
+        if (map is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+
+        return TypedResults.File(
+            map.Data,
+            "application/gbx",
+            Path.GetFileName(map.Path),
+            lastModified: map.UpdatedAt
         );
     }
 }

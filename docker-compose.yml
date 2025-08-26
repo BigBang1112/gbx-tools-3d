@@ -33,7 +33,7 @@ services:
     image: beeyev/phpmyadmin-lightweight
     restart: unless-stopped
     ports:
-      - 9010:80
+      - 9012:80
     environment:
       PMA_HOST: mariadb
       PMA_USER: root

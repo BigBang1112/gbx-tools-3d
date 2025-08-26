@@ -40,7 +40,9 @@ public sealed class PopulateDbService : BackgroundService
 
         var vehicleService = scope.ServiceProvider.GetRequiredService<VehicleService>();
         var collectionService = scope.ServiceProvider.GetRequiredService<CollectionService>();
+        var campaignService = scope.ServiceProvider.GetRequiredService<CampaignService>();
 
+        await campaignService.CreateOrUpdateCampaignsAsync(datasetPath, GBX.NET.GameVersion.TMF, CancellationToken.None);
         await vehicleService.CreateOrUpdateVehiclesAsync(datasetPath, stoppingToken);
         await collectionService.CreateOrUpdateCollectionsAsync(datasetPath, stoppingToken);
 

@@ -10,6 +10,7 @@ public static class DomainConfiguration
         services.AddHostedService<PopulateDbService>();
         services.AddScoped<VehicleService>();
         services.AddScoped<CollectionService>();
+        services.AddScoped<CampaignService>();
         services.AddScoped<ICollectionClientService, CollectionClientService>();
         services.AddScoped<IBlockClientService, BlockClientService>();
         services.AddScoped<IDecorationClientService, DecorationClientService>();
