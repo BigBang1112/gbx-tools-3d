@@ -49,6 +49,12 @@ public static class GameVersionSupport
             gameVersion = GameVersion.MP4;
         }
 
+        // looks like some TMF ghosts have different chunks than ones in replays
+        if (gameVersion == GameVersion.Unspecified)
+        {
+            gameVersion = GameVersion.TMF;
+        }
+
         return gameVersion;
     }
 }
