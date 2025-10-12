@@ -49,7 +49,14 @@ public static class GameVersionSupport
             gameVersion = GameVersion.MP4;
         }
 
+        // TMU specifically is not supported yet
+        if (gameVersion == GameVersion.TMU)
+        {
+            gameVersion = GameVersion.TMF;
+        }
+
         // looks like some TMF ghosts have different chunks than ones in replays
+        // FIXED: can be removed in next gbx.net update
         if (gameVersion == GameVersion.Unspecified)
         {
             gameVersion = GameVersion.TMF;
