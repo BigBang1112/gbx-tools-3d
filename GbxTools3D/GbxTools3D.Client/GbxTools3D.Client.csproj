@@ -11,7 +11,7 @@
 
     <ItemGroup>
         <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-        <PackageReference Include="GBX.NET" Version="2.2.1-nightly.20250826.c1aa6590" />
+        <PackageReference Include="GBX.NET" Version="2.2.2" />
         <PackageReference Include="GBX.NET.LZO" Version="2.*" />
         <PackageReference Include="GBX.NET.ZLib" Version="1.*" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.*" />

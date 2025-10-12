@@ -13,10 +13,10 @@
     <ItemGroup>
         <ProjectReference Include="..\GbxTools3D.Client\GbxTools3D.Client.csproj" />
         <PackageReference Include="GBX.NET.Imaging.ImageSharp" Version="1.*" />
-        <PackageReference Include="ManiaAPI.ManiaPlanetAPI" Version="2.3.1" />
-        <PackageReference Include="ManiaAPI.ManiaPlanetAPI.Extensions.Hosting" Version="2.2.0" />
-        <PackageReference Include="ManiaAPI.TMX" Version="2.3.1" />
-        <PackageReference Include="ManiaAPI.TMX.Extensions.Hosting" Version="2.2.0" />
+        <PackageReference Include="ManiaAPI.ManiaPlanetAPI" Version="2.4.0" />
+        <PackageReference Include="ManiaAPI.ManiaPlanetAPI.Extensions.Hosting" Version="2.4.0" />
+        <PackageReference Include="ManiaAPI.TMX" Version="2.4.0" />
+        <PackageReference Include="ManiaAPI.TMX.Extensions.Hosting" Version="2.4.0" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.*" />
         <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.*" />
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.*" />
