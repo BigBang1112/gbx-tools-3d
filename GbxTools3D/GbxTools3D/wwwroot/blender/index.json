@@ -1,0 +1,31 @@
+{
+  "version": "v1",
+  "blocklist": [],
+  "data": [
+    {
+      "schema_version": "1.0.0",
+      "id": "blender_gbx_tools",
+      "name": "Blender Gbx Tools",
+      "tagline": "Working with Gbx files inside of Blender.",
+      "version": "0.1.0",
+      "type": "add-on",
+      "maintainer": "BigBang1112",
+      "license": [
+        "SPDX:GPL-2.0-or-later"
+      ],
+      "blender_version_min": "4.2.0",
+      "tags": [
+        "Import-Export",
+        "Mesh",
+        "Material"
+      ],
+      "platforms": [
+        "windows-x64",
+        "linux-x64"
+      ],
+      "archive_url": "https://github.com/BigBang1112/blender-gbx-tools/releases/download/v0.1.0/BlenderGbxTools.zip",
+      "archive_size": 5343516,
+      "archive_hash": "sha256:31126981bda4f3b09a4253070fd306b64c3c47ab0d716f9c7b6ca07835ff88a5"
+    }
+  ]
+}
