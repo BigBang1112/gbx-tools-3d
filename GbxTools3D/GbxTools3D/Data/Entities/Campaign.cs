@@ -12,7 +12,7 @@ public sealed class Campaign
 
     public required GameVersion GameVersion { get; set; }
 
-    [StringLength(16)]
+    [StringLength(24)]
     public required string Name { get; set; }
 
     [StringLength(byte.MaxValue)]
