@@ -1,13 +1,15 @@
 ﻿using Blazored.LocalStorage;
 using GbxTools3D.Client.Converters;
 using GbxTools3D.Health;
+using ManiaAPI.ManiaPlanetAPI;
+using ManiaAPI.ManiaPlanetAPI.Extensions.Hosting;
 using ManiaAPI.TMX.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.BearerToken;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.ResponseCompression;
+using System.Net;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
-using ManiaAPI.ManiaPlanetAPI.Extensions.Hosting;
-using ManiaAPI.ManiaPlanetAPI;
 
 namespace GbxTools3D.Configuration;
 
@@ -106,6 +108,27 @@ public static class WebConfiguration
             options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
             options.SerializerOptions.Converters.Add(new JsonInt3Converter());
             options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        });
+        
+        // Figures out HTTPS behind proxies
+        services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders =
+                ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+            foreach (var knownProxy in config.GetSection("KnownProxies").Get<string[]>() ?? [])
+            {
+                if (IPAddress.TryParse(knownProxy, out var ipAddress))
+                {
+                    options.KnownProxies.Add(ipAddress);
+                    continue;
+                }
+
+                foreach (var hostIpAddress in Dns.GetHostAddresses(knownProxy))
+                {
+                    options.KnownProxies.Add(hostIpAddress);
+                }
+            }
         });
     }
 

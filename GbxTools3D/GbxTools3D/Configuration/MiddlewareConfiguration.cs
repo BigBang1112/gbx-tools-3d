@@ -10,6 +10,8 @@ public static class MiddlewareConfiguration
 {
     public static void UseMiddleware(this WebApplication app)
     {
+        app.UseForwardedHeaders();
+
         if (app.Environment.IsDevelopment())
         {
             app.UseWebAssemblyDebugging();
