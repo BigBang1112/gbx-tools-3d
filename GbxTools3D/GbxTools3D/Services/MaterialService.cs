@@ -167,7 +167,15 @@ internal sealed class MaterialService
                         ".Gbx" => ".gbx",
                         _ => throw new Exception("Unexpected texture file extension"),
                     };
-                    texture = Gbx.ParseNode<CPlugBitmap>(Path.ChangeExtension(textureFilePath, extension));
+                    var altTexturePath = Path.ChangeExtension(textureFilePath, extension);
+
+                    if (!File.Exists(altTexturePath))
+                    {
+                        logger.LogWarning("Texture file choice {AltTexturePath} for texture {TextureName} of material {MaterialName} does not exist.", altTexturePath, textureName, name);
+                        continue;
+                    }
+
+                    texture = Gbx.ParseNode<CPlugBitmap>(altTexturePath);
                 }
 
                 ProcessTexture(gamePath, gameVersion, texture, bitmap.TextureFile, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
