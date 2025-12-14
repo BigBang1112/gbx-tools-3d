@@ -104,6 +104,7 @@ internal sealed class MaterialService
         
         logger.LogInformation("Saving shader materials...");
         await db.SaveChangesAsync(cancellationToken);
+        logger.LogInformation("Finished saving materials.");
         await outputCache.EvictByTagAsync("material", cancellationToken);
         await outputCache.EvictByTagAsync("texture", cancellationToken); // probably not needed, but just to be sure
     }
@@ -146,8 +147,9 @@ internal sealed class MaterialService
             {
                 var textureName = bitmap.Name ?? throw new Exception("Texture has no name");
 
-                if (bitmap.Texture is not CPlugBitmap texture)
+                if (bitmap.GetTexture(new() { Logger = logger }, exceptions: true) is not CPlugBitmap texture)
                 {
+                    logger.LogWarning("Material {MaterialName} has texture {TextureName} which is not a CPlugBitmap", name, textureName);
                     continue;
                 }
 
