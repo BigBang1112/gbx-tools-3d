@@ -622,7 +622,15 @@ public class MeshSerializer
 
                     foreach (var tri in mesh.CookedTriangles)
                     {
-                        w.Write((byte)materials[tri.U03]);
+                        if (materials.Count > tri.U03)
+                        {
+                            w.Write((byte)materials[tri.U03]);
+                        }
+                        else
+                        {
+                            // fallback because Highlands somehow doesnt like it
+                            w.Write((byte)0);
+                        }
                         switch (intSize)
                         {
                             case 1:

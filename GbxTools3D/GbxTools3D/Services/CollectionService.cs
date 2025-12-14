@@ -531,6 +531,8 @@ internal sealed class CollectionService
                 .Where(x => x.CollectionId == collection.Id)
                 .ToDictionaryAsync(x => x.Name, cancellationToken);
 
+            var addedBlockNames = new HashSet<string>();
+
             // may have issue in TMO envs
             var folderBlockInfo = collectionNode.FolderBlockInfo ?? $"{collectionNode.Collection}\\ConstructionBlockInfo\\";
 
@@ -560,6 +562,12 @@ internal sealed class CollectionService
                 if (blockName.Length > 96)
                 {
                     throw new Exception($"Block name {blockName} is too long");
+                }
+
+                if (!addedBlockNames.Add(blockName))
+                {
+                    logger.LogWarning("Duplicate block info {BlockName} in collection {Collection}. Skipping duplicate.", blockName, collection.Name);
+                    continue;
                 }
 
                 var blockInfo = blockInfos.GetValueOrDefault(blockName);
@@ -852,7 +860,7 @@ internal sealed class CollectionService
                     solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
                     var solidHash = $"GbxTools3D|Solid|{gameFolder}|{collectionName}|{blockName}|Hella{isGround}|{i}|{j}|{k}|marosisPakPakGhidraGang".Hash();
-                    
+
                     var objectLinkMesh = await meshService.GetOrCreateMeshAsync(gamePath, solidHash, objectLinkSolidPath, objectLinkSolid, vehicle: null,
                         cancellationToken: cancellationToken);
                     
@@ -1022,8 +1030,10 @@ internal sealed class CollectionService
         {
             return null;
         }
-        
-        return await meshService.GetOrCreateMeshAsync(relativeTo, toHash.Hash(), path, solid, vehicle: null, cancellationToken: cancellationToken);
+
+        var hash = toHash.Hash();
+
+        return await meshService.GetOrCreateMeshAsync(relativeTo, hash, path, solid, vehicle: null, cancellationToken: cancellationToken);
     }
 
     private async ValueTask<Mesh?> GetOrCreateMeshFromSolidFidAsync(CPlugSolid solid, GbxRefTableFile? solidFile, string relativeTo, string toHash, CancellationToken cancellationToken)
