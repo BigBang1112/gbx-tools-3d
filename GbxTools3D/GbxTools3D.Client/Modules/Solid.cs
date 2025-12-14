@@ -765,8 +765,8 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
     private static JSObject CreateMeshFromVisual(CPlugVisualIndexedTriangles visual, string materialName, GameVersion gameVersion, Dictionary<string, MaterialDto>? availableMaterials)
     {
         bool hasNormals;
-        Vec3[] positions;
-        Vec3[] normals;
+        Span<Vec3> positions;
+        Span<Vec3> normals;
 
         if (visual.Vertices.Length > 0)
         {
@@ -797,7 +797,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
         Span<byte> normalData = hasNormals ? MemoryMarshal.AsBytes<Vec3>(normals) : [];
         Span<int> indices = visual.IndexBuffer?.Indices ?? [];
 
-        var uvs = visual.TexCoords.SelectMany(x => x.TexCoords).Select(x => x.UV).ToArray();
+        var uvs = visual.TexCoords.SelectMany(x => x.TexCoords).Select(x => x.UV).ToArray().AsSpan();
         Span<byte> uvData = MemoryMarshal.AsBytes<Vec2>(uvs);
 
         var geometry = CreateGeometry(vertexData, normalData, indices, uvData);
@@ -893,7 +893,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
             {
                 var positions = geometryLayer.Crystal.Positions;
                 var indices = new List<int>();
-                var uvs = new Vec2[positions.Length];
+                Span<Vec2> uvs = new Vec2[positions.Length];
 
                 foreach (var face in geometryLayer.Crystal.Faces)
                 {
@@ -925,7 +925,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
                     }
                 }
 
-                Span<byte> vertexData = MemoryMarshal.AsBytes<Vec3>(positions);
+                Span<byte> vertexData = MemoryMarshal.AsBytes<Vec3>(positions.AsSpan());
                 Span<byte> uvData = MemoryMarshal.AsBytes<Vec2>(uvs);
 
                 var geometry = CreateGeometry(vertexData, [], CollectionsMarshal.AsSpan(indices), uvData, computeNormals: true);
