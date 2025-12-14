@@ -29,11 +29,7 @@ public static class WebConfiguration
         services.AddHttpClient("exchange", client =>
         {
             client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("Exchange"));
-        }).AddStandardResilienceHandler(options =>
-        {
-            options.AttemptTimeout.Timeout = TimeSpan.FromSeconds(40);
-            options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(2);
-        });
+        }).AddStandardResilienceHandler();
 
         services.AddHttpClient("wrr", client =>
         {
