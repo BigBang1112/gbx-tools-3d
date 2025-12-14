@@ -147,7 +147,7 @@ internal sealed class MaterialService
             {
                 var textureName = bitmap.Name ?? throw new Exception("Texture has no name");
 
-                if (bitmap.GetTexture(new() { Logger = logger }, exceptions: true) is not CPlugBitmap texture)
+                if (bitmap.GetTexture(new() { Logger = logger }) is not CPlugBitmap texture)
                 {
                     logger.LogWarning("Material {MaterialName} has texture {TextureName} which is not a CPlugBitmap", name, textureName);
                     continue;
