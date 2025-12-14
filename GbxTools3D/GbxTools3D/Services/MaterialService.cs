@@ -147,10 +147,27 @@ internal sealed class MaterialService
             {
                 var textureName = bitmap.Name ?? throw new Exception("Texture has no name");
 
-                if (bitmap.GetTexture(new() { Logger = logger }) is not CPlugBitmap texture)
+                if (bitmap.Texture is not CPlugBitmap texture)
                 {
-                    logger.LogWarning("Material {MaterialName} has texture {TextureName} which is not a CPlugBitmap", name, textureName);
-                    continue;
+                    logger.LogWarning("Material {MaterialName} has texture {TextureName} which is null. This could mean that it couldn't find the file or that the Texture.Gbx cannot be read properly.", name, textureName);
+
+                    // Highlands references files with .gbx that exist as .Gbx and .Gbx that exist as .gbx - try to find the correct file by checking both cases
+
+                    var textureFilePath = bitmap.TextureFile?.GetFullPath();
+
+                    if (textureFilePath is null)
+                    {
+                        logger.LogWarning("Texture {TextureName} of material {MaterialName} has no file associated.", textureName, name);
+                        continue;
+                    }
+
+                    var extension = GbxPath.GetExtension(textureFilePath) switch
+                    {
+                        ".gbx" => ".Gbx",
+                        ".Gbx" => ".gbx",
+                        _ => throw new Exception("Unexpected texture file extension"),
+                    };
+                    texture = Gbx.ParseNode<CPlugBitmap>(GbxPath.ChangeExtension(textureFilePath, extension));
                 }
 
                 ProcessTexture(gamePath, gameVersion, texture, bitmap.TextureFile, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
