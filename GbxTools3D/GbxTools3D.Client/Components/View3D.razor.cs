@@ -258,6 +258,9 @@ public partial class View3D : ComponentBase
             else if (task == materialTask)
             {
                 Materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken) ?? [];
+
+                // Highlands can have case insensitive material names
+                Materials = new Dictionary<string, MaterialDto>(Materials, StringComparer.OrdinalIgnoreCase);
             }
             else if (task == vehicleTask)
             {
