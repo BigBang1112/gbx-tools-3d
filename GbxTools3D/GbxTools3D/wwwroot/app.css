@@ -1,12 +1,3 @@
-@font-face {  
-   font-family: 'Mona Sans';  
-   src: url('Mona-Sans.woff2') format('woff2 supports variations'), url('Mona-Sans.woff2') format('woff2-variations');  
-   font-weight: 200 900;  
-   font-stretch: 75% 125%;
-}
-
-@import url('https://fonts.googleapis.com/css2?family=PT+Mono&display=swap');
-
 :root {
     --blue-color: #08F;
     --red-color: #D10;
@@ -14,7 +5,6 @@
 }
 
 html, body {
-    font-family: "Mona Sans";
     background-color: #111;
     font-weight: 400;
     margin: 0;
@@ -61,14 +51,6 @@ html, body {
     }
 }
 
-footer.fixed {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-}
-
 h1 {
     outline: none;
 }
@@ -108,13 +90,6 @@ section.content {
     .container {
         width: calc(100% - 3rem);
     }
-}
-
-footer {
-    margin: 20px 0;
-    color: gray;
-    text-align: center;
-    padding: 10px;
 }
 
 

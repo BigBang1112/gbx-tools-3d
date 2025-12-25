@@ -1,4 +1,5 @@
-﻿@inherits LayoutComponentBase
+﻿@using Reuniverse.Razor
+@inherits LayoutComponentBase
 @inject NavigationManager NavManager
 
 @if (!NoTools)
@@ -10,15 +11,33 @@
     @Body
 </div>
 
-@if (!NoTools)
+@if (!NoTools && !Is3DPage())
 {
-    <footer class="@(Is3DPage() ? "fixed" : "")">
-        © 2025 Petr 'BigBang1112' Pivoňka<br />
-        <small>
-            Not affiliated with or endorsed by Nadeo or Ubisoft.
-            All relevant trademarks belong to their respective owners.
-        </small>
-    </footer>
+    <ReuFooter>
+        <CopyrightContent>
+            © 2025 Petr '<a href="https://bigbang1112.cz">BigBang1112</a>' Pivoňka<br />
+            <small>
+                Not affiliated with or endorsed by Nadeo or Ubisoft.
+                All relevant trademarks belong to their respective owners.
+            </small>
+        </CopyrightContent>
+        <LinkContent>
+        </LinkContent>
+        <ExtraContent>
+            <div class="footer-discover-more">
+                <span>Discover more:</span>
+                <a href="https://gbx.tools">gbx.tools</a>
+                <a href="https://explorer.gbx.tools">explorer.gbx.tools</a>
+                <span>3d.gbx.tools</span>
+                <a href="https://io.gbx.tools">io.gbx.tools</a>
+                <a href="https://nc.gbx.tools">nc.gbx.tools</a>
+                <a href="https://revalidate.gbx.tools">revalidate.gbx.tools</a>
+                <a href="https://envimix.gbx.tools">envimix.gbx.tools</a>
+                <a href="https://uotd.gbx.tools">uotd.gbx.tools</a>
+                <a href="https://nuget.gbx.tools">nuget.gbx.tools</a>
+            </div>
+        </ExtraContent>
+    </ReuFooter>
 }
 
 <div id="blazor-error-ui" data-nosnippet>
