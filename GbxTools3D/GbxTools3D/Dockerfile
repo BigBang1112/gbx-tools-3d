@@ -33,5 +33,6 @@ EXPOSE 8080
 EXPOSE 8081
 WORKDIR /app
 COPY --from=publish /app .
+RUN mkdir -p .aspnet/DataProtection-Keys && chown -R $APP_UID .aspnet
 USER $APP_UID
 ENTRYPOINT ["dotnet", "GbxTools3D.dll"]
