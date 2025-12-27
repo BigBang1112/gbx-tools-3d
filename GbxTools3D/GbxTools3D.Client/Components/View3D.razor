@@ -1,7 +1,7 @@
 ﻿@rendermode InteractiveWebAssembly
 @implements IAsyncDisposable
 
-@*if (GameVersion == GBX.NET.GameVersion.TM2020)
+@if (GameVersion == GBX.NET.GameVersion.TM2020)
 {
     <div class="centered" style="text-align: center;">
         <div>
@@ -11,8 +11,8 @@
             You can follow the progress on the <a href="https://discord.gbx.tools">GameBox Sandbox Discord server</a>.
         </div>
     </div>
-}*@
-@if (RendererInfo.IsInteractive)
+}
+else if (RendererInfo.IsInteractive)
 {
     <div class="canvas-wrap">
         <canvas></canvas>

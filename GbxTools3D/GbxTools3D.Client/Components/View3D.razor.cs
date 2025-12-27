@@ -156,7 +156,7 @@ public partial class View3D : ComponentBase
 
             if (GameVersion == GameVersion.TM2020)
             {
-                //return;
+                return;
             }
 
             await TryLoadBlockAsync(cts.Token);
@@ -747,7 +747,7 @@ public partial class View3D : ComponentBase
 
         if (GameVersion == GameVersion.TM2020)
         {
-            //return false;
+            return false;
         }
 
         await BeforeMapLoad.InvokeAsync();
