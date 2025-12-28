@@ -15,7 +15,7 @@
         <ProjectReference Include="..\GbxTools3D.Client\GbxTools3D.Client.csproj" />
         <PackageReference Include="GBX.NET.Imaging.ImageSharp" Version="1.*" />
         <PackageReference Include="ManiaAPI.ManiaPlanetAPI" Version="2.5.1" />
-        <PackageReference Include="ManiaAPI.ManiaPlanetAPI.Extensions.Hosting" Version="2.4.0" />
+        <PackageReference Include="ManiaAPI.ManiaPlanetAPI.Extensions.Hosting" Version="2.5.2" />
         <PackageReference Include="ManiaAPI.TMX" Version="2.5.0" />
         <PackageReference Include="ManiaAPI.TMX.Extensions.Hosting" Version="2.4.0" />
         <PackageReference Include="SixLabors.ImageSharp" Version="3.*" />

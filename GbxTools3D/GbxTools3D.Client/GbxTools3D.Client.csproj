@@ -15,7 +15,7 @@
         <PackageReference Include="GBX.NET.LZO" Version="2.*" />
         <PackageReference Include="GBX.NET.ZLib" Version="1.*" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.1" />
-        <PackageReference Include="Reuniverse.Razor" Version="0.1.1" />
+        <PackageReference Include="Reuniverse.Razor" Version="0.2.0" />
         <PackageReference Include="System.Linq.Async" Version="7.0.0" />
         <PackageReference Include="SimpleBase" Version="5.*" />
     </ItemGroup>
