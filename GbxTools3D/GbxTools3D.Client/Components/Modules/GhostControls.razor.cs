@@ -399,6 +399,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                     var cp = checkpoints[mid];
                     if (cp.Time is null)
                     {
+                        left = mid + 1;
                         continue;
                     }
 

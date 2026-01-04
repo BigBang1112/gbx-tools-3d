@@ -19,7 +19,7 @@ export function create() {
 
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setAnimationLoop(update);
 
