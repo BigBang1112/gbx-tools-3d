@@ -17,8 +17,13 @@ html, body {
     overflow-x: hidden;
 }
 
+@font-face {
+    font-family: "Chivo Mono";
+    src: url('ChivoMono-VariableFont_wght.ttf');
+}
+
 .mono {
-    font-family: "PT Mono", monospace;
+    font-family: "Chivo Mono", monospace;
     font-style: normal;
 }
 
