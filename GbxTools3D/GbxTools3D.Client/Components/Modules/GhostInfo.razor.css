@@ -27,9 +27,10 @@
     grid-template-columns: 1fr 2fr;
     align-items: center;
     gap: 3px 5px;
-    margin: 5px;
     font-size: 80%;
     white-space: nowrap;
+    margin: 5px 0 5px 5px;
+    scrollbar-width: thin;
 }
 
 .uid {
