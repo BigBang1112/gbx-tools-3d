@@ -191,7 +191,7 @@ public class MeshSerializer
     {
         var tree2 = new CPlugTree();
 
-        var shadedGeomsByLod = solid2.ShadedGeoms?.GroupBy(x => x.Lod) ?? [];
+        var shadedGeomsByLod = solid2.ShadedGeoms?.GroupBy(x => x.LodMask) ?? [];
 
         var mips = shadedGeomsByLod.Count() >= 2 ? new CPlugTreeVisualMip { Levels = [] } : null;
 
@@ -607,9 +607,9 @@ public class MeshSerializer
                     var maxIndex = 0;
                     foreach (var tri in mesh.CookedTriangles)
                     {
-                        if (tri.U02.X > maxIndex) maxIndex = tri.U02.X;
-                        if (tri.U02.Y > maxIndex) maxIndex = tri.U02.Y;
-                        if (tri.U02.Z > maxIndex) maxIndex = tri.U02.Z;
+                        if (tri.Indices.X > maxIndex) maxIndex = tri.Indices.X;
+                        if (tri.Indices.Y > maxIndex) maxIndex = tri.Indices.Y;
+                        if (tri.Indices.Z > maxIndex) maxIndex = tri.Indices.Z;
                     }
 
                     byte intSize = maxIndex switch
@@ -622,9 +622,9 @@ public class MeshSerializer
 
                     foreach (var tri in mesh.CookedTriangles)
                     {
-                        if (materials.Count > tri.U03)
+                        if (materials.Count > tri.SurfaceIndex)
                         {
-                            w.Write((byte)materials[tri.U03]);
+                            w.Write((byte)materials[tri.SurfaceIndex]);
                         }
                         else
                         {
@@ -634,19 +634,19 @@ public class MeshSerializer
                         switch (intSize)
                         {
                             case 1:
-                                w.Write((byte)tri.U02.X);
-                                w.Write((byte)tri.U02.Y);
-                                w.Write((byte)tri.U02.Z);
+                                w.Write((byte)tri.Indices.X);
+                                w.Write((byte)tri.Indices.Y);
+                                w.Write((byte)tri.Indices.Z);
                                 break;
                             case 2:
-                                w.Write((ushort)tri.U02.X);
-                                w.Write((ushort)tri.U02.Y);
-                                w.Write((ushort)tri.U02.Z);
+                                w.Write((ushort)tri.Indices.X);
+                                w.Write((ushort)tri.Indices.Y);
+                                w.Write((ushort)tri.Indices.Z);
                                 break;
                             case 4:
-                                w.Write(tri.U02.X);
-                                w.Write(tri.U02.Y);
-                                w.Write(tri.U02.Z);
+                                w.Write(tri.Indices.X);
+                                w.Write(tri.Indices.Y);
+                                w.Write(tri.Indices.Z);
                                 break;
                         }
                     }
@@ -658,9 +658,9 @@ public class MeshSerializer
                     var maxIndex = 0;
                     foreach (var tri in mesh.Triangles)
                     {
-                        if (tri.U01.X > maxIndex) maxIndex = tri.U01.X;
-                        if (tri.U01.Y > maxIndex) maxIndex = tri.U01.Y;
-                        if (tri.U01.Z > maxIndex) maxIndex = tri.U01.Z;
+                        if (tri.Indices.X > maxIndex) maxIndex = tri.Indices.X;
+                        if (tri.Indices.Y > maxIndex) maxIndex = tri.Indices.Y;
+                        if (tri.Indices.Z > maxIndex) maxIndex = tri.Indices.Z;
                     }
 
                     byte intSize = maxIndex switch
@@ -673,23 +673,23 @@ public class MeshSerializer
 
                     foreach (var tri in mesh.Triangles)
                     {
-                        w.Write((byte)materials[tri.U04]);
+                        w.Write((byte)materials[tri.SurfaceIndex]);
                         switch (intSize)
                         {
                             case 1:
-                                w.Write((byte)tri.U01.X);
-                                w.Write((byte)tri.U01.Y);
-                                w.Write((byte)tri.U01.Z);
+                                w.Write((byte)tri.Indices.X);
+                                w.Write((byte)tri.Indices.Y);
+                                w.Write((byte)tri.Indices.Z);
                                 break;
                             case 2:
-                                w.Write((ushort)tri.U01.X);
-                                w.Write((ushort)tri.U01.Y);
-                                w.Write((ushort)tri.U01.Z);
+                                w.Write((ushort)tri.Indices.X);
+                                w.Write((ushort)tri.Indices.Y);
+                                w.Write((ushort)tri.Indices.Z);
                                 break;
                             case 4:
-                                w.Write(tri.U01.X);
-                                w.Write(tri.U01.Y);
-                                w.Write(tri.U01.Z);
+                                w.Write(tri.Indices.X);
+                                w.Write(tri.Indices.Y);
+                                w.Write(tri.Indices.Z);
                                 break;
                         }
                     }
