@@ -8,6 +8,11 @@
         <StaticWebAssetProjectMode>Default</StaticWebAssetProjectMode>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
+    
+    <PropertyGroup>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <InvariantTimezone>true</InvariantTimezone>
+    </PropertyGroup>
 
     <ItemGroup>
         <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
