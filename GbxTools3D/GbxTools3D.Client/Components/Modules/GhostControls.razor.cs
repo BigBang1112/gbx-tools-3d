@@ -26,6 +26,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
     private Checkpoint? checkpoint;
     private CheckpointList? checkpointList;
     private InputList? inputList;
+    private InputDisplay? inputDisplay;
     private Speedometer? speedometer;
     private GhostInfo? ghostInfo;
 
@@ -498,6 +499,10 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                             inputList.CurrentInput = input.Time;
                             inputList.CurrentInputIndex = nextInputTime == double.MaxValue ? (mid - 1) : mid;
                         }
+                        if (inputDisplay is not null)
+                        {
+                            inputDisplay.CurrentInputIndex = nextInputTime == double.MaxValue ? (mid - 1) : mid;
+                        }
                         break;
                     }
                     else if (time < inputTime)
@@ -511,6 +516,10 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                             {
                                 inputList.CurrentInput = null;
                                 inputList.CurrentInputIndex = -1;
+                            }
+                            if (inputDisplay is not null)
+                            {
+                                inputDisplay.CurrentInputIndex = -1;
                             }
                         }
                     }
