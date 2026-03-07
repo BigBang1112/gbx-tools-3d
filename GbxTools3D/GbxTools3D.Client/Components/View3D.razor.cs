@@ -260,7 +260,7 @@ public partial class View3D : ComponentBase
                 Materials = await task.Result.Content.ReadFromJsonAsync(AppClientJsonContext.Default.DictionaryStringMaterialDto, cancellationToken) ?? [];
 
                 // Highlands can have case insensitive material names
-                Materials = new Dictionary<string, MaterialDto>(Materials, StringComparer.OrdinalIgnoreCase);
+                Materials = new Dictionary<string, MaterialDto>(Materials.DistinctBy(x => x.Key, StringComparer.OrdinalIgnoreCase), StringComparer.OrdinalIgnoreCase);
             }
             else if (task == vehicleTask)
             {
@@ -396,11 +396,13 @@ public partial class View3D : ComponentBase
         }
         catch (HttpRequestException ex)
         {
+            Console.WriteLine(ex.Message);
             return false;
         }
 
         if (!vehicles.TryGetValue(VehicleName, out var vehicleInfo))
         {
+            Console.WriteLine($"TryLoadVehicleAsync: Vehicle info for '{VehicleName}' not found.");
             return false;
         }
 
@@ -410,6 +412,7 @@ public partial class View3D : ComponentBase
 
         if (!meshResponse.IsSuccessStatusCode)
         {
+            Console.WriteLine($"TryLoadVehicleAsync: Failed to fetch mesh for vehicle '{VehicleName}'. Status code: {meshResponse.StatusCode}");
             return false;
         }
 
@@ -747,6 +750,7 @@ public partial class View3D : ComponentBase
 
         if (GameVersion == GameVersion.TM2020)
         {
+            StateHasChanged();
             return false;
         }
 
