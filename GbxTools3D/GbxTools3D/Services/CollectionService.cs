@@ -554,6 +554,7 @@ internal sealed class CollectionService
 
                 if (blockInfoNode is null)
                 {
+                    logger.LogWarning("Block info node is null for file {BlockInfoFilePath}. It may be corrupted or not supported.", blockInfoFilePath);
                     continue;
                 }
 

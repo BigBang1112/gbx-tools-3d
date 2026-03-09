@@ -6,7 +6,7 @@ namespace GbxTools3D.Client;
 
 public static class GameVersionSupport
 {
-    public static ImmutableArray<GameVersion> Versions => [GameVersion.TMF, GameVersion.MP4, GameVersion.TMT, GameVersion.TMSX, GameVersion.TMNESWC, GameVersion.TM2020];
+    public static ImmutableArray<GameVersion> Versions => [GameVersion.TMT, GameVersion.MP4, GameVersion.TMF, GameVersion.TMSX, GameVersion.TMNESWC, GameVersion.TM2020];
 
     public static GameVersion GetSupportedGameVersion(CGameCtnChallenge map)
     {

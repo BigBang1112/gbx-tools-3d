@@ -42,7 +42,14 @@ public sealed class PopulateDbService : BackgroundService
         var collectionService = scope.ServiceProvider.GetRequiredService<CollectionService>();
         var campaignService = scope.ServiceProvider.GetRequiredService<CampaignService>();
 
-        await campaignService.CreateOrUpdateCampaignsAsync(datasetPath, GBX.NET.GameVersion.TMF, CancellationToken.None);
+        try
+        {
+            await campaignService.CreateOrUpdateCampaignsAsync(datasetPath, GBX.NET.GameVersion.TMF, CancellationToken.None);
+        }
+        catch (Exception e)
+        {
+            logger.LogError(e, "Campaign import failed, continuing with vehicles");
+        }
         await vehicleService.CreateOrUpdateVehiclesAsync(datasetPath, stoppingToken);
         await collectionService.CreateOrUpdateCollectionsAsync(datasetPath, stoppingToken);
 
