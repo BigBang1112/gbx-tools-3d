@@ -43,6 +43,8 @@ public partial class View3D : ComponentBase
     internal Scene? Scene { get; private set; }
     internal List<Solid> FocusedSolids { get; private set; } = [];
 
+    private static HashSet<string> ignoredManiaPlanetBlocks = ["DecoTerrainHD", "Cliff8HD", "DecoTerraformingHD", "DecoTreeBeach", "DecoTrees", "DecoTreesLake", "DecoTreesSmall", "DecoTreesRiver"];
+
     private bool mapLoadAttempted;
 
     [Parameter]
@@ -863,6 +865,7 @@ public partial class View3D : ComponentBase
     {
         var collection = CollectionName ?? Map?.Collection;
 
+        var isManiaPlanet = GameVersion >= GameVersion.MP3;
         var yOffset = GameVersion >= GameVersion.TMT ? map.DecoBaseHeightOffset + baseHeight : 0;
 
         var coveredZoneBlocks = GetCoveredZoneBlocks().ToImmutableHashSet();
@@ -875,7 +878,7 @@ public partial class View3D : ComponentBase
         var uniqueBlockVariants = baseZoneBlocks
             .Concat(map.GetBlocks())
             .Concat(map.GetBakedBlocks())
-            .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x))
+            .Where(x => !x.IsClip && !coveredZoneBlocks.Contains(x) && (!isManiaPlanet || !ignoredManiaPlanetBlocks.Contains(x.Name)))
             .Concat(clipBlocks)
             .ToLookup(x => new UniqueVariant(
             x.Name,
@@ -1217,6 +1220,11 @@ public partial class View3D : ComponentBase
 
         foreach (var block in Map.GetBlocks())
         {
+            if (isManiaPlanet && ignoredManiaPlanetBlocks.Contains(block.Name))
+            {
+                continue;
+            }
+
             if (!blockInfos.TryGetValue(block.Name, out var blockInfo) || blockInfo.Height.HasValue)
             {
                 continue;
