@@ -51,7 +51,15 @@ public abstract class DataImportApiEndpoint
                 var collectionService = scope.ServiceProvider.GetRequiredService<CollectionService>();
                 var campaignService = scope.ServiceProvider.GetRequiredService<CampaignService>();
 
-                await campaignService.CreateOrUpdateCampaignsAsync(datasetPath, GBX.NET.GameVersion.TMF, CancellationToken.None);
+                try
+                {
+                    await campaignService.CreateOrUpdateCampaignsAsync(datasetPath, GBX.NET.GameVersion.TMF, CancellationToken.None);
+                }
+                catch (Exception e)
+                {
+                    logger.LogError(e, "Campaign import failed, continuing with vehicles");
+                }
+
                 await vehicleService.CreateOrUpdateVehiclesAsync(datasetPath, CancellationToken.None);
                 await collectionService.CreateOrUpdateCollectionsAsync(datasetPath, CancellationToken.None);
 
