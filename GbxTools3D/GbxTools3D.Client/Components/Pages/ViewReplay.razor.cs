@@ -4,6 +4,7 @@ using GbxTools3D.Client.Components.Modules;
 using GbxTools3D.Client.EventArgs;
 using GbxTools3D.Client.Models;
 using Microsoft.AspNetCore.Components;
+using System.Collections.Immutable;
 using System.Net.Http.Json;
 using System.Runtime.Versioning;
 
@@ -137,7 +138,7 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
 
         if (ghostControls is not null)
         {
-            await ghostControls.TryLoadGhostAsync(ghost, Replay.Inputs);
+            await ghostControls.TryLoadGhostAsync(ghost, Replay.Inputs?.ToImmutableArray());
         }
 
         return true;

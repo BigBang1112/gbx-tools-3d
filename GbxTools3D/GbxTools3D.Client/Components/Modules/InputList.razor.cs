@@ -21,7 +21,7 @@ public partial class InputList : ComponentBase
     private TimeInt32? currentInput;
 
     [Parameter, EditorRequired]
-    public ImmutableList<IInput>? OverrideInputs { get; set; }
+    public ImmutableArray<IInput>? OverrideInputs { get; set; }
 
     [Parameter, EditorRequired]
     public CGameCtnGhost? Ghost { get; set; }
@@ -67,8 +67,8 @@ public partial class InputList : ComponentBase
 
     public int CurrentInputIndex { get; set; }
 
-    private ImmutableList<IInput>? inputs;
-    private ImmutableList<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
+    private ImmutableArray<IInput> inputs;
+    private ImmutableArray<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? [];
 
     protected override async Task OnInitializedAsync()
     {
@@ -111,7 +111,7 @@ public partial class InputList : ComponentBase
         }
         else
         {
-            var totalInputCount = Inputs.Count;
+            var totalInputCount = Inputs.Length;
             var numInputs = Math.Min(request.Count, totalInputCount - request.StartIndex);
             var inputsSubset = Inputs.Skip(request.StartIndex)
                 .Take(numInputs)

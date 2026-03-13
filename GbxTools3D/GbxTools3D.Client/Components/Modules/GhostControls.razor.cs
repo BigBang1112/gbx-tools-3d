@@ -43,7 +43,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
     public CGameCtnGhost? CurrentGhost { get; set; }
     public Dictionary<int, TimeInt32>? LastRespawnByCp {get; set;}
 
-    private ImmutableList<IInput>? overrideInputs;
+    private ImmutableArray<IInput>? overrideInputs;
 
     private bool UseHundredths => Map is not null && GameVersionSupport.GetSupportedGameVersion(Map) <= GameVersion.TMF;
 
@@ -92,7 +92,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         return sb.ToString();
     }
 
-    public async ValueTask<bool> TryLoadGhostAsync(CGameCtnGhost ghost, ImmutableList<IInput>? overrideInputs = null)
+    public async ValueTask<bool> TryLoadGhostAsync(CGameCtnGhost ghost, ImmutableArray<IInput>? overrideInputs = null)
     {
         var animationModule = await JS.InvokeAsync<IJSObjectReference>("import", $"./js/animation.js");
         await animationModule.InvokeVoidAsync("registerDotNet", DotNetObjectReference.Create(this));
@@ -312,7 +312,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         var checkpoints = ghost.Checkpoints ?? [];
         var numLaps = ghost.GetNumberOfLaps(Map) ?? 1;
         var perLap = checkpoints.Length / numLaps;
-        var respawns = (overrideInputs ?? ghost.Inputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs ?? [])
+        var respawns = (overrideInputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? ghost.Inputs)
             .Where(x => x is Respawn { Pressed: true } or RespawnTM2020).ToList();
 
         InitLastRespawnByCp(respawns);
@@ -475,10 +475,10 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                 }
             }
 
-            var inputs = overrideInputs ?? CurrentGhost.Inputs ?? CurrentGhost.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
-            if (inputs.Count > 0)
+            var inputs = overrideInputs ?? CurrentGhost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? CurrentGhost.Inputs;
+            if (inputs.Length > 0)
             {
-                int left = 0, right = inputs.Count - 1, mid = -1;
+                int left = 0, right = inputs.Length - 1, mid = -1;
 
                 // Binary search for the first input within the range
                 while (left <= right)
@@ -487,7 +487,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                     var input = inputs[mid];
 
                     var inputTime = input.Time.TotalSeconds;
-                    var nextInputTime = (mid + 1 < inputs.Count)
+                    var nextInputTime = (mid + 1 < inputs.Length)
                         ? inputs[mid + 1].Time.TotalSeconds
                         : double.MaxValue; // Handle last input case
 
