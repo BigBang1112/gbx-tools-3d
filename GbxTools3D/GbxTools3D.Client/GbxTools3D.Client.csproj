@@ -23,6 +23,8 @@
         <PackageReference Include="Reuniverse.Razor" Version="0.6.2" />
         <PackageReference Include="System.Linq.Async" Version="7.0.0" />
         <PackageReference Include="SimpleBase" Version="5.*" />
+        <PackageReference Include="TmEssentials" Version="2.6.2" />
+        <PackageReference Include="TmEssentials.Razor" Version="1.1.2" />
     </ItemGroup>
 
 </Project>
