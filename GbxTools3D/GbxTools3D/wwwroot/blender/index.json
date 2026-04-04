@@ -7,7 +7,7 @@
       "id": "blender_gbx_tools",
       "name": "Blender Gbx Tools",
       "tagline": "Working with Gbx files inside of Blender",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "type": "add-on",
       "maintainer": "BigBang1112",
       "license": [
@@ -23,9 +23,9 @@
         "windows-x64",
         "linux-x64"
       ],
-      "archive_url": "https://github.com/BigBang1112/blender-gbx-tools/releases/download/v0.1.1/BlenderGbxTools.zip",
-      "archive_size": 5302335,
-      "archive_hash": "sha256:2faa1ca9184459162ae43d7be1f26976c69937e0c884f4200b044d0c563c4881"
+      "archive_url": "https://github.com/BigBang1112/blender-gbx-tools/releases/download/v0.1.2/BlenderGbxTools.zip",
+      "archive_size": 5804789,
+      "archive_hash": "sha256:58e042e4ca66918ede357fd800edc269d767d300a8467ac10f46c05014d60c21"
     }
   ]
 }
