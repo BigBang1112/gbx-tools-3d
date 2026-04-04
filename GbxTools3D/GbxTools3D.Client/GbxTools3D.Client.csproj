@@ -16,10 +16,10 @@
 
     <ItemGroup>
         <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-        <PackageReference Include="GBX.NET" Version="2.4.0-nightly.20260313.c397d32b" />
+        <PackageReference Include="GBX.NET" Version="2.4.0" />
         <PackageReference Include="GBX.NET.LZO" Version="2.*" />
         <PackageReference Include="GBX.NET.ZLib" Version="1.*" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.3" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />
         <PackageReference Include="Reuniverse.Razor" Version="0.6.2" />
         <PackageReference Include="System.Linq.Async" Version="7.0.0" />
         <PackageReference Include="SimpleBase" Version="5.*" />
