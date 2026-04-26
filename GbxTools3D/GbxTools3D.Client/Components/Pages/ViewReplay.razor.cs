@@ -33,7 +33,13 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
     [SupplyParameterFromQuery(Name = "url")]
     private string? Url { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url);
+    [SupplyParameterFromQuery(Name = "gdrive")]
+    private string? GDrive { get; set; }
+
+    [SupplyParameterFromQuery(Name = "gd")]
+    private string? Gd { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url) && string.IsNullOrEmpty(GDrive) && string.IsNullOrEmpty(Gd);
 
     public CGameCtnReplayRecord? Replay { get; set; }
     public CGameCtnGhost? CurrentGhost { get; set; }
@@ -79,6 +85,10 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
                 endpoint += $"/{MapId}";
             }
         }
+        else if (GDrive is not null || Gd is not null)
+        {
+            endpoint = $"/api/replay/gdrive/{GDrive ?? Gd}";
+        }
         else
         {
             throw new Exception();
@@ -86,7 +96,7 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
 
         using var response = await Http.GetAsync(endpoint);
 
-        if (string.IsNullOrEmpty(Url))
+        if (string.IsNullOrEmpty(Url) && string.IsNullOrEmpty(GDrive) && string.IsNullOrEmpty(Gd))
         {
             var content = await response.Content.ReadFromJsonAsync(AppClientJsonContext.Default.ReplayContentDto);
 

@@ -46,6 +46,18 @@ public partial class ViewGhost
     [SupplyParameterFromQuery(Name = "mapurl")]
     private string? MapUrl { get; set; }
 
+    [SupplyParameterFromQuery(Name = "gdrive")]
+    private string? GDrive { get; set; }
+
+    [SupplyParameterFromQuery(Name = "gd")]
+    private string? Gd { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mapgdrive")]
+    private string? MapGDrive { get; set; }
+
+    [SupplyParameterFromQuery(Name = "mapgd")]
+    private string? MapGd { get; set; }
+
     public bool IsDragAndDrop => string.IsNullOrEmpty(Type) && string.IsNullOrEmpty(Url);
 
     private string selectedExternal = "tmio";
@@ -98,6 +110,13 @@ public partial class ViewGhost
                     ghostResponseTask = Http.GetAsync($"/api/ghost/wrr/{MapUid}/{Time}/{Login}");
                 }
             }
+            else if (Type is "gd" or "gdrive")
+            {
+                if (GDrive is not null || Gd is not null)
+                {
+                    ghostResponseTask = Http.GetAsync($"/api/ghost/gdrive/{GDrive ?? Gd}");
+                }
+            }
 
             if (!string.IsNullOrEmpty(MapUrl))
             {
@@ -121,6 +140,10 @@ public partial class ViewGhost
                 {
                     mapResponseTask = Http.GetAsync($"/api/map/uid/{MapUid}");
                 }
+            }
+            else if (MapGDrive is not null || MapGd is not null)
+            {
+                mapResponseTask = Http.GetAsync($"/api/map/gdrive/{MapGDrive ?? MapGd}");
             }
 
             if (ghostResponseTask is not null)

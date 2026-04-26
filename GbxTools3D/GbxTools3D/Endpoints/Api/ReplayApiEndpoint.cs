@@ -4,6 +4,8 @@ using GbxTools3D.Enums;
 using GbxTools3D.External;
 using System.Text;
 using Microsoft.AspNetCore.Http.HttpResults;
+using GBX.NET;
+using GBX.NET.Engines.Game;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -11,15 +13,16 @@ public static class ReplayApiEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/tmx/{site}/{replayId}", GetReplayFromTmx)
+        group.MapGet("tmx/{site}/{replayId}", GetReplayFromTmx)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/tmx/{site}/{replayId}/{trackId}", GetReplayFromTmxWithMapInfo)
+        group.MapGet("tmx/{site}/{replayId}/{trackId}", GetReplayFromTmxWithMapInfo)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/mx/{site}/{replayId}", GetReplayFromMx)
+        group.MapGet("mx/{site}/{replayId}", GetReplayFromMx)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/mx/{site}/{replayId}/{mapId}", GetReplayFromMxWithMapInfo)
+        group.MapGet("mx/{site}/{replayId}/{mapId}", GetReplayFromMxWithMapInfo)
             .RequireRateLimiting("fixed-external-downloads");
-        // tmuf/userid/mapuid
+        group.MapGet("gdrive/{id}", GetReplayFromGoogleDrive)
+            .RequireRateLimiting("fixed-external-downloads");
     }
 
     private static async Task<Results<Ok<ReplayContentDto>, NotFound, StatusCodeHttpResult>> GetReplayFromTmx(
@@ -282,5 +285,49 @@ public static class ReplayApiEndpoint
             Replay = replayInfoDto,
             Content = replayData
         });
+    }
+
+    private static async Task<Results<FileStreamHttpResult, NotFound, BadRequest>> GetReplayFromGoogleDrive(
+        HttpContext context,
+        IHttpClientFactory httpFactory,
+        string id,
+        CancellationToken cancellationToken)
+    {
+        var http = httpFactory.CreateClient("gdrive");
+
+        var response = await http.GetAsync($"https://drive.usercontent.google.com/download?id={id}&export=download", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+        
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            response.Dispose();
+            return TypedResults.NotFound();
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength > 12 * 1024 * 1024)
+        {
+            return TypedResults.BadRequest();
+        }
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(response);
+
+        await response.Content.LoadIntoBufferAsync(cancellationToken);
+
+        var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+        _ = Gbx.ParseHeader<CGameCtnReplayRecord>(stream);
+
+        stream.Position = 0;
+
+        return TypedResults.File(
+            stream,
+            "application/gbx",
+            response.Content.Headers.ContentDisposition?.FileName,
+            response.Content.Headers.LastModified,
+            response.Headers.ETag is null
+                ? null
+                : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(response.Headers.ETag.Tag, response.Headers.ETag.IsWeak));
     }
 }

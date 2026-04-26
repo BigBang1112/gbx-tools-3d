@@ -46,6 +46,11 @@ public static class WebConfiguration
             client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("TMTurbo"));
         }).AddStandardResilienceHandler();
 
+        services.AddHttpClient("gdrive", client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("Google Drive"));
+        }).AddStandardResilienceHandler();
+
         services.AddTMX();
 
         services.AddManiaPlanetAPI(options =>

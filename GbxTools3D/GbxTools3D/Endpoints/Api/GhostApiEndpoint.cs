@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using GBX.NET;
+using GBX.NET.Engines.Game;
+using Microsoft.AspNetCore.Http.HttpResults;
 using System.Web;
 
 namespace GbxTools3D.Endpoints.Api;
@@ -7,9 +9,11 @@ public static class GhostApiEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/wrr/{mapUid}/{time}/{login}", GetGhostFromWorldRecordReport)
+        group.MapGet("wrr/{mapUid}/{time}/{login}", GetGhostFromWorldRecordReport)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/tmt/{url}", GetGhostTMTurbo)
+        group.MapGet("tmt/{url}", GetGhostTMTurbo)
+            .RequireRateLimiting("fixed-external-downloads");
+        group.MapGet("gdrive/{id}", GetGhostFromGoogleDrive)
             .RequireRateLimiting("fixed-external-downloads");
     }
 
@@ -91,5 +95,49 @@ public static class GhostApiEndpoint
                 ? null
                 : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(ghostResponse.Headers.ETag.Tag, ghostResponse.Headers.ETag.IsWeak)
         );
+    }
+
+    private static async Task<Results<FileStreamHttpResult, NotFound, BadRequest>> GetGhostFromGoogleDrive(
+        HttpContext context,
+        IHttpClientFactory httpFactory,
+        string id,
+        CancellationToken cancellationToken)
+    {
+        var http = httpFactory.CreateClient("gdrive");
+
+        var response = await http.GetAsync($"https://drive.usercontent.google.com/download?id={id}&export=download", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            response.Dispose();
+            return TypedResults.NotFound();
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength > 12 * 1024 * 1024)
+        {
+            return TypedResults.BadRequest();
+        }
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(response);
+
+        await response.Content.LoadIntoBufferAsync(cancellationToken);
+
+        var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+        _ = Gbx.ParseHeader<CGameCtnGhost>(stream);
+
+        stream.Position = 0;
+
+        return TypedResults.File(
+            stream,
+            "application/gbx",
+            response.Content.Headers.ContentDisposition?.FileName,
+            response.Content.Headers.LastModified,
+            response.Headers.ETag is null
+                ? null
+                : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(response.Headers.ETag.Tag, response.Headers.ETag.IsWeak));
     }
 }

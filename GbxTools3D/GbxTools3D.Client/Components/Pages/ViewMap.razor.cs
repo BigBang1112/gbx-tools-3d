@@ -35,7 +35,13 @@ public partial class ViewMap : ComponentBase
     [SupplyParameterFromQuery(Name = "url")]
     private string? Url { get; set; }
 
-    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url) && string.IsNullOrEmpty(MapUid);
+    [SupplyParameterFromQuery(Name = "gdrive")]
+    private string? GDrive { get; set; }
+
+    [SupplyParameterFromQuery(Name = "gd")]
+    private string? Gd { get; set; }
+
+    public bool IsDragAndDrop => string.IsNullOrEmpty(TmxSite) && string.IsNullOrEmpty(MxSite) && string.IsNullOrEmpty(Url) && string.IsNullOrEmpty(MapUid) && string.IsNullOrEmpty(GDrive) && string.IsNullOrEmpty(Gd);
 
     public CGameCtnChallenge? Map { get; set; }
 
@@ -80,6 +86,10 @@ public partial class ViewMap : ComponentBase
         {
             endpoint = $"/api/map/mx/{MxSite}/id/{MapId}";
         }
+        else if (GDrive is not null || Gd is not null)
+        {
+            endpoint = $"/api/map/gdrive/{GDrive ?? Gd}";
+        }
         else
         {
             throw new Exception("This should not happen");
@@ -87,7 +97,7 @@ public partial class ViewMap : ComponentBase
 
         using var response = await Http.GetAsync(endpoint);
 
-        if (!string.IsNullOrEmpty(Url) || !string.IsNullOrEmpty(MapUid))
+        if (!string.IsNullOrEmpty(Url) || !string.IsNullOrEmpty(MapUid) || !string.IsNullOrEmpty(GDrive) || !string.IsNullOrEmpty(Gd))
         {
             await using var stream = await response.Content.ReadAsStreamAsync();
             Map = await Gbx.ParseAsync<CGameCtnChallenge>(stream);

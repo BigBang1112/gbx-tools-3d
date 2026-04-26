@@ -1,12 +1,14 @@
-﻿using GbxTools3D.Client.Dtos;
+﻿using GBX.NET;
+using GBX.NET.Engines.Game;
+using GbxTools3D.Client.Dtos;
 using GbxTools3D.Data;
 using GbxTools3D.Enums;
 using GbxTools3D.External;
-using System.Text;
-using Microsoft.AspNetCore.Http.HttpResults;
 using ManiaAPI.ManiaPlanetAPI;
-using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
+using System.Text;
 
 namespace GbxTools3D.Endpoints.Api;
 
@@ -14,17 +16,19 @@ public static class MapApiEndpoint
 {
     public static void Map(RouteGroupBuilder group)
     {
-        group.MapGet("/tmx/{site}/id/{trackId}", GetMapFromTmxById)
+        group.MapGet("tmx/{site}/id/{trackId}", GetMapFromTmxById)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/mx/{site}/id/{mapId}", GetMapFromMxById)
+        group.MapGet("mx/{site}/id/{mapId}", GetMapFromMxById)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/mx/{site}/uid/{mapUid}", GetMapFromMxByUid)
+        group.MapGet("mx/{site}/uid/{mapUid}", GetMapFromMxByUid)
             .RequireRateLimiting("fixed-external-downloads");
-        group.MapGet("/mp/{mapUid}", GetMapFromManiaPlanetByUid)
+        group.MapGet("mp/{mapUid}", GetMapFromManiaPlanetByUid)
             .RequireRateLimiting("fixed-external-downloads");
         group.MapGet("tmt/{platform}/uid/{mapUid}", GetMapFromTMTurboByUid)
             .RequireRateLimiting("fixed-external-downloads");
         group.MapGet("uid/{mapUid}", GetLocalMapByUid);
+        group.MapGet("gdrive/{id}", GetMapFromGoogleDrive)
+            .RequireRateLimiting("fixed-external-downloads");
     }
 
     private static async Task<Results<Ok<MapContentDto>, NotFound, StatusCodeHttpResult>> GetMapFromTmxById(
@@ -344,5 +348,49 @@ public static class MapApiEndpoint
             Path.GetFileName(map.Path),
             lastModified: map.UpdatedAt
         );
+    }
+
+    private static async Task<Results<FileStreamHttpResult, NotFound, BadRequest>> GetMapFromGoogleDrive(
+        HttpContext context,
+        IHttpClientFactory httpFactory,
+        string id,
+        CancellationToken cancellationToken)
+    {
+        var http = httpFactory.CreateClient("gdrive");
+
+        var response = await http.GetAsync($"https://drive.usercontent.google.com/download?id={id}&export=download", HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            response.Dispose();
+            return TypedResults.NotFound();
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        if (response.Content.Headers.ContentLength > 12 * 1024 * 1024)
+        {
+            return TypedResults.BadRequest();
+        }
+
+        context.Response.Headers.CacheControl = "max-age=3600";
+        context.Response.RegisterForDispose(response);
+
+        await response.Content.LoadIntoBufferAsync(cancellationToken);
+
+        var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+
+        _ = Gbx.ParseHeader<CGameCtnChallenge>(stream);
+
+        stream.Position = 0;
+
+        return TypedResults.File(
+            stream,
+            "application/gbx",
+            response.Content.Headers.ContentDisposition?.FileName,
+            response.Content.Headers.LastModified,
+            response.Headers.ETag is null
+                ? null
+                : new Microsoft.Net.Http.Headers.EntityTagHeaderValue(response.Headers.ETag.Tag, response.Headers.ETag.IsWeak));
     }
 }
