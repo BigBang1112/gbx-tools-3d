@@ -345,6 +345,11 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         
         LastRespawnByCp = new Dictionary<int, TimeInt32>(); 
 
+        if (checkpointTimes.Count == 0)
+        {
+            return;
+        }
+
         var checkpointIndex = 0;
         foreach (var actionTime in actionTimes)
         {
