@@ -1,0 +1,142 @@
+﻿@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject Blazored.LocalStorage.ISyncLocalStorageService SyncLocalStorage
+@inject IJSRuntime JS
+
+<div class="module">
+    <div class="input-display">
+        <div class="col left-col">
+            @if (CurrentInputState.IsSteerReal)
+            {
+                <div class="triangle-container">
+                    <svg viewBox="0 0 100 100" class="triangle base">
+                        <path d="M5,50 L95,5 L95,95 Z" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" class="triangle fill-alt" style="clip-path: inset(0 0 0 @(CurrentInputState.InputSteerLeft ? 0 : 100)%);">
+                        <path d="M5,50 L95,5 L95,95 Z" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" class="triangle fill" style="clip-path: inset(0 0 0 @(100 - Math.Abs(Math.Min(CurrentInputState.Steer, 0)) * 100)%);">
+                        <path d="M5,50 L95,5 L95,95 Z" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" class="triangle outline">
+                        <path d="M5,50 L95,5 L95,95 Z" />
+                    </svg>
+                </div>
+            }
+            else
+            {
+                <div class="spacer"></div>
+                <div class="arrow">
+                    <div class="key key-fill-main-on"
+                        style="width:@(CurrentInputState.Steer < 0 ? $"{Math.Abs(CurrentInputState.Steer) * 100}" : "0")%;
+                            left:auto; right:0"></div>
+                    <div class="key key-fill-main-on-inactive"
+                        style="width:@(CurrentInputState.Steer >= 0 && CurrentInputState.InputSteerLeft ? "100" :
+                                CurrentInputState.InputSteer < 0 ? $"{Math.Abs(Math.Min(CurrentInputState.InputSteer, 0)) * 100}" : "0")%;
+                            left:auto; right:0"></div>
+                    <span>←</span>
+                </div>
+            }
+        </div>
+        <div class="col center-col">
+            <div class="arrow">
+                <div class="@(!CurrentInputState.IsAccelerateReal && !CurrentInputState.IsAccelerateGas ?
+                        /* Accelerate is active */
+                        "key key-fill-main-on" :
+                        /* AccelerateReal or AccelerateGas is active */
+                        "key key-fill-main-on-inactive")"
+                    style="height:@(CurrentInputState.InputAccelerate ? "100" : "0")%;
+                        top:auto; bottom:0; z-index: 
+                        @(!CurrentInputState.IsAccelerateReal && !CurrentInputState.IsAccelerateGas && Math.Max(CurrentInputState.InputAccelerateReal, Math.Abs(Math.Max(CurrentInputState.InputGas, 0))) == 1f ?
+                            "2" : "1"
+                        )"
+                    >
+                </div>
+                <div class="@(!CurrentInputState.IsAccelerateReal && !CurrentInputState.IsAccelerateGas ?
+                        /* Accelerate is active */
+                        (Math.Max(CurrentInputState.InputAccelerateReal, Math.Abs(Math.Max(CurrentInputState.InputGas, 0))) < 0.3f ?
+                            "key key-fill-main-off-inactive" :
+                            "key key-fill-main-on-inactive"
+                        ) :
+                        /* AccelerateReal or AccelerateGas is active */
+                        (Math.Max(CurrentInputState.InputAccelerateReal, Math.Abs(Math.Max(CurrentInputState.InputGas, 0))) < 0.3f ?
+                            "key key-fill-main-off" :
+                            "key key-fill-main-on"
+                        ))"
+                     style="height:@($"{Math.Max(CurrentInputState.InputAccelerateReal, Math.Abs(Math.Max(CurrentInputState.InputGas, 0))) * 100}%");
+                        top:auto; bottom:0; z-index: 
+                        @(!CurrentInputState.IsAccelerateReal && !CurrentInputState.IsAccelerateGas && Math.Max(CurrentInputState.InputAccelerateReal, Math.Abs(Math.Max(CurrentInputState.InputGas, 0))) == 1f ?
+                            "1" : "2"
+                        )"
+                    >
+                </div>
+                <span>↑</span>
+            </div>
+            <div class="arrow">
+                <div class="@(!CurrentInputState.IsBrakeReal && !CurrentInputState.IsBrakeGas ?
+                        /* Brake is active */
+                        "key key-fill-brake-on" :
+                        /* BrakeReal or BrakeGas is active */
+                        "key key-fill-brake-on-inactive")"
+                    style="height:@(CurrentInputState.InputBrake ? "100" : "0")%;
+                        top:0; bottom:auto; z-index: 
+                        @(!CurrentInputState.IsBrakeReal && !CurrentInputState.IsBrakeGas && Math.Max(CurrentInputState.InputBrakeReal, Math.Abs(Math.Min(CurrentInputState.InputGas, 0))) == 1f ?
+                            "2" : "1"
+                        )"
+                    >
+                </div>
+                <div class="@(!CurrentInputState.IsBrakeReal && !CurrentInputState.IsBrakeGas ?
+                        /* Brake is active */
+                        (Math.Max(CurrentInputState.InputBrakeReal, Math.Abs(Math.Min(CurrentInputState.InputGas, 0))) < 0.3f ?
+                            "key key-fill-brake-off-inactive" :
+                            "key key-fill-brake-on-inactive"
+                        ) :
+                        /* BrakeReal or BrakeGas is active */
+                        (Math.Max(CurrentInputState.InputBrakeReal, Math.Abs(Math.Min(CurrentInputState.InputGas, 0))) < 0.3f ?
+                            "key key-fill-brake-off" :
+                            "key key-fill-brake-on"
+                        ))"
+                     style="height:@($"{Math.Max(CurrentInputState.InputBrakeReal, Math.Abs(Math.Min(CurrentInputState.InputGas, 0))) * 100}%");
+                        top:0; bottom:auto; z-index: 
+                        @(!CurrentInputState.IsBrakeReal && !CurrentInputState.IsBrakeGas && Math.Max(CurrentInputState.InputBrakeReal, Math.Abs(Math.Min(CurrentInputState.InputGas, 0))) == 1f ?
+                            "1" : "2"
+                        )"
+                    >
+                </div>
+                <span>↓</span>
+            </div>
+        </div>
+        <div class="col right-col">
+            @if (CurrentInputState.IsSteerReal)
+            {
+                <div class="triangle-container">
+                    <svg viewBox="0 0 100 100" class="triangle base">
+                        <path d="M95,50 L5,5 L5,95 Z" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" class="triangle fill-alt" style="clip-path: inset(0 @(CurrentInputState.InputSteerRight ? 0 : 100)% 0 0);">
+                        <path d="M95,50 L5,5 L5,95 Z" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" class="triangle fill" style="clip-path: inset(0 @(100 - Math.Abs(Math.Max(CurrentInputState.Steer, 0)) * 100)% 0 0);">
+                        <path d="M95,50 L5,5 L5,95 Z" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" class="triangle outline">
+                        <path d="M95,50 L5,5 L5,95 Z" />
+                    </svg>
+                </div>
+            }
+            else
+            {
+                <div class="spacer"></div>
+                <div class="arrow">
+                    <div class="key key-fill-main-on"
+                        style="width:@(CurrentInputState.Steer > 0 ? $"{Math.Abs(CurrentInputState.Steer) * 100}" : "0")%;
+                            left:0; right:auto"></div>
+                    <div class="key key-fill-main-on-inactive"
+                        style="width:@(CurrentInputState.Steer <= 0 && CurrentInputState.InputSteerRight ? "100" :
+                                CurrentInputState.InputSteer > 0 ? $"{Math.Abs(Math.Max(CurrentInputState.InputSteer, 0)) * 100}" : "0")%;
+                            left:0; right:auto"></div>
+                    <span>→</span>
+                </div>
+            }
+        </div>
+    </div>
+</div>
