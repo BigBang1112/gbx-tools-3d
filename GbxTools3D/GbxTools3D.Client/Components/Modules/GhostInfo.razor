@@ -140,6 +140,8 @@
                     <div>Zone:</div>
                     <div class="mono">@Ghost.GhostZone</div>
                 }
+                <div>Version:</div>
+                <div class="mono">@Ghost.GhostVersionString</div>
             </div>
             @if (Ghost.Validate_ExeVersion is not null)
             {
@@ -147,11 +149,11 @@
                     Validation info
                 </div>
                 <div class="validation table">
-                    <div>Version:</div>
+                    <div>EXE version:</div>
                     <div class="mono" style="white-space: nowrap">@Ghost.Validate_ExeVersion</div>
                     @if (Ghost.Validate_ExeChecksum != 0)
                     {
-                        <div>Checksum:</div>
+                        <div>EXE checksum:</div>
                         <div class="mono">@Ghost.Validate_ExeChecksum</div>
                     }
                     @if (!string.IsNullOrEmpty(Ghost.Validate_RaceSettings))
@@ -168,6 +170,11 @@
                     {
                         <div>Title:</div>
                         <div class="mono">@Ghost.Validate_TitleId</div>
+                    }
+                    @if (Ghost.Validate_TitleChecksum is not null)
+                    {
+                        <div>Title checksum:</div>
+                        <div class="mono">@Ghost.Validate_TitleChecksum</div>
                     }
                     @if (Ghost.Validate_OsKind != 0)
                     {
