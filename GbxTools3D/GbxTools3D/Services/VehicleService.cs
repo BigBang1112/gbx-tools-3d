@@ -120,13 +120,13 @@ internal sealed class VehicleService
             }
             else
             {
-                if (modelNode.DefaultSkinFile is null)
+                if (modelNode.References.DefaultSkin.File is not { } defaultSkinFile)
                 {
                     logger.LogWarning("Vehicle {Vehicle} has no default skin file, cannot create any solid, skipping", modelNode.Ident.Id);
                     continue;
                 }
 
-                var skinPath = modelNode.DefaultSkinFile.GetFullPath();
+                var skinPath = defaultSkinFile.GetFullPath();
 
                 // this is to avoid usage of MainBody.Mesh.gbx which has complicated bone logic
                 if (gameVersion == GameVersion.MP4)
@@ -360,7 +360,7 @@ internal sealed class VehicleService
                 await db.Vehicles.AddAsync(vehicle, cancellationToken);
             }
 
-            if (modelNode.Cameras?.ElementAtOrDefault(1)?.Node is CGameControlCameraTarget camera2)
+            if (modelNode.Cameras?.ElementAtOrDefault(1) is CGameControlCameraTarget camera2)
             {
                 if (camera2 is CGameControlCameraTrackManiaRace3 cam)
                 {

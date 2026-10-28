@@ -83,7 +83,7 @@ internal sealed class MaterialService
                 continue;
             }
             
-            var path = Path.GetRelativePath(gamePath, parentNode.ShaderFile?.GetFullPath() ?? throw new Exception("Shader has instance but no file"));
+            var path = Path.GetRelativePath(gamePath, parentNode.References.Shader.File?.GetFullPath() ?? throw new Exception("Shader has instance but no file"));
             
             if (!alreadyProcessedShaders.TryGetValue(path, out var shaderMaterial))
             {
@@ -153,7 +153,7 @@ internal sealed class MaterialService
                     continue;
                 }
 
-                ProcessTexture(gamePath, gameVersion, texture, bitmap.TextureFile, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
+                ProcessTexture(gamePath, gameVersion, texture, bitmap.References.Texture.File, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
             }
                 
             material.Textures = textures.ToImmutable();
@@ -168,7 +168,7 @@ internal sealed class MaterialService
                 // lookup into shader (SportCar situation)
                 var pc0 = node.DeviceMaterials[0].Shader1 as CPlugShaderApply;
 
-                if (pc0?.BitmapAddresses?.Length > 0)
+                if (pc0?.BitmapAddresses?.Count > 0)
                 {
                     var bitmapAddress = pc0.BitmapAddresses[0];
 
@@ -176,7 +176,7 @@ internal sealed class MaterialService
                     {
                         var textures = ImmutableDictionary.CreateBuilder<string, string>();
 
-                        ProcessTexture(gamePath, gameVersion, bitmapAddress.Bitmap, bitmapAddress.BitmapFile, "Diffuse", textures, alreadyProcessedTexturePaths, cancellationToken);
+                        ProcessTexture(gamePath, gameVersion, bitmapAddress.Bitmap, bitmapAddress.References.Bitmap.File, "Diffuse", textures, alreadyProcessedTexturePaths, cancellationToken);
 
                         material.Textures = textures.ToImmutable();
                     }
@@ -251,7 +251,7 @@ internal sealed class MaterialService
         var textureRelativePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(textureFullPath, null));
         textures.Add(textureName, textureRelativePath);
 
-        var imageFullPath = texture?.ImageFile?.GetFullPath();
+        var imageFullPath = texture?.References.Image.File?.GetFullPath();
         if (imageFullPath is null)
         {
             return;

@@ -210,12 +210,21 @@ public class MeshSerializer
                 if (solid2.MaterialIds?.Length > 0)
                 {
                     var materialName = solid2.MaterialIds[shadedGeom.MaterialIndex];
-                    subTree.ShaderFile = materialName is null ? null : new GbxRefTableFile(new(), 0, false, materialName);
+                    subTree.References.Shader.Descriptor = materialName is null ? null : new GbxRefTableFile(new(), 0, false, materialName);
                 }
-                else if (solid2.Materials?.Length > 0)
+                else if (solid2.Materials?.Count > 0)
                 {
-                    subTree.Shader = solid2.Materials[shadedGeom.MaterialIndex].Node;
-                    subTree.ShaderFile = solid2.Materials[shadedGeom.MaterialIndex].File;
+                    var material = solid2.Materials.Get(shadedGeom.MaterialIndex);
+
+                    // sharing the descriptor also shares its resolved node
+                    if (material.Descriptor is null)
+                    {
+                        subTree.Shader = material.Node;
+                    }
+                    else
+                    {
+                        subTree.References.Shader.Descriptor = material.Descriptor;
+                    }
                 }
                 else
                 {
@@ -267,7 +276,7 @@ public class MeshSerializer
             }
             else
             {
-                WriteMaterial(w, tree.Shader as CPlugMaterial, tree.ShaderFile, tree.Shader as CPlugShaderApply, gamePath);
+                WriteMaterial(w, tree.Shader as CPlugMaterial, tree.References.Shader.File, tree.Shader as CPlugShaderApply, gamePath);
             }
         }
 
@@ -521,10 +530,10 @@ public class MeshSerializer
 
         w.Write7BitEncodedInt(pickedLevels.Count);
 
-        foreach (var (distance, tree) in pickedLevels)
+        foreach (var level in pickedLevels)
         {
-            w.Write(distance);
-            WriteTree(w, tree, gamePath);
+            w.Write(level.FarZ);
+            WriteTree(w, level.Tree, gamePath);
         }
     }
 
@@ -539,7 +548,8 @@ public class MeshSerializer
 
         w.Write(materialName);
 
-        var shaderName = material?.ShaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(material.ShaderFile.GetFullPath(), null));
+        var shaderFile = material?.References.Shader.File;
+        var shaderName = shaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(shaderFile.GetFullPath(), null));
 
         if (shaderName == Path.Combine("Techno", "Media", "Material", "TDiff PX2 Trans NormY PC3only")
             || shaderName == Path.Combine("Techno", "Media", "Material", "TAdd Night"))

@@ -4,6 +4,7 @@ using GbxTools3D.External;
 using GbxTools3D.Models;
 using ManiaAPI.TMX;
 using System.Collections.Immutable;
+using MxSite = GbxTools3D.Enums.MxSite;
 
 namespace GbxTools3D.Services;
 

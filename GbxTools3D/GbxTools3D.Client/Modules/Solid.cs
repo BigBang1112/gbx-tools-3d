@@ -711,7 +711,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
 
         if (plugTree.Visual is CPlugVisualIndexedTriangles visual)
         {
-            var materialName = GbxPath.ChangeExtension(plugTree.ShaderFile?.FilePath, null);
+            var materialName = GbxPath.ChangeExtension(plugTree.References.Shader.File?.FilePath, null);
 
             if (materialName is null)
             {
@@ -837,12 +837,12 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
             return customMaterials[materialIndex].MaterialUserInst?.Link ?? "";
         }
 
-        if (solid.Materials is { Length: > 0 } materialsArray)
+        if (solid.Materials is { Count: > 0 } materialsArray)
         {
-            return GbxPath.GetFileNameWithoutExtension(materialsArray[materialIndex].File?.FilePath) ?? "";
+            return GbxPath.GetFileNameWithoutExtension(materialsArray.Get(materialIndex).File?.FilePath) ?? "";
         }
 
-        if (solid.MaterialInsts is { Length: > 0 } materialInsts)
+        if (solid.MaterialInsts is { Count: > 0 } materialInsts)
         {
             return materialInsts[materialIndex].Link ?? "";
         }

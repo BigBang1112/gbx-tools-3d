@@ -6,7 +6,7 @@ internal static class CPlugSolid2ModelExtensions
 {
     public static void PopulateUsedMaterials(this CPlugSolid2Model solid2, Dictionary<string, CPlugMaterial?> materials, string relativeTo)
     {
-        foreach (var extMat in solid2.Materials ?? [])
+        foreach (var extMat in solid2.Materials?.EnumerateReferences() ?? [])
         {
             if (extMat.File is null)
             {

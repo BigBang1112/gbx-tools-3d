@@ -7,14 +7,15 @@ internal static class CSceneMobilExtensions
 {
     public static CPlugSolid? GetSolid(this CSceneMobil mobil, string relativeTo, out string? relativePath)
     {
-        if (mobil.Item?.Solid?.Tree is not CPlugSolid solid)
+        if (mobil.Item?.Solid?.Model is not CPlugSolid solid)
         {
             relativePath = null;
             return null;
         }
 
-        relativePath = mobil.Item.Solid.TreeFile is null ? null
-            : Path.GetRelativePath(relativeTo, mobil.Item.Solid.TreeFile.GetFullPath());
+        var modelFile = mobil.Item.Solid.References.Model.File;
+        relativePath = modelFile is null ? null
+            : Path.GetRelativePath(relativeTo, modelFile.GetFullPath());
         return solid;
     }
 }

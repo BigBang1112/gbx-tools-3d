@@ -27,9 +27,10 @@ internal sealed class SoundService
         Dictionary<string, Sound> sounds,
         CancellationToken cancellationToken)
     {
-        var soundPath = soundSource.PlugSoundFile is null
+        var plugSoundFile = soundSource.References.PlugSound.File;
+        var soundPath = plugSoundFile is null
             ? null
-            : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(soundSource.PlugSoundFile.GetFullPath(), null));
+            : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(plugSoundFile.GetFullPath(), null));
         
         if (soundSource.PlugSound is not CPlugSound plugSound)
         {
@@ -57,7 +58,7 @@ internal sealed class SoundService
 
         var sound = await db.Sounds.FirstOrDefaultAsync(x =>
             x.GameVersion == gameVersion && x.Path == soundPath, cancellationToken) ?? sounds.GetValueOrDefault(soundPath);
-        var rawSoundFilePath = plugSound.PlugFileFile?.GetFullPath();
+        var rawSoundFilePath = plugSound.References.PlugFile.File?.GetFullPath();
 
         if (!File.Exists(rawSoundFilePath))
         {

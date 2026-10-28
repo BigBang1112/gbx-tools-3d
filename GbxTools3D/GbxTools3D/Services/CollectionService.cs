@@ -111,9 +111,10 @@ internal sealed class CollectionService
             collection.DefaultZoneBlock = collectionNode.DefaultZoneId;
             collection.SortIndex = collectionNode.SortIndex;
 
-            var iconTextureRelativePath = collectionNode.IconFidFile is null
+            var iconFidFile = collectionNode.References.IconFid.File;
+            var iconTextureRelativePath = iconFidFile is null
                 ? collectionNode.IconFullName?.Replace('\\', Path.DirectorySeparatorChar)
-                : Path.GetRelativePath(gamePath, collectionNode.IconFidFile.GetFullPath());
+                : Path.GetRelativePath(gamePath, iconFidFile.GetFullPath());
 
             if (iconTextureRelativePath is not null)
             {
@@ -127,7 +128,7 @@ internal sealed class CollectionService
                 collection.Icon.UpdatedAt = DateTime.UtcNow;
 
                 var iconFid = await Gbx.ParseNodeAsync<CPlugBitmap>(Path.Combine(gamePath, iconTextureRelativePath), cancellationToken: cancellationToken);
-                var imageFullPath = iconFid?.ImageFile?.GetFullPath();
+                var imageFullPath = iconFid?.References.Image.File?.GetFullPath();
 
                 if (imageFullPath is not null)
                 {
@@ -150,7 +151,7 @@ internal sealed class CollectionService
                 collection.Icon = null;
             }
 
-            if (collectionNode.IconSmallFidFile is not null)
+            if (collectionNode.References.IconSmallFid.File is { } iconSmallFidFile)
             {
                 if (collection.IconSmall is null)
                 {
@@ -158,10 +159,10 @@ internal sealed class CollectionService
                     await db.Icons.AddAsync(collection.IconSmall, cancellationToken);
                 }
 
-                collection.IconSmall.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(collectionNode.IconSmallFidFile.GetFullPath(), null));
+                collection.IconSmall.TexturePath = Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(iconSmallFidFile.GetFullPath(), null));
                 collection.IconSmall.UpdatedAt = DateTime.UtcNow;
 
-                var imageFullPath = collectionNode.IconSmallFid?.ImageFile?.GetFullPath();
+                var imageFullPath = collectionNode.IconSmallFid?.References.Image.File?.GetFullPath();
 
                 if (imageFullPath is not null)
                 {
@@ -212,9 +213,10 @@ internal sealed class CollectionService
                     throw new Exception("Decoration size is null");
                 }
 
-                var sceneName = decorationNode.DecoSize.SceneFile is null
+                var sceneFile = decorationNode.DecoSize.References.Scene.File;
+                var sceneName = sceneFile is null
                     ? string.Empty
-                    : GbxPath.ChangeExtension(Path.GetRelativePath(gamePath, decorationNode.DecoSize.SceneFile.GetFullPath()), null);
+                    : GbxPath.ChangeExtension(Path.GetRelativePath(gamePath, sceneFile.GetFullPath()), null);
 
                 var decorationSize = await db.DecorationSizes.FirstOrDefaultAsync(x =>
                     x.CollectionId == collection.Id // not verified enough if it makes sense
@@ -291,25 +293,25 @@ internal sealed class CollectionService
                     }
 
                     var lights = decorationNode.DecoSize.Scene.Lights ?? [];
-                    for (var i = 0; i < lights.Length; i++)
+                    for (var i = 0; i < lights.Count; i++)
                     {
                         var light = lights[i];
                         var location = decorationNode.DecoSize.Scene.LightLocations?[i].U02 ?? new Iso4();
 
-                        if (light.Node is null)
+                        if (light is null)
                         {
                             continue;
                         }
 
-                        var type = light.Node.Light?.MainGxLight switch
+                        var type = light.Light?.MainGxLight switch
                         {
                             GxLightAmbient => "Ambient",
                             GxLightDirectional => "Directional",
                             null => throw new Exception("Light is null"),
-                            _ => throw new Exception($"Unknown light type ({light.Node.Light.MainGxLight.GetType()})")
+                            _ => throw new Exception($"Unknown light type ({light.Light.MainGxLight.GetType()})")
                         };
 
-                        var gxLight = light.Node.Light.MainGxLight;
+                        var gxLight = light.Light.MainGxLight;
                         var gxLightAmbient = gxLight as GxLightAmbient;
 
                         scene.Add(new SceneObject
@@ -317,7 +319,7 @@ internal sealed class CollectionService
                             Light = new Light
                             {
                                 Type = type,
-                                IsActive = light.Node.IsActive,
+                                IsActive = light.IsActive,
                                 Color = gxLight.Color,
                                 Intensity = gxLight.Intensity,
                                 FlareIntensity = gxLight.FlareIntensity,
@@ -330,7 +332,7 @@ internal sealed class CollectionService
                     }
 
                     var objects = decorationNode.DecoSize.Scene.Objects ?? [];
-                    for (var i = 0; i < objects.Length; i++)
+                    for (var i = 0; i < objects.Count; i++)
                     {
                         var sceneObject = objects[i];
                         var location = decorationNode.DecoSize.Scene.ObjectLocations?[i] ?? new Iso4();
@@ -477,16 +479,18 @@ internal sealed class CollectionService
                     decoration.Remap = decorationNode.DecoMood.RemapFolder;
                 }
 
-                if (decorationNode.TerrainModifierCovered is null && decorationNode.TerrainModifierCoveredFile is not null)
+                var terrainModifierCoveredFile = decorationNode.References.TerrainModifierCovered.File;
+
+                if (decorationNode.TerrainModifierCovered is null && terrainModifierCoveredFile is not null)
                 {
-                    logger.LogWarning("Decoration terrain modifier covered is null ({File}) in collection {Collection}. It may be corrupted or not supported.", decorationNode.TerrainModifierCoveredFile, collection.Name);
+                    logger.LogWarning("Decoration terrain modifier covered is null ({File}) in collection {Collection}. It may be corrupted or not supported.", terrainModifierCoveredFile, collection.Name);
                 }
 
-                if (decorationNode.TerrainModifierCovered is not null && decorationNode.TerrainModifierCoveredFile is not null)
+                if (decorationNode.TerrainModifierCovered is not null && terrainModifierCoveredFile is not null)
                 {
                     decoration.TerrainModifierCovered = await ProcessTerrainModifierAsync(
-                        decorationNode.TerrainModifierCovered, 
-                        decorationNode.TerrainModifierCoveredFile, 
+                        decorationNode.TerrainModifierCovered,
+                        terrainModifierCoveredFile,
                         terrainModifierDict, 
                         collection, 
                         cancellationToken);
@@ -495,15 +499,15 @@ internal sealed class CollectionService
             
             logger.LogInformation("Checking block changes...");
 
-            var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone.Node switch
+            var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone switch
             {
                 CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ?? Guid.NewGuid().ToString() /* throw new Exception("BlockInfoFrontier is null")*/,
                 CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ?? Guid.NewGuid().ToString() /*throw new Exception("BlockInfoFlat is null") some zones are corrupted */,
                 CGameCtnZoneTransition transition => transition.BlockInfoTransition?.Ident.Id ?? Guid.NewGuid().ToString() /*?? throw new Exception("BlockInfoTransition is null") some zones are corrupted */,
                 _ => Guid.NewGuid().ToString()
-            }, x => x.Node) ?? [];
+            }, x => (CGameCtnZone?)x) ?? [];
 
-            foreach (var terrainModifierExt in collectionNode.ReplacementTerrainModifiers ?? [])
+            foreach (var terrainModifierExt in collectionNode.ReplacementTerrainModifiers?.EnumerateReferences() ?? [])
             {
                 if (terrainModifierExt.Node is null && terrainModifierExt.File is not null)
                 {
@@ -635,7 +639,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromSolidFidAsync(
                         blockInfoNode.VariantBaseAir.HelperSolidFid,
-                        blockInfoNode.VariantBaseAir.HelperSolidFidFile,
+                        blockInfoNode.VariantBaseAir.References.HelperSolidFid.File,
                         gamePath,
                         $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|False|You're not helper here >:(",
                         cancellationToken);
@@ -652,7 +656,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromSolidFidAsync(
                         blockInfoNode.VariantBaseGround.HelperSolidFid,
-                        blockInfoNode.VariantBaseGround.HelperSolidFidFile,
+                        blockInfoNode.VariantBaseGround.References.HelperSolidFid.File,
                         gamePath,
                         $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|True|You're not helper here >:(",
                         cancellationToken);
@@ -670,7 +674,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromSolidFidAsync(
                         waypointTriggerSolidAir,
-                        blockInfoNode.VariantBaseAir.WaypointTriggerSolidFile,
+                        blockInfoNode.VariantBaseAir.References.WaypointTriggerSolid.File,
                         gamePath,
                         $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|False|Way to go bois",
                         cancellationToken);
@@ -679,7 +683,7 @@ internal sealed class CollectionService
                 {
                     await GetOrCreateMeshFromSolidFidAsync(
                         waypointTriggerSolidGround,
-                        blockInfoNode.VariantBaseGround.WaypointTriggerSolidFile,
+                        blockInfoNode.VariantBaseGround.References.WaypointTriggerSolid.File,
                         gamePath,
                         $"GbxTools3D|Solid|{gameFolder}|{collection.Name}|{blockName}|True|Way to go bois",
                         cancellationToken);
@@ -739,7 +743,7 @@ internal sealed class CollectionService
 
         if (terrainModifier.Remapping is null)
         {
-            logger.LogWarning("Terrain modifier remapping is null ({File}) in collection {Collection}. It may be corrupted or not supported.", terrainModifier.RemappingFile, collection.Name);
+            logger.LogWarning("Terrain modifier remapping is null ({File}) in collection {Collection}. It may be corrupted or not supported.", terrainModifier.References.Remapping.File, collection.Name);
             return null;
         }
 
@@ -775,7 +779,7 @@ internal sealed class CollectionService
     }
 
     private async Task ProcessOldBlockVariantsAsync(
-        External<CSceneMobil>[][]? mobils,
+        NodeRefList<CSceneMobil>[]? mobils,
         string gamePath,
         GameVersion gameVersion,
         string collectionName,
@@ -795,9 +799,9 @@ internal sealed class CollectionService
 
         for (var i = 0; i < mobils.Length; i++)
         {
-            for (var j = 0; j < mobils[i].Length; j++)
+            for (var j = 0; j < mobils[i].Count; j++)
             {
-                var mobil = mobils[i][j];
+                var mobil = mobils[i].Get(j);
                 var variant = mobil.Node;
 
                 if (variant is null)
@@ -846,12 +850,14 @@ internal sealed class CollectionService
                 var k = 0;
                 foreach (var link in variant.ObjectLink ?? [])
                 {
-                    if (link.Mobil is null)
+                    var linkMobil = link?.Mobil?.Model ?? link?.Mobil?.Mobil;
+
+                    if (link is null || linkMobil is null)
                     {
                         continue;
                     }
-                    
-                    var objectLinkSolid = link.Mobil.GetSolid(gamePath, out var objectLinkSolidPath);
+
+                    var objectLinkSolid = linkMobil.GetSolid(gamePath, out var objectLinkSolidPath);
                     
                     if (objectLinkSolid is null)
                     {
@@ -882,12 +888,13 @@ internal sealed class CollectionService
                     
                     objectLink.Variant = blockVariant;
                     objectLink.Index = k;
-                    objectLink.Path = link.MobilFile is null
+                    var linkMobilFile = link.Mobil?.References.Model.File ?? link.Mobil?.References.Mobil.File;
+                    objectLink.Path = linkMobilFile is null
                         ? null
-                        : Path.GetRelativePath(gamePath, link.MobilFile.GetFullPath());
+                        : Path.GetRelativePath(gamePath, linkMobilFile.GetFullPath());
                     objectLink.Loc = link.RelativeLocation;
 
-                    var soundLink = link.Mobil.ObjectLink?.FirstOrDefault(x => x.Object is CSceneSoundSource { SoundSource: not null });
+                    var soundLink = linkMobil.ObjectLink?.FirstOrDefault(x => x.Object is CSceneSoundSource { SoundSource: not null });
 
                     if (soundLink is not null)
                     {
@@ -922,7 +929,7 @@ internal sealed class CollectionService
 
         for (var i = 0; i < variant.Mobils.Length; i++)
         {
-            for (var j = 0; j < variant.Mobils[i].Length; j++)
+            for (var j = 0; j < variant.Mobils[i].Count; j++)
             {
                 var mobil = variant.Mobils[i][j];
 
@@ -936,9 +943,10 @@ internal sealed class CollectionService
                 Mesh mesh;
                 if (mobil.SolidFid is CPlugSolid solid)
                 {
-                    var path = mobil.SolidFidFile is null
+                    var solidFidFile = mobil.References.SolidFid.File;
+                    var path = solidFidFile is null
                         ? null
-                        : Path.GetRelativePath(gamePath, mobil.SolidFidFile.GetFullPath());
+                        : Path.GetRelativePath(gamePath, solidFidFile.GetFullPath());
 
                     solid.PopulateUsedMaterials(usedMaterials, gamePath);
 
@@ -946,9 +954,10 @@ internal sealed class CollectionService
                 }
                 else if (mobil.PrefabFid is CPlugPrefab prefab)
                 {
-                    var path = mobil.PrefabFidFile is null
+                    var prefabFidFile = mobil.References.PrefabFid.File;
+                    var path = prefabFidFile is null
                         ? null
-                        : Path.GetRelativePath(gamePath, mobil.PrefabFidFile.GetFullPath());
+                        : Path.GetRelativePath(gamePath, prefabFidFile.GetFullPath());
 
                     prefab.PopulateUsedMaterials(usedMaterials, gamePath);
 
@@ -1010,11 +1019,11 @@ internal sealed class CollectionService
         return new BlockUnit
         {
             Offset = (Byte3)unit.RelativeOffset,
-            Clips = unit.Clips?.Any(x => x.Node is not null) == true
+            Clips = unit.Clips?.Any(x => x is not null) == true
                 ? unit.Clips.Select((x, i) => new BlockClip
                 {
                     Dir = (ClipDir)i,
-                    Id = x.Node?.Ident.Id ?? ""
+                    Id = x?.Ident.Id ?? ""
                 }).Where(x => !string.IsNullOrEmpty(x.Id)).ToImmutableArray()
                 : null,
             AcceptPylons = unit.AcceptPylons == 255 ? null : (byte)unit.AcceptPylons,
