@@ -5,5 +5,6 @@ public static class EndpointExtensions
     public static void MapEndpoints(this IEndpointRouteBuilder app)
     {
         ApiEndpoint.Map(app.MapGroup("/api"));
+        BlenderEndpoint.Map(app.MapGroup("/blender"));
     }
 }

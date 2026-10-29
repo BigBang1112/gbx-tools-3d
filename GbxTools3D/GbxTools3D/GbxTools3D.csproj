@@ -12,6 +12,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Tomlyn" Version="2.10.1" />
         <ProjectReference Include="..\GbxTools3D.Client\GbxTools3D.Client.csproj" />
         <PackageReference Include="GBX.NET.Imaging.ImageSharp" Version="1.*" />
         <PackageReference Include="ManiaAPI.ManiaPlanetAPI" Version="2.7.0" />

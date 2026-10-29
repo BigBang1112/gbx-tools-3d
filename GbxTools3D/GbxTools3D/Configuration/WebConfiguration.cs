@@ -51,6 +51,11 @@ public static class WebConfiguration
             client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("Google Drive"));
         }).AddStandardResilienceHandler();
 
+        services.AddHttpClient("github", client =>
+        {
+            client.DefaultRequestHeaders.UserAgent.ParseAdd(GetUserAgent("GitHub"));
+        }).AddStandardResilienceHandler();
+
         services.AddTMX();
 
         services.AddManiaPlanetAPI(options =>
