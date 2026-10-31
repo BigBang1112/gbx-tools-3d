@@ -1,0 +1,151 @@
+﻿.module {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    font-weight: bold;
+}
+
+.input-display {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    align-items: center;
+    justify-items: center;
+    gap: 6px;
+    font-family: monospace;
+    user-select: none;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.arrow {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border: 2px solid #666;
+    border-radius: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    color: #ccc;
+    background-color: #222;
+    overflow: hidden;
+}
+
+.arrow .key {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 0; right: 0;
+    transition: none;
+}
+
+    .key-fill-main-on {
+        z-index: 1;
+        background-color: #00bfff;
+        transition: none;
+    }
+
+    .key-fill-main-off {
+        z-index: 1;
+        background-color: #5f5f5f;
+        transition: none;
+    }
+
+    .key-fill-main-on-inactive {
+        z-index: 2;
+        background-color: #005f7f;
+        transition: none;
+    }
+
+    .key-fill-main-off-inactive {
+        z-index: 2;
+        background-color: #2f2f2f;
+        transition: none;
+    }
+
+
+    .key-fill-brake-on {
+        z-index: 1;
+        background-color: #ff3333;
+        transition: none;
+    }
+
+    .key-fill-brake-off {
+        z-index: 1;
+        background-color: #5f5f5f;
+        transition: none;
+    }
+
+    .key-fill-brake-on-inactive {
+        z-index: 2;
+        background-color: #7f1919;
+        transition: none;
+    }
+
+    .key-fill-brake-off-inactive {
+        z-index: 2;
+        background-color: #2f2f2f;
+        transition: none;
+    }
+
+
+.arrow span {
+    position: relative;
+    z-index: 3;
+    pointer-events: none;
+}
+
+
+.spacer {
+    width: 48px;
+    height: 48px;
+    border: 2px solid #666;
+    border-radius: 6px;
+    visibility: hidden;
+}
+
+
+.triangle-container {
+    position: relative;
+    width: 96px;
+    height: 96px;
+}
+
+.triangle {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    fill: none;
+    stroke-width: 2;
+}
+
+    .triangle.base {
+        fill: #222;
+        stroke: none;
+    }
+
+    .triangle.fill {
+        fill: #00bfff;
+        stroke: none;
+        transition: none;
+    }
+
+    .triangle.fill-alt {
+        fill: #005f7f;
+        stroke: none;
+        transition: none;
+    }
+
+    .triangle.outline {
+        stroke: #666;
+        fill: none;
+    }
+

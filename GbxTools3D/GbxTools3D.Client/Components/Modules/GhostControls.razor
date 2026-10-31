@@ -3,6 +3,7 @@
 
 @if (RendererInfo.IsInteractive)
 {
+    <InputDisplay Ghost="CurrentGhost" OverrideInputs="overrideInputs" @ref="inputDisplay"></InputDisplay>
     <Checkpoint UseHundredths="UseHundredths" @ref="checkpoint"></Checkpoint>
     <Playback OnPlay="Play" OnPause="Pause" OnRewind="Rewind" OnSpeedChange="SetSpeed" Description="@GetPlaybackDescription()" UseHundredths="UseHundredths" @ref="playback"></Playback>
     <div class="panels small left">
