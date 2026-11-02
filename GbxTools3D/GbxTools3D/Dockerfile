@@ -11,7 +11,9 @@ FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS publish
 ARG BUILD_CONFIGURATION=Release
 ARG TARGETARCH
 ARG APPNAME=GbxTools3D
-RUN apt-get update && apt-get install -y git python3
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends git python3 \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /src
 RUN dotnet workload install wasm-tools
 
@@ -24,6 +26,8 @@ RUN dotnet restore $APPNAME/$APPNAME/$APPNAME.csproj -a $TARGETARCH
 # copy and publish app and libraries
 COPY $APPNAME/$APPNAME $APPNAME/$APPNAME
 COPY $APPNAME/$APPNAME.Client $APPNAME/$APPNAME.Client
+# SimplestGitSourceGenerator reads commits, tags, and the remote during compilation.
+COPY .git .git
 RUN dotnet publish $APPNAME/$APPNAME -c $BUILD_CONFIGURATION -a $TARGETARCH -o /app /p:UseAppHost=false --no-restore
 
 

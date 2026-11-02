@@ -24,7 +24,6 @@
 LICENSE
 README.md
 !**/.gitignore
-!.git/HEAD
-!.git/config
-!.git/packed-refs
-!.git/refs/heads/**
+# SimplestGitSourceGenerator needs the complete repository in the publish stage.
+!.git
+!.git/**
