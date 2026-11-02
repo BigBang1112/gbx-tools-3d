@@ -6,17 +6,17 @@
     align-items: center;
     border-radius: 5px;
     text-decoration: none;
-    color: white;
+    color: var(--color-text-primary);
     cursor: pointer;
     white-space: nowrap;
 }
 
     .item:hover {
-        background-color: #333;
+        background-color: var(--color-surface-hover);
     }
 
     .item.active {
-        background-color: #444;
+        background-color: var(--color-surface-active);
     }
 
 ul {
@@ -32,5 +32,5 @@ ul {
 }
 
 .description {
-    color: #888;
+    color: var(--color-text-secondary);
 }

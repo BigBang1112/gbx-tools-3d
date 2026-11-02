@@ -15,11 +15,11 @@
         }
 
             .catalog .games ::deep a:hover {
-                background-color: #333;
+                background-color: var(--color-surface-hover);
             }
 
             .catalog .games ::deep a.active {
-                background-color: #444;
+                background-color: var(--color-surface-active);
             }
 
             .catalog .games ::deep a img {
@@ -30,8 +30,8 @@
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        background-color: #1A1A1AAA;
-        border: 1px solid #333;
+        background-color: color-mix(in srgb, var(--color-input-bg) 67%, transparent);
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         padding: 5px;
     }
@@ -44,23 +44,23 @@
             padding: 10px;
             border-radius: 5px;
             text-decoration: none;
-            color: white;
+            color: var(--color-text-primary);
         }
 
             .catalog .collections ::deep a:hover {
-                background-color: #333;
+                background-color: var(--color-surface-hover);
             }
 
             .catalog .collections ::deep a.active {
-                background-color: #444;
+                background-color: var(--color-surface-active);
             }
 
     .catalog .assets {
         display: flex;
         flex-direction: column;
         flex: 1;
-        background-color: #1A1A1AAA;
-        border: 1px solid #333;
+        background-color: color-mix(in srgb, var(--color-input-bg) 67%, transparent);
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         overflow: hidden auto;
         font-size: 90%;
@@ -73,16 +73,16 @@
             align-items: center;
             border-radius: 5px;
             text-decoration: none;
-            color: white;
-            animation: fadeIn 0.3s;
+            color: var(--color-text-primary);
+            animation: reu-fade-in 0.3s;
         }
 
             .catalog .assets ::deep a:hover {
-                background-color: #333;
+                background-color: var(--color-surface-hover);
             }
 
             .catalog .assets ::deep a.active {
-                background-color: #444;
+                background-color: var(--color-surface-active);
             }
 
             .catalog .assets ::deep a img {

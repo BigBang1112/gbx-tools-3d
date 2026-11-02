@@ -35,7 +35,7 @@
 
 .uid {
     font-size: 60%;
-    color: #666;
+    color: var(--color-text-secondary);
     text-align: center;
     margin-top: 5px;
 }
@@ -54,22 +54,22 @@
     gap: 5px;
 }
 
-    .minimenu div {
+    .minimenu ::deep .reu-button {
         flex: 1;
     }
 
 .gas {
-    color: #0C0;
+    color: var(--color-green);
 }
 
 .brake {
-    color: #F44;
+    color: var(--color-red);
 }
 
 .release {
-    color: #FA0;
+    color: var(--color-input-release);
 }
 
 .turbo {
-    color: #FF0;
+    color: var(--color-input-turbo);
 }

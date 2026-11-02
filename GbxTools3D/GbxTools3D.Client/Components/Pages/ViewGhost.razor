@@ -12,7 +12,7 @@
 
 @if (IsDragAndDrop && Ghost is null)
 {
-    <div class="container">
+    <ReuContainer>
         <div class="navbar-fake-margin"></div>
         <h2 class="view">View a ghost</h2>
         <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
@@ -26,11 +26,11 @@
                         <option value="tmio">TM.IO</option>
                         <option value="url">URL</option>
                     </InputSelect>
-                    <button type="submit" class="button-generic">Load</button>
+                    <ReuButton type="submit">Load</ReuButton>
                 </EditForm>
             </div>
         }
-    </div>
+    </ReuContainer>
 }
 else
 {
@@ -43,7 +43,7 @@ else
         else
         {
             <div class="centered">
-                <Loader></Loader>
+                <ReuLoader></ReuLoader>
             </div>
         }
 

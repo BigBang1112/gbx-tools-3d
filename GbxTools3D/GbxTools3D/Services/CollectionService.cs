@@ -456,18 +456,25 @@ internal sealed class CollectionService
                         var fullFileWithoutExtension = GbxPath.ChangeExtension(extNode.File.GetFullPath(), null);
                         sounds[key] = Path.GetRelativePath(gamePath, fullFileWithoutExtension);
 
-                        if (extNode.Node is null)
+                        try
                         {
-                            continue;
-                        }
+                            if (extNode.Node is null)
+                            {
+                                continue;
+                            }
 
-                        await soundService.CreateOrUpdateSoundAsync(
-                            gamePath,
-                            gameVersion,
-                            extNode.Node,
-                            sounds[key],
-                            usedSounds,
-                            cancellationToken);
+                            await soundService.CreateOrUpdateSoundAsync(
+                                gamePath,
+                                gameVersion,
+                                extNode.Node,
+                                sounds[key],
+                                usedSounds,
+                                cancellationToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogError(ex, "Error processing sound {Sound} in collection {Collection}", sounds[key], collection.Name);
+                        }
                     }
                     
                     decoration.Musics = musics.ToImmutable();
@@ -488,18 +495,26 @@ internal sealed class CollectionService
 
                 if (decorationNode.TerrainModifierCovered is not null && terrainModifierCoveredFile is not null)
                 {
-                    decoration.TerrainModifierCovered = await ProcessTerrainModifierAsync(
-                        decorationNode.TerrainModifierCovered,
-                        terrainModifierCoveredFile,
-                        terrainModifierDict, 
-                        collection, 
-                        cancellationToken);
+                    try
+                    {
+                        decoration.TerrainModifierCovered = await ProcessTerrainModifierAsync(
+                            decorationNode.TerrainModifierCovered,
+                            terrainModifierCoveredFile,
+                            terrainModifierDict, 
+                            collection, 
+                            cancellationToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, "Failed to process terrain modifier {File} in collection {Collection}. It may be corrupted or not supported.", terrainModifierCoveredFile, collection.Name);
+                        continue;
+                    }
                 }
             }
             
             logger.LogInformation("Checking block changes...");
 
-            var zoneDict = collectionNode.CompleteListZoneList?.ToDictionary(zone => zone switch
+            var zoneDict = collectionNode.CompleteZoneList?.ToDictionary(zone => zone switch
             {
                 CGameCtnZoneFrontier frontier => frontier.BlockInfoFrontier?.Ident.Id ?? Guid.NewGuid().ToString() /* throw new Exception("BlockInfoFrontier is null")*/,
                 CGameCtnZoneFlat flat => flat.BlockInfoFlat?.Ident.Id ?? Guid.NewGuid().ToString() /*throw new Exception("BlockInfoFlat is null") some zones are corrupted */,
@@ -520,7 +535,15 @@ internal sealed class CollectionService
                     continue;
                 }
 
-                await ProcessTerrainModifierAsync(terrainModifierExt.Node, terrainModifierExt.File, terrainModifierDict, collection, cancellationToken);
+                try 
+                {
+                    await ProcessTerrainModifierAsync(terrainModifierExt.Node, terrainModifierExt.File, terrainModifierDict, collection, cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to process terrain modifier {File} in collection {Collection}. It may be corrupted or not supported.", terrainModifierExt.File, collection.Name);
+                    continue;
+                }
             }
 
             var terrainModifierLookup = terrainModifierDict

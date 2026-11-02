@@ -1,30 +1,26 @@
-:root {
+:root,
+[data-theme="dark"],
+.reu-theme-dark {
     --blue-color: #08F;
     --red-color: #D10;
     --yellow-color: #CA0;
+    --color-input-release: #FA0;
+    --color-input-turbo: #FF0;
+}
+
+[data-theme="light"],
+.reu-theme-light {
+    --blue-color: #0669C7;
+    --red-color: #B91000;
+    --yellow-color: #896F00;
+    --color-input-release: #996000;
+    --color-input-turbo: #806C00;
 }
 
 html, body {
-    background-color: #111;
-    font-weight: 400;
-    margin: 0;
-    padding: 0;
-    font-size: 18px;
-    color: white;
     background-size: cover;
     background-position: center center;
     background-attachment: fixed;
-    overflow-x: hidden;
-}
-
-@font-face {
-    font-family: "Chivo Mono";
-    src: url('ChivoMono-VariableFont_wght.ttf');
-}
-
-.mono {
-    font-family: "Chivo Mono", monospace;
-    font-style: normal;
 }
 
 .black-background {
@@ -44,6 +40,12 @@ html, body {
     top: 50%;
     transform: translate(-50%, -50%);
     z-index: 20;
+}
+
+.black-background > .centered,
+.black-background-fade > .centered {
+    --color-loader: white;
+    color: white;
 }
 
 @keyframes fadeToBlack {
@@ -68,93 +70,28 @@ ul {
         list-style-type: none;
     }
 
-button {
-    all: unset;
-}
-
 section.scene {
     width: 100%;
     background: black;
-    border-bottom: 2px solid #333;
+    color: var(--color-text-primary);
+    border-bottom: 2px solid var(--color-border);
 }
 
 section.content {
     width: 100%;
-    background: #111;
+    background: var(--color-bg);
 }
-
-.container {
-    padding: 1rem;
-    width: 75%;
-    margin-right: auto;
-    margin-left: auto;
-    transition: width 0.2s ease, padding 0.2s ease;
-}
-
-@media (max-width: 850px) {
-    .container {
-        width: calc(100% - 3rem);
-    }
-}
-
-
-.button-generic {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    background: #2225;
-    border-bottom: 2px solid #FFF3;
-    border-radius: 4px;
-    text-decoration: none;
-    transition: background-color 0.05s ease;
-    padding: 10px 5px;
-    cursor: pointer;
-}
-
-    .button-generic:hover {
-        background-color: #3338;
-        color: white;
-        text-decoration: none;
-    }
-
-    .button-generic.active {
-        background-color: #333C;
-    }
-
-    .button-generic.disabled {
-        background-color: #3334;
-        color: #888;
-        cursor: not-allowed;
-    }
-
-    .button-generic.spaced {
-        padding: 10px 15px;
-    }
 
 .navbar-fake-margin {
     height: 5.5rem;
 }
 
-input[type=text], input.text, select {
-    border: 1px solid #333;
-    font-family: inherit;
-    border-radius: 5px;
-    color: inherit;
-    padding: 2px 10px;
+input[type=text], input.text {
     height: 32px;
-    background-color: #1A1A1A;
-    font-size: inherit;
 }
-
-    input[type=text]:hover, input.text:hover, select:hover {
-        border-color: #444;
-        background-color: #222;
-    }
 
 select {
     height: 38px;
-    cursor: pointer;
 }
 
 .view-external {
@@ -220,9 +157,9 @@ h2.view {
 
 .panel {
     box-sizing: border-box;
-    background-color: #111D;
+    background-color: var(--color-overlay-bg);
     backdrop-filter: blur(10px);
-    border: 2px solid #222D;
+    border: 2px solid var(--color-border);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -233,13 +170,13 @@ h2.view {
     .panel .opener {
         display: flex;
         position: absolute;
-        background-color: #111D;
-        border: 2px solid #222D;
+        background-color: var(--color-overlay-bg);
+        border: 2px solid var(--color-border);
         cursor: pointer;
     }
 
         .panel .opener:hover {
-            background-color: #222D;
+            background-color: var(--color-surface-hover);
         }
 
     .panel.left {
@@ -272,8 +209,8 @@ h2.view {
         display: flex;
         flex-direction: column;
         flex: 1;
-        background-color: #1A1A1ADD;
-        border: 1px solid #333;
+        background-color: color-mix(in srgb, var(--color-input-bg) 87%, transparent);
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         overflow: hidden auto;
     }
@@ -285,39 +222,21 @@ h2.view {
         align-items: center;
         border-radius: 5px;
         text-decoration: none;
-        color: white;
-        animation: fadeIn 0.3s;
+        color: var(--color-text-primary);
+        animation: reu-fade-in 0.3s;
         cursor: pointer;
     }
 
         .panel .list .item:hover {
-            background-color: #333;
+            background-color: var(--color-surface-hover);
         }
 
         .panel .list .item.active {
-            background-color: #444;
+            background-color: var(--color-surface-active);
         }
 
-a {
-    color: #26A8FF;
-    text-decoration: none;
-}
-
-    a:hover {
-        color: #47B5FF;
-        text-decoration: underline;
-    }
-
 .valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-}
-
-.invalid {
-    outline: 1px solid #e50000;
-}
-
-.validation-message {
-    color: #e50000;
+    outline: 1px solid var(--color-green);
 }
 
 .blazor-error-boundary {
@@ -330,19 +249,6 @@ a {
         content: "An error has occurred."
     }
 
-.darker-border-checkbox.form-check-input {
-    border-color: #929292;
-}
-
-.form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-    color: var(--bs-secondary-color);
-    text-align: end;
-}
-
-.form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-    text-align: start;
-}
-
 #components-reconnect-modal {
     display: none;
 }
@@ -351,7 +257,7 @@ a {
     #components-reconnect-modal.components-reconnect-failed,
     #components-reconnect-modal.components-reconnect-rejected {
         display: flex;
-        background-color: #111C;
+        background-color: var(--color-modal-bg);
         text-align: center;
         position: fixed;
         top: 0;
@@ -360,18 +266,20 @@ a {
         height: calc(100vh - 4rem);
         align-items: center;
         justify-content: center;
-        animation: fadeIn 0.5s;
+        animation: reu-fade-in 0.5s;
         flex-direction: column;
         gap: 20px;
         padding: 2rem;
     }
 
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
+.reu-mono {
+    font-weight: 400 !important;
+}
 
-    to {
-        opacity: 1;
-    }
+:is([data-theme="light"], .reu-theme-light) :is(.navbar, .panel, .player) img[src^="icons/ui/"]:not([src$="/blender.svg"]) {
+    filter: invert(1);
+}
+
+.footer-buttons {
+    gap: 0.5rem;
 }

@@ -1,43 +1,22 @@
-﻿@implements IAsyncDisposable
-@inject IJSRuntime JS
-
-<div class="upload-area @(dragged ? "drag" : "")" style="@(Height.HasValue ? $"height: {Height.Value}px" : ""); font-size: @(FontSize)%;">
-    @if (RendererInfo.IsInteractive)
-    {
-        @if (uploadFileName is null)
-        {
-            <span>Drag & Drop 
-                @if (Extensions?.Length > 0)
+﻿<div class="gbx-upload" style="@(Height.HasValue ? $"height: {Height.Value}px;" : "") font-size: @(FontSize)%;">
+    <ReuUploadArea OnUpload="OnUpload" MaxFileCount="1" Accept="@(Extensions is null ? null : string.Join(',', Extensions.Select(x => "." + x)))">
+        <span>Drag &amp; Drop
+            @if (Extensions?.Length > 0)
+            {
+                @for (var i = 0; i < Extensions.Length; i++)
                 {
-                    @foreach (var ext in Extensions)
+                    if (i > 0)
                     {
-                        if (ext != Extensions[0])
-                        {
-                            <span>/</span>
-                        }
-                        <span class="ext @(ext.EndsWith("Gbx") ? "gbx" : "other")">@ext</span>
+                        <span>/</span>
                     }
+                    <span class="ext @(Extensions[i].EndsWith("Gbx", StringComparison.OrdinalIgnoreCase) ? "gbx" : "other")">@Extensions[i]</span>
                 }
-                else
-                {
-                    <span>any</span>
-                }
-                file here...</span>
-            <span class="note">or click to upload</span>
-        }
-        else
-        {
-            <span>@uploadFileName</span>
-        }
-        
-        <input @ref="inputFile"
-            @ondragenter="DragEnter"
-            @ondragleave="DragEnd"
-            @ondragend="DragEnd"
-            @ondrop="DragEnd" type="file" class="file" accept="@(Extensions is null ? "" : string.Join(',', Extensions.Select(x => "." + x)))" />
-    }
-    else
-    {
-        <Loader></Loader>
-    }
+            }
+            else
+            {
+                <span>any</span>
+            }
+            file here...</span>
+        <span class="note">or click to upload</span>
+    </ReuUploadArea>
 </div>

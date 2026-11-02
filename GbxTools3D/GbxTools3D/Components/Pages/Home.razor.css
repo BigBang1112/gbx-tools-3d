@@ -20,7 +20,7 @@ section.scene {
     position: relative;
 }
 
-    section.scene .container {
+    section.scene ::deep .reu-container {
         display: flex;
         flex-direction: column;
     }
@@ -64,60 +64,36 @@ h2 {
     }
 }
 
-.button-blue {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    background: #1E72CC;
-    border-bottom: 2px solid #FFF8;
-    border-radius: 4px;
+::deep .view-button {
     height: 3.5rem;
     width: 20rem;
-    text-decoration: none;
+    padding: 0;
     margin-top: 50px;
     font-size: 140%;
     font-weight: bold;
-    transition: background-color 0.1s ease;
     backdrop-filter: blur(10px);
 }
 
-    .button-blue:hover {
-        background-color: #258cfb;
-    }
-
-.button-catalog {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    background: #111A;
-    border-bottom: 2px solid #FFF3;
-    border-radius: 4px;
+::deep .catalog-button {
     height: 2.5rem;
     width: 20rem;
-    text-decoration: none;
+    padding: 0;
     margin-top: 10px;
     margin-bottom: 60px;
-    transition: background-color 0.05s ease;
     backdrop-filter: blur(10px);
 }
-
-    .button-catalog:hover {
-        background-color: #2228;
-    }
 
 .showcase-button {
     display: flex;
     align-items: center;
     padding: 0.5rem;
     position: relative;
-    background-color: #3333;
-    border-bottom: 2px solid #FFF3;
+    background-color: var(--color-nav-item-bg);
+    border-bottom: 2px solid var(--color-button-border);
     border-radius: 4px;
     cursor: pointer;
     gap: 1rem;
-    color: white;
+    color: var(--color-text-primary);
     text-decoration: none;
     margin-bottom: 10px;
     height: 100px;
@@ -125,7 +101,7 @@ h2 {
 }
 
     .showcase-button:hover {
-        background-color: #3338;
+        background-color: var(--color-nav-item-hover);
     }
 
     .showcase-button .info {
@@ -191,11 +167,11 @@ h2 {
 }
 
 @media (max-width: 450px) {
-    .button-blue {
+    ::deep .view-button {
         width: 100%;
     }
 
-    .button-catalog {
+    ::deep .catalog-button {
         width: 100%;
     }
 }

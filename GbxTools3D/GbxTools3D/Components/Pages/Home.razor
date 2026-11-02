@@ -12,21 +12,21 @@
 
 <PageTitle>Home - 3D Gbx Tools</PageTitle>
 
-<section class="scene">
+<section class="scene reu-theme-dark">
     <video autoplay muted loop><source src="intro.mp4" type="video/mp4"></video>
-    <div class="container">
+    <ReuContainer>
         <h1 class="brand-3d">3D</h1>
         <h2 class="brand-gbx-tools">gbx.tools</h2>
         <p class="home-text">Analyze maps, replays, and 3D objects from Nadeo games.</p>
         <div class="primary-buttons">
-            <a href="view" class="button-blue">View a .Gbx file</a>
-            <a href="catalog" class="button-catalog">Open the catalog</a>
+            <ReuButton Href="view" Variant="ReuButtonVariant.Blue" CssClass="view-button">View a .Gbx file</ReuButton>
+            <ReuButton Href="catalog" CssClass="catalog-button">Open the catalog</ReuButton>
         </div>
-    </div>
+    </ReuContainer>
 </section>
 
 <section class="content">
-    <div class="container">
+    <ReuContainer>
         <h2>Latest world records</h2>
         <div class="wrs">
             <div class="wrs-category">
@@ -35,7 +35,7 @@
                     for (var i = 0; i < 5; i++)
                     {
                         <div class="showcase-button" style="justify-content: center;">
-                            <GbxTools3D.Client.Components.Loader></GbxTools3D.Client.Components.Loader>
+                            <ReuLoader></ReuLoader>
                         </div>
                     }
                 }
@@ -60,7 +60,7 @@
                     for (var i = 0; i < 5; i++)
                     {
                         <div class="showcase-button" style="justify-content: center;">
-                            <GbxTools3D.Client.Components.Loader></GbxTools3D.Client.Components.Loader>
+                            <ReuLoader></ReuLoader>
                         </div>
                     }
                 }
@@ -87,7 +87,7 @@
             for (var i = 0; i < 5; i++)
             {
                 <div class="showcase-button" style="justify-content: center;">
-                    <GbxTools3D.Client.Components.Loader></GbxTools3D.Client.Components.Loader>
+                    <ReuLoader></ReuLoader>
                 </div>
             }
         }
@@ -107,7 +107,7 @@
         }
         <h2>Item showcase of the day</h2>
         To come...
-    </div>
+    </ReuContainer>
 </section>
 
 @code {

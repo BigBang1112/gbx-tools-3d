@@ -14,11 +14,11 @@
 
 @if (IsDragAndDrop && SkinZip is null)
 {
-    <div class="container">
+    <ReuContainer>
         <div class="navbar-fake-margin"></div>
         <h2 class="view">View a skin</h2>
         <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
-    </div>
+    </ReuContainer>
 }
 else
 {
@@ -27,7 +27,7 @@ else
         @if (!RendererInfo.IsInteractive)
         {
             <div class="centered">
-                <Loader></Loader>
+                <ReuLoader></ReuLoader>
             </div>
         }
 

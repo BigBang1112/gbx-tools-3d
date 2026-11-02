@@ -27,6 +27,15 @@ You also need a **MariaDB** or a MySQL database. The default development connect
 
 **For production deployment, secure the database together with the connection string.** You also need to manually apply the migration, via the `Script-Migration` command or bundles for example.
 
+### Visual Studio Code
+
+Open the repository root in VS Code and install the recommended C# Dev Kit and Blazor WebAssembly Debugging Extension. The workspace selects `GbxTools3D.slnx` automatically.
+
+- Select **GbxTools3D: Watch (Integrated Browser)** and press **F5** to run with hot reload inside VS Code. **GbxTools3D: Watch** opens your default browser instead. Both profiles restart automatically when an edit requires it.
+- Select **GbxTools3D: Debug (Edge)** for server and WebAssembly C# debugging. Change `browser` to `chrome` in `.vscode/launch.json` to use Chrome.
+- Select **GbxTools3D: Debug (Server)** for server C# debugging with your default browser.
+- Press **Ctrl+Shift+B** to run the **Build** task. It builds the server and client and restores dependencies as needed.
+
 ### Visual Studio 2022
 
 If you have Visual Studio 2022, you can use the Docker Compose setup, which will automatically launch the app, database, phpMyAdmin, and Seq for development purposes in debug mode.

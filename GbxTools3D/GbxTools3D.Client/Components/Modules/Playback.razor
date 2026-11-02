@@ -7,7 +7,7 @@
         @if (PreviewTime.HasValue)
         {
             <div class="time-preview-mark" style="left: @(((double)PreviewTime.Value.Ticks / Duration.Ticks * 100).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture))%">
-                <div class="time-preview mono">@PreviewTime.ToTmString()</div>
+                <div class="time-preview reu-mono">@PreviewTime.ToTmString()</div>
             </div>
         }
         @if (Markers.Count <= 100)
@@ -18,7 +18,7 @@
                      @onmousedown="() => OnMarkerMouseDown(marker)" @onmouseup="EndSeekAsync" @onmouseenter="() => SelectedMarker = marker" @onmouseleave="() => SelectedMarker = null">
                     @if (SelectedMarker == marker)
                     {
-                        <span class="time mono">@marker.Time.ToTmString(UseHundredths)</span>
+                        <span class="time reu-mono">@marker.Time.ToTmString(UseHundredths)</span>
                     }
                     <div class="chevron @marker.Type.ToString().ToLowerInvariant()">
                         @switch (marker.Type)
@@ -48,9 +48,9 @@
        <button class="button-control" @onclick="RewindAsync">
            <img src="icons/ui/skip_previous.svg" width="48" height="48" />
        </button>
-       <span class="duration mono"><b>@CurrentTime.ToTmString(UseHundredths)</b> <small>/ @Duration.ToTmString(UseHundredths)</small></span>
+       <span class="duration reu-mono"><b>@CurrentTime.ToTmString(UseHundredths)</b> <small>/ @Duration.ToTmString(UseHundredths)</small></span>
        <input type="range" min="1" max="20" value="8" class="slider" @oninput="SpeedChange" @onchange="SpeedChange" />
-       <span class="mono"><small>@(Speed)x</small></span>
+       <span class="reu-mono"><small>@(Speed)x</small></span>
        <div class="right"><span><FormattedText Text="@Description"></FormattedText></span></div>
    </div>
 </div>

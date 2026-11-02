@@ -36,7 +36,7 @@
 
     .mapuid small {
         font-size: 60%;
-        color: #666;
+        color: var(--color-text-secondary);
     }
 
     .mapuid img {

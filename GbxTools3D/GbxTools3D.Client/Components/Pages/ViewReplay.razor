@@ -13,7 +13,7 @@
 
 @if (IsDragAndDrop && Replay is null)
 {
-    <div class="container">
+    <ReuContainer>
         <div class="navbar-fake-margin"></div>
         <h2 class="view">View a replay</h2>
         <UploadArea OnUpload="OnUploadAsync" Extensions="extensions" FontSize="150" Height="400"></UploadArea>
@@ -56,11 +56,11 @@
                             <InputText class="text" @bind-Value="externalId" placeholder="ID" style="width: 60px" />
                             break;
                     }
-                    <button type="submit" class="button-generic">Load</button>
+                    <ReuButton type="submit">Load</ReuButton>
                 </EditForm>
             </div>
         }
-    </div>
+    </ReuContainer>
 }
 else
 {
@@ -73,7 +73,7 @@ else
         else
         {
             <div class="centered">
-                <Loader></Loader>
+                <ReuLoader></ReuLoader>
             </div>
         }
 

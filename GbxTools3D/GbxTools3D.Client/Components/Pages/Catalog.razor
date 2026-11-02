@@ -19,7 +19,7 @@
     @if (!RendererInfo.IsInteractive)
     {
         <div class="centered">
-            <Loader></Loader>
+            <ReuLoader></ReuLoader>
         </div>
     }
 
@@ -68,8 +68,8 @@
             else
             {
                 <div class="asset-types">
-                    <NavLink href="@($"/catalog/{GameVersionEnum}/collections")" class="button-generic">Environments</NavLink>
-                    <NavLink href="@($"/catalog/{GameVersionEnum}/vehicles")" class="button-generic">Vehicles</NavLink>
+                    <ReuButton Href="@($"/catalog/{GameVersionEnum}/collections")" NavLink="true">Environments</ReuButton>
+                    <ReuButton Href="@($"/catalog/{GameVersionEnum}/vehicles")" NavLink="true">Vehicles</ReuButton>
                 </div>
 
                 @if (ContentTypeEnum == Enums.ContentType.Collection)
@@ -90,17 +90,17 @@
                         <div class="asset-types">
                             @if (SelectedCollection.HasBlocks)
                             {
-                                <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/blocks")" class="button-generic">Blocks</NavLink>
+                                <ReuButton Href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/blocks")" NavLink="true">Blocks</ReuButton>
                             }
 
                             @if (SelectedCollection.HasDecorations)
                             {
-                                <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/decorations")" class="button-generic">Decorations</NavLink>
+                                <ReuButton Href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/decorations")" NavLink="true">Decorations</ReuButton>
                             }
 
                             @if (SelectedCollection.HasItems)
                             {
-                                <NavLink href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/items")" class="button-generic">Items</NavLink>
+                                <ReuButton Href="@($"/catalog/{GameVersionEnum}/collections/{SelectedCollection.Name}/items")" NavLink="true">Items</ReuButton>
                             }
                         </div>
 
@@ -212,8 +212,8 @@
                         }
                     </div>
                     <div class="minimenu">
-                        <div class="button-generic @(!blockIsGround ? "active" : "") @(block.AirVariants.Count > 0 ? "" : "disabled")" @onclick="() => ChangeBlockVariantAsync(isGround: block.AirVariants.Count == 0)">Air</div>
-                        <div class="button-generic @(blockIsGround ? "active" : "") @(block.GroundVariants.Count > 0 ? "" : "disabled")" @onclick="() => ChangeBlockVariantAsync(isGround: block.GroundVariants.Count > 0)">Ground</div>
+                        <ReuButton Active="@(!blockIsGround)" Enable="@(block.AirVariants.Count > 0)" OnClick="() => ChangeBlockVariantAsync(isGround: false)">Air</ReuButton>
+                        <ReuButton Active="blockIsGround" Enable="@(block.GroundVariants.Count > 0)" OnClick="() => ChangeBlockVariantAsync(isGround: true)">Ground</ReuButton>
                     </div>
 
                     var variants = blockIsGround ? block.GroundVariants : block.AirVariants;
@@ -223,7 +223,7 @@
                         <div class="minimenu">
                             @foreach (var variant in variants.GroupBy(x => x.Variant))
                             {
-                                <div class="button-generic @(blockVariant == variant.Key ? "active" : "")" @onclick="() => ChangeBlockVariantAsync(variant.First())" title="Variant #@variant.Key">@variant.Key</div>
+                                <ReuButton Active="@(blockVariant == variant.Key)" OnClick="() => ChangeBlockVariantAsync(variant.First())" Tooltip="@($"Variant #{variant.Key}")">@variant.Key</ReuButton>
                             }
                         </div>
                     }
@@ -233,7 +233,7 @@
                         <div class="minimenu">
                             @foreach (var variant in variants.Where(x => x.Variant == blockVariant))
                             {
-                                <div class="button-generic @(blockSubVariant == variant.SubVariant ? "active" : "")" @onclick="() => ChangeBlockVariantAsync(variant)" title="Sub-variant #@variant.SubVariant">@variant.SubVariant</div>
+                                <ReuButton Active="@(blockSubVariant == variant.SubVariant)" OnClick="() => ChangeBlockVariantAsync(variant)" Tooltip="@($"Sub-variant #{variant.SubVariant}")">@variant.SubVariant</ReuButton>
                             }
                         </div>
                     }
@@ -361,21 +361,21 @@
                     }
 
                     <div class="solid-tools">
-                        <div class="button-generic @(selectMode ? "active" : "")" @onclick="ToggleSelectMode" title="Select mode">
+                        <ReuButton Active="@(selectMode)" OnClick="ToggleSelectMode" Tooltip="Select mode">
                             <img src="icons/ui/ads_click.svg" alt="Select mode" class="icon" width="32" height="32" />
-                        </div>
-                        <div class="button-generic @(showGrid ? "active" : "")" @onclick="ToggleGrid" title="Grid">
+                        </ReuButton>
+                        <ReuButton Active="@(showGrid)" OnClick="ToggleGrid" Tooltip="Grid">
                             <img src="icons/ui/grid_4x4.svg" alt="Grid" class="icon" width="32" height="32" />
-                        </div>
+                        </ReuButton>
 
                         @if (currentSolid is not null)
                         {
-                            <div class="button-generic @(currentSolid.WireframeEnabled ? "active" : "")" @onclick="() => currentSolid.ToggleWireframe()" title="Wireframe">
+                            <ReuButton Active="@(currentSolid.WireframeEnabled)" OnClick="() => currentSolid.ToggleWireframe()" Tooltip="Wireframe">
                                 <img src="icons/ui/details.svg" alt="Wireframe" class="icon" width="32" height="32" />
-                            </div>
-                            <div class="button-generic @(currentSolid.CollisionsEnabled ? "active" : "")" @onclick="() => ToggleCollisionsAsync(currentSolid)" title="Collisions">
+                            </ReuButton>
+                            <ReuButton Active="@(currentSolid.CollisionsEnabled)" OnClick="() => ToggleCollisionsAsync(currentSolid)" Tooltip="Collisions">
                                 <img src="icons/ui/minor_crash.svg" alt="Collisions" class="icon" width="32" height="32" />
-                            </div>
+                            </ReuButton>
                             @if (block is not null)
                             {
                                 var variants = blockIsGround ? block.GroundVariants : block.AirVariants;
@@ -384,20 +384,20 @@
 
                                 @if (currentVariant?.ObjectLinks?.Count > 0 || hasWaypoint)
                                 {
-                                    <div class="button-generic @(currentSolid.ObjectLinksEnabled ? "active" : "")" @onclick="() => ToggleObjectLinksAsync(currentSolid, currentVariant?.ObjectLinks?.Count ?? 0, hasWaypoint)" title="Triggers and object links">
+                                    <ReuButton Active="@(currentSolid.ObjectLinksEnabled)" OnClick="() => ToggleObjectLinksAsync(currentSolid, currentVariant?.ObjectLinks?.Count ?? 0, hasWaypoint)" Tooltip="Triggers and object links">
                                         <img src="icons/ui/view_in_ar.svg" alt="Object links" class="icon" width="32" height="32" />
-                                    </div>
+                                    </ReuButton>
                                 }
                             }
                             @if (view3d?.Scene is not null)
                             {
-                                <div class="button-generic @(currentSolid.VertexNormalHelperEnabled ? "active" : "")" @onclick="() => currentSolid.ToggleVertexNormalHelper(view3d.Scene)" title="Vertex normals">
+                                <ReuButton Active="@(currentSolid.VertexNormalHelperEnabled)" OnClick="() => currentSolid.ToggleVertexNormalHelper(view3d.Scene)" Tooltip="Vertex normals">
                                     <img src="icons/ui/merge_type.svg" alt="Vertex normals" class="icon" width="32" height="32" />
-                                </div>
+                                </ReuButton>
                             }
                             @if (decoSize is not null)
                             {
-                                <div class="button-generic active" title="Buildable area zone">
+                                <div class="reu-button active" data-reu-tooltip="Buildable area zone">
                                     <img src="icons/ui/grass.svg" alt="Zone" class="icon" width="32" height="32" />
                                 </div>
                             }

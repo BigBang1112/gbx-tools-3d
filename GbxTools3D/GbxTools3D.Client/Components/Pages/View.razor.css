@@ -19,15 +19,15 @@ h3.supported {
     align-items: center;
     padding: 10px;
     position: relative;
-    background-color: #3333;
-    border-bottom: 2px solid #FFF3;
+    background-color: var(--color-nav-item-bg);
+    border-bottom: 2px solid var(--color-button-border);
     border-radius: 4px;
     cursor: pointer;
     gap: 20px;
 }
 
     .view-type:hover {
-        background-color: #3338;
+        background-color: var(--color-nav-item-hover);
     }
 
     .view-type h3 {
@@ -36,7 +36,7 @@ h3.supported {
         font-size: 175%;
     }
 
-    .view-type ::deep div.upload-area:last-child {
+    .view-type ::deep .gbx-upload:last-child {
         margin-left: auto;
         width: 35%;
     }
@@ -54,7 +54,7 @@ h3.supported {
             text-align: center;
         }
 
-        .view-type ::deep div.upload-area:last-child {
+        .view-type ::deep .gbx-upload:last-child {
             margin-left: auto;
             width: 100%;
         }

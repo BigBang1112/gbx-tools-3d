@@ -1,0 +1,10 @@
+.reu-theme-icon {
+    width: 32px;
+    height: 32px;
+    background-size: 20px;
+}
+
+.reu-theme-icon:focus-visible {
+    outline: 2px solid var(--color-link);
+    outline-offset: 2px;
+}

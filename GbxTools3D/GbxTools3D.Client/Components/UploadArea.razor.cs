@@ -1,19 +1,10 @@
-﻿using GbxTools3D.Client.EventArgs;
-using Microsoft.AspNetCore.Components.Web;
-using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
+﻿using Microsoft.AspNetCore.Components;
+using Reuniverse.Razor;
 
 namespace GbxTools3D.Client.Components;
 
 public partial class UploadArea : ComponentBase
 {
-    private ElementReference inputFile;
-    private IJSObjectReference? module;
-    private DotNetObjectReference<UploadArea>? objRef;
-
-    private bool dragged;
-    private string? uploadFileName;
-
     [Parameter]
     public int? Height { get; set; } = 100;
 
@@ -24,63 +15,8 @@ public partial class UploadArea : ComponentBase
     /// Extensions without the dot.
     /// </summary>
     [Parameter]
-    public required string[]? Extensions { get; set; }
+    public string[]? Extensions { get; set; }
 
     [Parameter]
     public EventCallback<UploadEventArgs> OnUpload { get; set; }
-
-    protected override void OnInitialized() =>
-        objRef = DotNetObjectReference.Create(this);
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            module = await JS.InvokeAsync<IJSObjectReference>("import", $"./Components/UploadArea.razor.js");
-            await module.InvokeVoidAsync("addHandlers", inputFile, objRef);
-        }
-    }
-
-    [JSInvokable]
-    public async Task UploadAsync(string fileName, byte[] data, long lastModified)
-    {
-        await OnUpload.InvokeAsync(new UploadEventArgs(fileName, data, DateTimeOffset.FromUnixTimeMilliseconds(lastModified)));
-    }
-
-    public void SetUploadFileName(string fileName)
-    {
-        uploadFileName = fileName;
-    }
-
-    [JSInvokable]
-    public void ClearUploadFileName()
-    {
-        uploadFileName = null;
-    }
-
-    private void DragEnter(DragEventArgs e)
-    {
-        dragged = true;
-    }
-
-    private void DragEnd()
-    {
-        dragged = false;
-    }
-
-    async ValueTask IAsyncDisposable.DisposeAsync()
-    {
-        if (module is not null)
-        {
-            try
-            {
-                await module.DisposeAsync();
-            }
-            catch (JSDisconnectedException)
-            {
-            }
-        }
-
-        objRef?.Dispose();
-    }
 }

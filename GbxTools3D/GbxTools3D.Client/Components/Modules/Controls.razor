@@ -12,15 +12,15 @@
         }
     </div>
     <div class="contents">
-        <div class="button-generic spaced camera @(cameraType == ReplayCameraType.Cam2 ? "active" : "")" @onclick="() => SwitchCameraTypeAsync(ReplayCameraType.Cam2)" title="Replica of Cam2">
+        <ReuButton CssClass="camera" Active="@(cameraType == ReplayCameraType.Cam2)" OnClick="() => SwitchCameraTypeAsync(ReplayCameraType.Cam2)" Tooltip="Replica of Cam2">
             <img src="icons/ui/videocam.svg" width="24" height="24" /><span>2</span>
-        </div>
-        <div class="button-generic spaced camera @(cameraType == ReplayCameraType.Orbital ? "active" : "")" @onclick="() => SwitchCameraTypeAsync(ReplayCameraType.Orbital)" title="Orbiting camera">
+        </ReuButton>
+        <ReuButton CssClass="camera" Active="@(cameraType == ReplayCameraType.Orbital)" OnClick="() => SwitchCameraTypeAsync(ReplayCameraType.Orbital)" Tooltip="Orbiting camera">
             <img src="icons/ui/videocam.svg" width="24" height="24" /><span>O</span>
-        </div>
-        @*<div class="button-generic spaced camera @(cameraType == ReplayCameraType.Free ? "active" : "")" @onclick="() => SwitchCameraTypeAsync(ReplayCameraType.Free)" title="Free camera">
+        </ReuButton>
+        @*<ReuButton CssClass="camera" Active="@(cameraType == ReplayCameraType.Free)" OnClick="() => SwitchCameraTypeAsync(ReplayCameraType.Free)" Tooltip="Free camera">
             <img src="icons/ui/videocam.svg" width="24" height="24" /><span>F</span>
-        </div>*@
-        <div class="button-generic spaced @(collisionsEnabled ? "active" : "")" @onclick="ToggleCollisionsAsync">Collisions</div>
+        </ReuButton>*@
+        <ReuButton Active="@(collisionsEnabled)" OnClick="ToggleCollisionsAsync">Collisions</ReuButton>
     </div>
 </div>

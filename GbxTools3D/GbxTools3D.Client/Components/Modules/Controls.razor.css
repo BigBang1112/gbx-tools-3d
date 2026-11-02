@@ -14,19 +14,19 @@
     gap: 5px;
 }
 
-    .contents div {
+    .contents ::deep .reu-button {
         flex: 1;
     }
 
-.camera {
+::deep .camera {
     position: relative;
 }
 
-    .camera img {
+    ::deep .camera img {
         margin: -2px 0 -2px -4px;
     }
 
-    .camera span {
+    ::deep .camera span {
         position: absolute;
         right: 6px;
         bottom: 2px;

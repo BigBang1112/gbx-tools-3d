@@ -3,7 +3,7 @@
     gap: 5px;
 }
 
-    .minimenu div {
+    .minimenu ::deep .reu-button {
         flex: 1;
     }
 
@@ -29,8 +29,8 @@
 .tree {
     display: flex;
     flex-direction: column;
-    background-color: #1A1A1A;
-    border: 1px solid #333;
+    background-color: var(--color-input-bg);
+    border: 1px solid var(--color-border);
     border-radius: 5px;
     overflow: auto;
     font-size: 90%;
@@ -44,7 +44,7 @@
     gap: 5px;
 }
 
-    .solid-tools div {
+    .solid-tools ::deep .reu-button {
         flex: 1;
     }
 
@@ -85,11 +85,11 @@
         }
 
             .catalog .games ::deep a:hover {
-                background-color: #333;
+                background-color: var(--color-surface-hover);
             }
 
             .catalog .games ::deep a.active {
-                background-color: #444;
+                background-color: var(--color-surface-active);
             }
 
             .catalog .games ::deep a img {
@@ -100,8 +100,8 @@
         display: flex;
         flex-wrap: wrap;
         justify-content: center;
-        background-color: #1A1A1AAA;
-        border: 1px solid #333;
+        background-color: color-mix(in srgb, var(--color-input-bg) 67%, transparent);
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         padding: 5px;
     }
@@ -114,15 +114,15 @@
             padding: 10px;
             border-radius: 5px;
             text-decoration: none;
-            color: white;
+            color: var(--color-text-primary);
         }
 
             .catalog .collections ::deep a:hover {
-                background-color: #333;
+                background-color: var(--color-surface-hover);
             }
 
             .catalog .collections ::deep a.active {
-                background-color: #444;
+                background-color: var(--color-surface-active);
             }
 
     .catalog .asset-types {
@@ -139,8 +139,8 @@
         display: flex;
         flex-direction: column;
         flex: 1;
-        background-color: #1A1A1AAA;
-        border: 1px solid #333;
+        background-color: color-mix(in srgb, var(--color-input-bg) 67%, transparent);
+        border: 1px solid var(--color-border);
         border-radius: 5px;
         overflow: hidden auto;
         font-size: 90%;
@@ -153,16 +153,16 @@
             align-items: center;
             border-radius: 5px;
             text-decoration: none;
-            color: white;
-            animation: fadeIn 0.3s;
+            color: var(--color-text-primary);
+            animation: reu-fade-in 0.3s;
         }
 
             .catalog .assets ::deep a:hover {
-                background-color: #333;
+                background-color: var(--color-surface-hover);
             }
 
             .catalog .assets ::deep a.active {
-                background-color: #444;
+                background-color: var(--color-surface-active);
             }
 
             .catalog .assets ::deep a img {
@@ -227,7 +227,7 @@
             display: flex;
             text-align: center;
             overflow-x: auto;
-            background-color: #222A;
+            background-color: color-mix(in srgb, var(--color-surface) 67%, transparent);
             padding: 5px 10px;
             border-radius: 5px;
             gap: 10px;

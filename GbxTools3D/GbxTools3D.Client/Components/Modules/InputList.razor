@@ -16,7 +16,7 @@
     <div class="title">
         Inputs
     </div>
-    <div class="list mono" @ref="inputList">
+    <div class="list reu-mono" @ref="inputList">
         <Virtualize ItemsProvider="LoadInputsAsync" Context="input" ItemSize="14" @ref="virtualizeInputList" OverscanCount="20">
             <div @onclick="() => OnInputClick.InvokeAsync(input)" class="item input @(CurrentInput == input.Time ? "active" : "")" data-time="@input.Time.TotalMilliseconds">
                 <span>@input.Time.ToString(UseHundredths)</span>
@@ -33,13 +33,8 @@
         </Virtualize>
     </div>
     <div class="settings-wrapper">
-        <label>
-            <input type="checkbox" @bind="OnlyRespawns" />
-            Only respawns
-        </label>
-        <label title="@((MarkupString)"Does not affect displayed inputs.\nUsed to skip failed attempts on a checkpoint during playback.")">
-            <input type="checkbox" @bind="SkipRespawns"/>
-            Skip respawns
-        </label>
+        <ReuCheckbox @bind-IsChecked="OnlyRespawns" Size="20">Only respawns</ReuCheckbox>
+        <ReuCheckbox @bind-IsChecked="SkipRespawns" Size="20"
+                     Tooltip="@("Does not affect displayed inputs.\nUsed to skip failed attempts on a checkpoint during playback.")">Skip respawns</ReuCheckbox>
     </div>
 </div>

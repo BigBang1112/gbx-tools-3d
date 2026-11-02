@@ -5,7 +5,7 @@
 
 <PageTitle>Widgets - 3D Gbx Tools</PageTitle>
 
-<div class="container">
+<ReuContainer>
     <h2>Widgets</h2>
     <p>You can embed these 3D tools into your websites.</p>
     <h3>View map</h3>
@@ -70,8 +70,8 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetViewMapRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
-            <input type="text" class="text" value="@GetFullUrl(GetViewMapRelativeUrl())" placeholder="https://..." disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetViewMapRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" readonly onclick="this.select()" onfocus="this.select()" />
+            <input type="text" class="text" value="@GetFullUrl(GetViewMapRelativeUrl())" placeholder="https://..." readonly onclick="this.select()" onfocus="this.select()" />
         </div>
         <iframe src="@GetViewMapRelativeUrl()" loading="lazy"></iframe>
     </div>
@@ -140,8 +140,8 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetViewReplayRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
-            <input type="text" class="text" value="@GetFullUrl(GetViewReplayRelativeUrl())" placeholder="https://..." disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetViewReplayRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" readonly onclick="this.select()" onfocus="this.select()" />
+            <input type="text" class="text" value="@GetFullUrl(GetViewReplayRelativeUrl())" placeholder="https://..." readonly onclick="this.select()" onfocus="this.select()" />
         </div>
         <iframe src="@GetViewReplayRelativeUrl()" loading="lazy"></iframe>
     </div>
@@ -176,8 +176,8 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetViewSkinRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
-            <input type="text" class="text" value="@GetFullUrl(GetViewSkinRelativeUrl())" placeholder="https://..." disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetViewSkinRelativeUrl())" placeholder="@(@"<iframe src=""...""></iframe>")" readonly onclick="this.select()" onfocus="this.select()" />
+            <input type="text" class="text" value="@GetFullUrl(GetViewSkinRelativeUrl())" placeholder="https://..." readonly onclick="this.select()" onfocus="this.select()" />
         </div>
         <iframe src="@GetViewSkinRelativeUrl()" loading="lazy"></iframe>
     </div>
@@ -223,12 +223,12 @@
                 <div class="label">Height:</div>
                 <InputNumber class="text" @bind-Value="height" placeholder="450" style="width: 60px" />
             </div>
-            <input type="text" class="text" value="@GetFrameHtml(GetCatalogRelativeUrl(isFrame: true))" placeholder="@(@"<iframe src=""...""></iframe>")" disabled />
-            <input type="text" class="text" value="@GetFullUrl(GetCatalogRelativeUrl(isFrame: false))" placeholder="https://..." disabled />
+            <input type="text" class="text" value="@GetFrameHtml(GetCatalogRelativeUrl(isFrame: true))" placeholder="@(@"<iframe src=""...""></iframe>")" readonly onclick="this.select()" onfocus="this.select()" />
+            <input type="text" class="text" value="@GetFullUrl(GetCatalogRelativeUrl(isFrame: false))" placeholder="https://..." readonly onclick="this.select()" onfocus="this.select()" />
         </div>
         <iframe src="@GetCatalogRelativeUrl(isFrame: true)" loading="lazy"></iframe>
     </div>
-</div>
+</ReuContainer>
 
 @code {
 

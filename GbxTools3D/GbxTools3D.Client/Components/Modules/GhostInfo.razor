@@ -19,8 +19,8 @@
             <FormattedText Text="@(Ghost.GhostNickname ?? Ghost.GhostLogin)"></FormattedText>
         </div>
         <div class="minimenu">
-            <div class="button-generic @(mode == MenuType.Samples ? "active" : "")" @onclick="() => SwitchModeAsync(MenuType.Samples)">Samples</div>
-            <div class="button-generic @(mode == MenuType.Details ? "active" : "")" @onclick="() => SwitchModeAsync(MenuType.Details)">Details</div>
+            <ReuButton Active="@(mode == MenuType.Samples)" OnClick="() => SwitchModeAsync(MenuType.Samples)">Samples</ReuButton>
+            <ReuButton Active="@(mode == MenuType.Details)" OnClick="() => SwitchModeAsync(MenuType.Details)">Details</ReuButton>
         </div>
         @if (mode == MenuType.Samples)
         {
@@ -34,16 +34,16 @@
                     @if (Ghost.CompressedData is not null)
                     {
                         <div>Size:</div>
-                        <div class="mono">
+                        <div class="reu-mono">
                             <span title="Compressed sample data size">@((Ghost.CompressedData.Data.Length / 1024f).ToString("0.0")) kB</span>
                             <span title="@((1 - Ghost.CompressedData.Data.Length / (float)Ghost.CompressedData.UncompressedSize).ToString("P")) compressed">/</span>
                             <span title="Uncompressed sample data size">@((Ghost.CompressedData.UncompressedSize / 1024f).ToString("0.0")) kB</span>
                         </div>
                     }
                     <div>Period:</div>
-                    <div class="mono">@Ghost.SampleData.SamplePeriod.ToTmString(UseHundredths)</div>
+                    <div class="reu-mono">@Ghost.SampleData.SamplePeriod.ToTmString(UseHundredths)</div>
                     <div>Version:</div>
-                    <div class="mono">
+                    <div class="reu-mono">
                         <span>@Ghost.SampleData.Version</span>
                         @if (VersionName.HasValue)
                         {
@@ -58,53 +58,53 @@
                     </div>
                     <div class="basic table">
                         <div>Time:</div>
-                        <div class="mono">@currentSample.Time.ToTmString(UseHundredths)</div>
+                        <div class="reu-mono">@currentSample.Time.ToTmString(UseHundredths)</div>
                         <div>Position:</div>
-                        <div class="mono"><Vec3Display Value="currentSample.Position" /></div>
+                        <div class="reu-mono"><Vec3Display Value="currentSample.Position" /></div>
                         <div>Rotation:</div>
-                        <div class="mono"><QuatDisplay Value="currentSample.Rotation" /></div>
+                        <div class="reu-mono"><QuatDisplay Value="currentSample.Rotation" /></div>
                         <div>Velocity:</div>
-                        <div class="mono"><Vec3Display Value="currentSample.Velocity" /></div>
+                        <div class="reu-mono"><Vec3Display Value="currentSample.Velocity" /></div>
                         <div>Ang. velocity:</div>
-                        <div class="mono"><Vec3Display Value="currentSample.AngularVelocity" /></div>
+                        <div class="reu-mono"><Vec3Display Value="currentSample.AngularVelocity" /></div>
 
                         @if (currentSample is GBX.NET.Engines.Scene.CSceneVehicleCar.Sample carSample)
                         {
                             <div class="@(carSample.Gas > 0 ? "gas" : "release")">Gas:</div>
-                            <div class="mono @(carSample.Gas > 0 ? "gas" : "release")">@carSample.Gas</div>
+                            <div class="reu-mono @(carSample.Gas > 0 ? "gas" : "release")">@carSample.Gas</div>
                             <div class="@(carSample.Brake > 0 ? "brake" : "")">Brake:</div>
-                            <div class="mono @(carSample.Brake > 0 ? "brake" : "")">@carSample.Brake</div>
+                            <div class="reu-mono @(carSample.Brake > 0 ? "brake" : "")">@carSample.Brake</div>
                             <div>Steer:</div>
-                            <div class="mono">@carSample.Steer.ToString("0.000")</div>
+                            <div class="reu-mono">@carSample.Steer.ToString("0.000")</div>
                             <div>Steer front:</div>
-                            <div class="mono">@carSample.SteerFront.ToString("0.000")</div>
+                            <div class="reu-mono">@carSample.SteerFront.ToString("0.000")</div>
                             <div class="@(carSample.TurboStrength > 0 ? "turbo" : "")">Turbo:</div>
-                            <div class="mono @(carSample.TurboStrength > 0 ? "turbo" : "")">@carSample.TurboStrength</div>
+                            <div class="reu-mono @(carSample.TurboStrength > 0 ? "turbo" : "")">@carSample.TurboStrength</div>
                             @if (carSample.DirtBlend.HasValue)
                             {
                                 <div style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">Dirt blend:</div>
-                                <div class="mono" style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">@carSample.DirtBlend</div>
+                                <div class="reu-mono" style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">@carSample.DirtBlend</div>
                             }
                             <div>Horn:</div>
-                            <div class="mono" title="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
+                            <div class="reu-mono" title="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
                             <div>U13:</div>
-                            <div class="mono">@carSample.U13</div>
+                            <div class="reu-mono">@carSample.U13</div>
                             <div>U14:</div>
-                            <div class="mono">@carSample.U14</div>
+                            <div class="reu-mono">@carSample.U14</div>
                             <div>U25_1:</div>
-                            <div class="mono">@carSample.U25_1</div>
+                            <div class="reu-mono">@carSample.U25_1</div>
                             <div>U25_3:</div>
-                            <div class="mono">@carSample.U25_3</div>
+                            <div class="reu-mono">@carSample.U25_3</div>
                             <div>U25_4:</div>
-                            <div class="mono">@carSample.U25_4</div>
+                            <div class="reu-mono">@carSample.U25_4</div>
                             <div>U27_7:</div>
-                            <div class="mono">@carSample.U27_7</div>
+                            <div class="reu-mono">@carSample.U27_7</div>
                             <div>U27_8:</div>
-                            <div class="mono">@carSample.U27_8</div>
+                            <div class="reu-mono">@carSample.U27_8</div>
                         }
 
                         <div title="Size of the sample">Size:</div>
-                        <div class="mono">@currentSample.Data.Length bytes</div>
+                        <div class="reu-mono">@currentSample.Data.Length bytes</div>
                     </div>
                 }
             }
@@ -115,33 +115,33 @@
                 @if (!string.IsNullOrEmpty(Ghost.GhostLogin))
                 {
                     <div>Login:</div>
-                    <div class="mono">@Ghost.GhostLogin</div>
+                    <div class="reu-mono">@Ghost.GhostLogin</div>
                 }
                 <div>Vehicle:</div>
-                <div class="mono">@Ghost.PlayerModel?.Id</div>
+                <div class="reu-mono">@Ghost.PlayerModel?.Id</div>
                 <div>Time:</div>
-                <div class="mono">@Ghost.RaceTime.ToTmString()</div>
+                <div class="reu-mono">@Ghost.RaceTime.ToTmString()</div>
                 <div>Stunt score:</div>
-                <div class="mono">@Ghost.StuntScore</div>
+                <div class="reu-mono">@Ghost.StuntScore</div>
                 <div>Respawns:</div>
-                <div class="mono">@Ghost.Respawns</div>
+                <div class="reu-mono">@Ghost.Respawns</div>
                 @if (Ghost.GhostClubTag is not null)
                 {
                     <div>Club tag:</div>
-                    <div class="mono"><FormattedText Text="@Ghost.GhostClubTag"></FormattedText></div>
+                    <div class="reu-mono"><FormattedText Text="@Ghost.GhostClubTag"></FormattedText></div>
                 }
                 @if (Ghost.GhostTrigram is not null)
                 {
                     <div>Trigram:</div>
-                    <div class="mono">@Ghost.GhostTrigram</div>
+                    <div class="reu-mono">@Ghost.GhostTrigram</div>
                 }
                 @if (Ghost.GhostZone is not null)
                 {
                     <div>Zone:</div>
-                    <div class="mono">@Ghost.GhostZone</div>
+                    <div class="reu-mono">@Ghost.GhostZone</div>
                 }
                 <div>Version:</div>
-                <div class="mono">@Ghost.GhostVersionString</div>
+                <div class="reu-mono">@Ghost.GhostVersionString</div>
             </div>
             @if (Ghost.Validate_ExeVersion is not null)
             {
@@ -150,44 +150,44 @@
                 </div>
                 <div class="validation table">
                     <div>EXE version:</div>
-                    <div class="mono" style="white-space: nowrap">@Ghost.Validate_ExeVersion</div>
+                    <div class="reu-mono" style="white-space: nowrap">@Ghost.Validate_ExeVersion</div>
                     @if (Ghost.Validate_ExeChecksum != 0)
                     {
                         <div>EXE checksum:</div>
-                        <div class="mono">@Ghost.Validate_ExeChecksum</div>
+                        <div class="reu-mono">@Ghost.Validate_ExeChecksum</div>
                     }
                     @if (!string.IsNullOrEmpty(Ghost.Validate_RaceSettings))
                     {
                         <div>Race settings:</div>
-                        <div class="mono">@Ghost.Validate_RaceSettings</div>
+                        <div class="reu-mono">@Ghost.Validate_RaceSettings</div>
                     }
                     @if (!string.IsNullOrEmpty(Ghost.Validate_ChallengeUid))
                     {
                         <div>Challenge:</div>
-                        <div class="mono">@Ghost.Validate_ChallengeUid</div>
+                        <div class="reu-mono">@Ghost.Validate_ChallengeUid</div>
                     }
                     @if (!string.IsNullOrEmpty(Ghost.Validate_TitleId))
                     {
                         <div>Title:</div>
-                        <div class="mono">@Ghost.Validate_TitleId</div>
+                        <div class="reu-mono">@Ghost.Validate_TitleId</div>
                     }
                     @if (Ghost.Validate_TitleChecksum is not null)
                     {
                         <div>Title checksum:</div>
-                        <div class="mono">@Ghost.Validate_TitleChecksum</div>
+                        <div class="reu-mono">@Ghost.Validate_TitleChecksum</div>
                     }
                     @if (Ghost.Validate_OsKind != 0)
                     {
                         <div>OS kind:</div>
-                        <div class="mono">@Ghost.Validate_OsKind</div>
+                        <div class="reu-mono">@Ghost.Validate_OsKind</div>
                     }
                     @if (Ghost.Validate_CpuKind != 0)
                     {
                         <div>CPU kind:</div>
-                        <div class="mono">@Ghost.Validate_CpuKind</div>
+                        <div class="reu-mono">@Ghost.Validate_CpuKind</div>
                     }
                     <div title="Steering Wheel Sensitivity (TM2+)">SWS:</div>
-                    <div class="mono">@Ghost.SteeringWheelSensitivity</div>
+                    <div class="reu-mono">@Ghost.SteeringWheelSensitivity</div>
                 </div>
             }
             @if (Ghost.GhostUid is not null)

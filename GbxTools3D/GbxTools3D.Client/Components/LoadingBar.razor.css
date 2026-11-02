@@ -7,7 +7,7 @@
 
 .progress {
     height: 2px;
-    background-color: #1E72CC;
+    background-color: var(--color-blue);
 }
 
 .progress.fake {

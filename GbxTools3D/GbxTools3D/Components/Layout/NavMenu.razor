@@ -1,144 +1,35 @@
-﻿@rendermode InteractiveServer
-@inject NavigationManager NavManager
-
-@{
-    var isAbsolute = IsAbsolute || Is3DPage();
-}
-
-<div class="navbar @(isAbsolute ? $"navbar-absolute" : "") @(NoNav ? "navbar-none" : "")">
-    <div class="container">
-        <div class="navbar-left">
-            @if (NoNav)
-            {
-                <span class="navbar-brand nonav">3d.gbx.tools</span>
-            }
-            else
-            {
-                <a class="navbar-brand" href="">3d.gbx.tools</a>
-            }
-        </div>
-
-        @if (!NoNav)
-        {
-            <nav class="@(showBurger ? "show" : "")">
-                <div class="nav-item" title="Home">
-                    <NavLink class="nav-link wide" href="" Match="NavLinkMatch.All">
-                        <img src="icons/ui/home.svg" alt="Home" class="icon" width="32" height="32" />
-                        <span>Home</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item" title="View">
-                    <NavLink class="nav-link wide" href="view">
-                        <img src="icons/ui/pageview.svg" alt="View" class="icon" width="32" height="32" />
-                        <span>View</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item" title="Catalog">
-                    <NavLink class="nav-link wide" href="catalog">
-                        <img src="icons/ui/menu_book.svg" alt="Catalog" class="icon" width="32" height="32" />
-                        <span>Catalog</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item" title="Widgets">
-                    <NavLink class="nav-link wide" href="widgets">
-                        <img src="icons/ui/widgets.svg" alt="Widgets" class="icon" width="32" height="32" />
-                        <span>Widgets</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item" title="About">
-                    <NavLink class="nav-link wide" href="about">
-                        <img src="icons/ui/info.svg" alt="About" class="icon" width="32" height="32" />
-                        <span>About</span>
-                    </NavLink>
-                </div>
-
-                <div class="nav-item" title="Blender Gbx Tools">
-                    <NavLink class="nav-link" href="blender">
-                        <img src="icons/ui/blender.svg" alt="Blender" width="32" height="32" />
-                    </NavLink>
-                </div>
-
-                <div class="nav-item" title="Join the Discord server">
-                    <a class="nav-link discord" href="https://discord.gbx.tools">
-                        <img src="icons/ui/discord.svg" alt="Discord" width="32" height="32" />
-                    </a>
-                </div>
-
-                <div class="nav-item" title="Donate">
-                    <button class="nav-link kofi @(showDono ? "open" : "")" @onclick="() => showDono = !showDono">
-                        @if (RendererInfo.IsInteractive)
-                        {
-                            <img src="icons/kofi.png" alt="Login" width="32" height="32" />
-                        }
-                        else
-                        {
-                            <GbxTools3D.Client.Components.Loader Size="20" Thickness="5"></GbxTools3D.Client.Components.Loader>
-                        }
-                    </button>
-                </div>
-            </nav>
-
-            <div class="nav-item burger">
-                <button class="burger nav-link @(showBurger ? "active" : "")" @onclick="() => showBurger = !showBurger">
-                    @if (RendererInfo.IsInteractive)
-                    {
-                        <img src="icons/ui/menu.svg" alt="Menu" width="32" height="32" />
-                    }
-                    else
-                    {
-                        <GbxTools3D.Client.Components.Loader Size="20" Thickness="5"></GbxTools3D.Client.Components.Loader>
-                    }
-                </button>
-            </div>
-        }
-    </div>
-    @if (isAbsolute)
+﻿<div class="site-navigation">
+    @if (NoNav)
     {
-        <div class="navbar-hoverable navbar-fake-margin"></div>
+        <div class="viewer-brand"><ReuContainer>3d.gbx.tools</ReuContainer></div>
+    }
+    else
+    {
+        <ReuNavMenu Brand="3d.gbx.tools" IsAbsolute="IsAbsolute">
+            <ReuNavItem Name="Home" Href="" IconType="IconType.Home" NavLinkMatch="NavLinkMatch.All" />
+            <ReuNavItem Name="View" Href="view" IconSrc="icons/ui/pageview.svg" />
+            <ReuNavItem Name="Catalog" Href="catalog" IconSrc="icons/ui/menu_book.svg" />
+            <ReuNavItem Name="Widgets" Href="widgets" IconSrc="icons/ui/widgets.svg" />
+            <ReuNavItem Name="About" Href="about" IconType="IconType.Info" />
+            <ReuNavItem Name="Blender Gbx Tools" Href="blender" IconSrc="icons/ui/blender.svg" IconOnly="true" />
+            <ReuNavItem Name="Discord" Href="https://discord.gbx.tools" IconType="IconType.Discord"
+                        IsNavLink="false" IconOnly="true" Title="Join the Discord server" />
+            <ReuNavItem Name="Donate" Href="https://ko-fi.com/bigbang1112" IconSrc="icons/kofi.png"
+                        IconOnly="true" Title="Donate" IsNavLink="false" />
+            @if (IsAbsolute)
+            {
+                <div class="nav-item theme-toggle">
+                    <ThemeToggle />
+                </div>
+            }
+        </ReuNavMenu>
     }
 </div>
 
-@if (showDono)
-{
-    <Donate></Donate>
-}
-
 @code {
-    private bool showBurger;
-    private bool showNavbar;
-    private bool showDono;
-
     [Parameter]
     public bool IsAbsolute { get; set; }
 
     [SupplyParameterFromQuery(Name = "nonav")]
     private bool NoNav { get; set; }
-
-    protected override void OnInitialized()
-    {
-        NavManager.LocationChanged += (sender, args) =>
-        {
-            if (showBurger)
-            {
-                showBurger = false;
-            }
-            StateHasChanged();
-        };
-    }
-
-    bool Is3DPage()
-    {
-        var currentPath = NavManager.Uri.Replace(NavManager.BaseUri, ""); // Get relative path
-        return currentPath.StartsWith("view/map") ||
-               currentPath.StartsWith("view/replay") ||
-               currentPath.StartsWith("view/item") ||
-               currentPath.StartsWith("view/ghost") ||
-               currentPath.StartsWith("view/skin") ||
-               currentPath.StartsWith("view/mesh") ||
-               currentPath.StartsWith("catalog");
-    }
 }

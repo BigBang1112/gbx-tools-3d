@@ -1,162 +1,16 @@
-.discord {
-    background-color: #5865F2DD !important;
-}
-
-    .discord:hover {
-        background-color: #6373EDDD !important;
-    }
-
-.kofi {
-    background-color: #FF4F19DD !important;
-    cursor: pointer;
-}
-
-    .kofi:hover {
-        background-color: #FF6433DD !important;
-    }
-
-    .kofi.open {
-        background-color: #FF8966DD !important;
-    }
-
-.navbar {
-    position: relative;
-    z-index: 10;
-    background-color: #111;
-    border-bottom: 2px solid #333;
-    width: 100vw;
-}
-
-.navbar-absolute {
+.viewer-brand {
     position: absolute;
     top: 0;
-}
-
-.navbar-hoverable {
-    display: none;
-    position: absolute;
     width: 100%;
-}
-
-.navbar-none {
-    background-color: transparent;
-    border: none;
-}
-
-.container {
-    display: flex;
-}
-
-nav {
-    display: flex;
-    margin-left: auto;
-    gap: 5px;
-}
-
-.navbar-left {
-    display: flex;
-    align-items: center;
-}
-
-.navbar-brand {
-    color: white;
-    text-decoration: none;
+    z-index: 10;
     font-size: 1.5rem;
-    margin-left: 0.5rem;
-    margin-right: 2rem;
+    color: white;
+    text-shadow: 2px 2px 4px #2228;
+    opacity: 0.5;
 }
 
-    .navbar-brand.nonav {
-        text-shadow: 2px 2px 4px #2228;
-        opacity: 0.5;
-    }
-
-.nav-item ::deep .nav-link {
-    color: white;
-    background-color: #3333;
-    border-bottom: 2px solid #FFF3;
-    border-radius: 4px;
-    height: 2.5rem;
-    min-width: 3rem;
+.theme-toggle {
     display: flex;
     align-items: center;
     justify-content: center;
-    text-decoration: none;
-    transition: background-color 0.05s ease;
-    backdrop-filter: blur(5px);
-}
-
-    .nav-item ::deep .nav-link:hover {
-        background-color: #3338;
-    }
-
-    .nav-item ::deep .nav-link.wide {
-        min-width: 8rem;
-    }
-
-    .nav-item ::deep .nav-link img.icon {
-        display: none;
-    }
-
-@media (max-width: 1430px) and (min-width: 1080px) {
-    .nav-item ::deep .nav-link.wide {
-        min-width: 5rem;
-    }
-
-        .nav-item ::deep .nav-link span {
-            display: none;
-        }
-
-        .nav-item ::deep .nav-link img.icon {
-            display: block;
-        }
-}
-
-.nav-item ::deep a.active, .nav-item ::deep button.active {
-    background-color: #555A !important;
-}
-
-.burger {
-    margin-left: auto;
-    display: none;
-    cursor: pointer;
-}
-
-.show {
-    display: flex;
-}
-
-@media (max-width: 1080px) {
-    nav {
-        display: none;
-        flex-direction: column;
-        position: absolute;
-        right: 1.5rem;
-        top: 85%;
-    }
-
-    .burger {
-        display: block;
-    }
-
-        .burger ::deep .nav-link.wide {
-            min-width: 5rem;
-        }
-
-        .burger ::deep .nav-link img.icon {
-            display: block;
-        }
-
-    .show {
-        background: #111A;
-        padding: 5px;
-        border-radius: 5px;
-        backdrop-filter: blur(5px);
-    }
-}
-
-@media (max-height: 600px) {
-    .container {
-        padding: 0.7rem;
-    }
 }

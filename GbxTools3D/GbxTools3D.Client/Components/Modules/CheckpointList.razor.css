@@ -56,7 +56,7 @@
 }
 
     .bonus.unchanged {
-        color: #666;
+        color: var(--color-text-secondary);
     }
 
 .counter {
@@ -69,13 +69,13 @@
 }
 
 .no-laps {
-    color: #666;
+    color: var(--color-text-secondary);
 }
 
 .checkpoint-num {
     flex: 1;
     font-size: 70%;
-    color: #666;
+    color: var(--color-text-secondary);
 }
 
 .counters {

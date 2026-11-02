@@ -1,0 +1,61 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "GbxTools3D: Watch (Integrated Browser)",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "dotnet watch --launch-profile http",
+            "cwd": "${workspaceFolder}/GbxTools3D/GbxTools3D",
+            "env": {
+                "DOTNET_WATCH_SUPPRESS_LAUNCH_BROWSER": "1",
+                "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "1"
+            },
+            "serverReadyAction": {
+                "action": "openIntegratedBrowser",
+                "pattern": "Now listening on:\\s+(https?://\\S+)",
+                "uriFormat": "%s"
+            }
+        },
+        {
+            "name": "GbxTools3D: Watch",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "dotnet watch --launch-profile http",
+            "cwd": "${workspaceFolder}/GbxTools3D/GbxTools3D",
+            "env": {
+                "DOTNET_WATCH_RESTART_ON_RUDE_EDIT": "1"
+            }
+        },
+        {
+            "name": "GbxTools3D: Debug (Edge)",
+            "type": "blazorwasm",
+            "request": "launch",
+            "preLaunchTask": "Build",
+            "hosted": true,
+            "program": "${workspaceFolder}/GbxTools3D/GbxTools3D/bin/Debug/net10.0/GbxTools3D.dll",
+            "cwd": "${workspaceFolder}/GbxTools3D/GbxTools3D",
+            "projectPath": "${workspaceFolder}/GbxTools3D/GbxTools3D.Client/GbxTools3D.Client.csproj",
+            "url": "http://localhost:5149",
+            "browser": "edge",
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5149"
+            }
+        },
+        {
+            "name": "GbxTools3D: Debug (Server)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "Build",
+            "program": "${workspaceFolder}/GbxTools3D/GbxTools3D/bin/Debug/net10.0/GbxTools3D.dll",
+            "cwd": "${workspaceFolder}/GbxTools3D/GbxTools3D",
+            "launchSettingsFilePath": "${workspaceFolder}/GbxTools3D/GbxTools3D/Properties/launchSettings.json",
+            "launchSettingsProfile": "http",
+            "serverReadyAction": {
+                "action": "openExternally",
+                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+            }
+        }
+    ]
+}

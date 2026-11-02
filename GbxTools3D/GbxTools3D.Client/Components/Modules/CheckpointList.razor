@@ -16,7 +16,7 @@
     <div class="title">
         Checkpoints
     </div>
-    <div class="list mono">
+    <div class="list reu-mono">
         <Virtualize Items="Checkpoints" Context="checkpointInfo" ItemSize="28">
             @{
                 var isLap = (checkpointInfo.Index + 1) % CheckpointsPerLap == 0;
@@ -59,7 +59,7 @@
         <div class="counter">
             @if (cpCount > 0)
             {
-                <span class="mono">@(CurrentCheckpointIndex + 1)</span> <span class="mono">/</span> <span class="mono" title="Actual checkpoint count (not counting the finish)">@cpCount</span>
+                <span class="reu-mono">@(CurrentCheckpointIndex + 1)</span> <span class="reu-mono">/</span> <span class="reu-mono" title="Actual checkpoint count (not counting the finish)">@cpCount</span>
             }
             else
             {
@@ -72,7 +72,7 @@
                 @if (NumLaps > 1)
                 {
                     <img src="icons/ui/laps.svg" width="32" height="32" />
-                    <span class="mono">@(CurrentLapIndex + 1) / @NumLaps</span>
+                    <span class="reu-mono">@(CurrentLapIndex + 1) / @NumLaps</span>
                 }
                 else
                 {
