@@ -246,10 +246,10 @@
                             @if (currentVariant.MobilPath is not null)
                             {
                                 <div class="label">Mobil:</div>
-                                <InputText class="text" @bind-Value="currentVariant.MobilPath" disabled />
+                                <InputText class="text" @bind-Value="currentVariant.MobilPath" readonly />
                             }
                             <div class="label">Mesh:</div>
-                            <InputText class="text" @bind-Value="currentVariant.MeshPath" disabled />
+                            <InputText class="text" @bind-Value="currentVariant.MeshPath" readonly />
                         </div>
                     }
 
@@ -321,11 +321,11 @@
 
                                         <div class="table">
                                             <div class="label">Material:</div>
-                                            <InputText class="text" @bind-Value="materialName" disabled />
+                                            <InputText class="text" @bind-Value="materialName" readonly />
                                             @if (shaderName is not null)
                                             {
                                                 <div class="label">Shader:</div>
-                                                <InputText class="text" @bind-Value="shaderName" disabled />
+                                                <InputText class="text" @bind-Value="shaderName" readonly />
                                             }
                                         </div>
                                         <div class="textures">
