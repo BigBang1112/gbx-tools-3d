@@ -159,7 +159,7 @@ h2.view {
     box-sizing: border-box;
     background-color: var(--color-overlay-bg);
     backdrop-filter: blur(10px);
-    border: 2px solid var(--color-border);
+    border: 2px solid var(--color-border-subtle);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -171,7 +171,7 @@ h2.view {
         display: flex;
         position: absolute;
         background-color: var(--color-overlay-bg);
-        border: 2px solid var(--color-border);
+        border: 2px solid var(--color-border-subtle);
         cursor: pointer;
     }
 
