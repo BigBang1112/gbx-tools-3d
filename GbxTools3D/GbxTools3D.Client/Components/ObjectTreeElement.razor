@@ -28,11 +28,11 @@
             {
                 @if (child.GetPropertyAsBoolean("isSpotLight"))
                 {
-                    <img src="icons/ui/wb_incandescent.svg" title="Spotlight" width="20" height="20" />
+                    <img src="icons/ui/wb_incandescent.svg" alt="Spotlight" data-reu-tooltip="Spotlight" width="20" height="20" />
                 }
                 else if (child.GetPropertyAsBoolean("isLight"))
                 {
-                    <img src="icons/ui/emoji_objects.svg" title="Light" width="20" height="20" />
+                    <img src="icons/ui/emoji_objects.svg" alt="Light" data-reu-tooltip="Light" width="20" height="20" />
                 }
 
                 @if (child.GetPropertyAsBoolean("isMesh"))

@@ -16,9 +16,9 @@
     </div>
     <div class="contents">
         <div class="params reu-mono">
-            <div class="gear" title="Gear (not stored in this ghost)">@(Gear?.ToString() ?? "?")</div>
-            <div class="speed" title="Speed">@Speed.ToString("0", CultureInfo.InvariantCulture)</div>
+            <div class="gear" data-reu-tooltip="Gear (not stored in this ghost)">@(Gear?.ToString() ?? "?")</div>
+            <div class="speed" data-reu-tooltip="Speed">@Speed.ToString("0", CultureInfo.InvariantCulture)</div>
         </div>
-        <progress max="11000" value="@RPM.ToString(CultureInfo.InvariantCulture)" title="RPM"></progress>
+        <progress max="11000" value="@RPM.ToString(CultureInfo.InvariantCulture)" data-reu-tooltip="RPM"></progress>
     </div>
 </div>

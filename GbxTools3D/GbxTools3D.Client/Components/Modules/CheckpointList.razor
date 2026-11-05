@@ -35,7 +35,7 @@
                 <div class="checkpoint-num">
                     (@(checkpointInfo.Index + 1))
                 </div>
-                <div class="bonus @(checkpointInfo.HasBonusChanged ? "" : "unchanged")" title="@(checkpointInfo.Checkpoint.Speed.HasValue ? "Speed at the checkpoint" : "Stunt points at the checkpoint")">
+                <div class="bonus @(checkpointInfo.HasBonusChanged ? "" : "unchanged")" data-reu-tooltip="@(checkpointInfo.Checkpoint.Speed.HasValue ? "Speed at the checkpoint" : "Stunt points at the checkpoint")">
                     @if (checkpointInfo.Checkpoint.Speed.HasValue)
                     {
                         <span>@checkpointInfo.Checkpoint.Speed.Value</span>
@@ -59,7 +59,7 @@
         <div class="counter">
             @if (cpCount > 0)
             {
-                <span class="reu-mono">@(CurrentCheckpointIndex + 1)</span> <span class="reu-mono">/</span> <span class="reu-mono" title="Actual checkpoint count (not counting the finish)">@cpCount</span>
+                <span class="reu-mono">@(CurrentCheckpointIndex + 1)</span> <span class="reu-mono">/</span> <span class="reu-mono" data-reu-tooltip="Actual checkpoint count (not counting the finish)">@cpCount</span>
             }
             else
             {

@@ -42,7 +42,7 @@
                         @{
                             var remoteUrl = SimplestGit.RemoteUrl.EndsWith(".git") ? SimplestGit.RemoteUrl.Substring(0, SimplestGit.RemoteUrl.Length - 4) : SimplestGit.RemoteUrl;
                         }
-                        <a href="@remoteUrl/tree/@SimplestGit.CommitHash" title="@SimplestGit.CommitDate" target="_blank">
+                        <a href="@remoteUrl/tree/@SimplestGit.CommitHash" data-reu-tooltip="@SimplestGit.CommitDate" target="_blank">
                             @SimplestGit.CommitHash.Substring(0, 7)
                         </a>
                         -

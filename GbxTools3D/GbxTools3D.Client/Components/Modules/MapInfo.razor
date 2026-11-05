@@ -28,7 +28,7 @@
                 </div>
                 <div class="mapuid">
                     <small>@Map.MapUid</small>
-                    <img src="icons/ui/content_copy.svg" title="Copy MapUid" width="16" height="16" @onclick="CopyMapUidToClipboard" />
+                    <img src="icons/ui/content_copy.svg" alt="Copy MapUid" data-reu-tooltip="Copy MapUid" width="16" height="16" @onclick="CopyMapUidToClipboard" />
                 </div>
                 <div class="mode">
                     <span>@(Map.Mode == GBX.NET.Engines.Game.CGameCtnChallenge.PlayMode.Script ? Map.MapType : Map.Mode.ToString())</span>
@@ -36,10 +36,10 @@
             </div>
             <div class="icons">
                 <div>
-                    <img src="icons/env/@(Map.Collection).webp" title="Environment: @Map.Collection" width="28" height="28" />
+                    <img src="icons/env/@(Map.Collection).webp" alt="Environment: @Map.Collection" data-reu-tooltip="Environment: @Map.Collection" width="28" height="28" />
                 </div>
                 <div>
-                    <img src="icons/mood/@(Mood).webp" title="Mood: @Mood" width="28" height="28" />
+                    <img src="icons/mood/@(Mood).webp" alt="Mood: @Mood" data-reu-tooltip="Mood: @Mood" width="28" height="28" />
                 </div>
 
                 @if ((!string.IsNullOrEmpty(TmxSite) || !string.IsNullOrEmpty(MxSite)) && !string.IsNullOrEmpty(ExchangeId))

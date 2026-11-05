@@ -35,9 +35,9 @@
                     {
                         <div>Size:</div>
                         <div class="reu-mono">
-                            <span title="Compressed sample data size">@((Ghost.CompressedData.Data.Length / 1024f).ToString("0.0")) kB</span>
-                            <span title="@((1 - Ghost.CompressedData.Data.Length / (float)Ghost.CompressedData.UncompressedSize).ToString("P")) compressed">/</span>
-                            <span title="Uncompressed sample data size">@((Ghost.CompressedData.UncompressedSize / 1024f).ToString("0.0")) kB</span>
+                            <span data-reu-tooltip="Compressed sample data size">@((Ghost.CompressedData.Data.Length / 1024f).ToString("0.0")) kB</span>
+                            <span data-reu-tooltip="@((1 - Ghost.CompressedData.Data.Length / (float)Ghost.CompressedData.UncompressedSize).ToString("P")) compressed">/</span>
+                            <span data-reu-tooltip="Uncompressed sample data size">@((Ghost.CompressedData.UncompressedSize / 1024f).ToString("0.0")) kB</span>
                         </div>
                     }
                     <div>Period:</div>
@@ -47,7 +47,7 @@
                         <span>@Ghost.SampleData.Version</span>
                         @if (VersionName.HasValue)
                         {
-                            <small title="@VersionName.Value.Item1"> (@VersionName.Value.Item2)</small>
+                            <small data-reu-tooltip="@VersionName.Value.Item1"> (@VersionName.Value.Item2)</small>
                         }
                     </div>
                 </div>
@@ -86,7 +86,7 @@
                                 <div class="reu-mono" style="color: @InterpolateDirtBlend(carSample.DirtBlend.Value)">@carSample.DirtBlend</div>
                             }
                             <div>Horn:</div>
-                            <div class="reu-mono" title="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
+                            <div class="reu-mono" data-reu-tooltip="Starts at 1 and adds to 3 and overflows to 0 again. Each change is a use of a horn.">@carSample.Horn</div>
                             <div>U13:</div>
                             <div class="reu-mono">@carSample.U13</div>
                             <div>U14:</div>
@@ -103,7 +103,7 @@
                             <div class="reu-mono">@carSample.U27_8</div>
                         }
 
-                        <div title="Size of the sample">Size:</div>
+                        <div data-reu-tooltip="Size of the sample">Size:</div>
                         <div class="reu-mono">@currentSample.Data.Length bytes</div>
                     </div>
                 }
@@ -186,7 +186,7 @@
                         <div>CPU kind:</div>
                         <div class="reu-mono">@Ghost.Validate_CpuKind</div>
                     }
-                    <div title="Steering Wheel Sensitivity (TM2+)">SWS:</div>
+                    <div data-reu-tooltip="Steering Wheel Sensitivity (TM2+)">SWS:</div>
                     <div class="reu-mono">@Ghost.SteeringWheelSensitivity</div>
                 </div>
             }
