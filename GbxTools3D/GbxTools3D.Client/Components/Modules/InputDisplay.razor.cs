@@ -1,12 +1,9 @@
 ﻿using GBX.NET.Engines.Game;
 using GBX.NET.Inputs;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web.Virtualization;
 using System.Collections.Immutable;
-using TmEssentials;
 
 namespace GbxTools3D.Client.Components.Modules;
-
 
 public partial class InputDisplay : ComponentBase
 {
@@ -37,35 +34,19 @@ public partial class InputDisplay : ComponentBase
         public bool IsBrakeGas;
     }
 
-    private ElementReference inputDisplay;
-    private Virtualize<IInput>? virtualizeInputList;
-
-    //private TimeInt32? currentInput;
-    private int currentInputIndex;
+    private int currentInputIndex = -1;
 
     [Parameter, EditorRequired]
-    public ImmutableList<IInput>? OverrideInputs { get; set; }
+    public ImmutableArray<IInput>? OverrideInputs { get; set; }
 
     [Parameter, EditorRequired]
     public CGameCtnGhost? Ghost { get; set; }
-
-    //public static bool UseHundredths => false; // inputs can sometimes be millisecond-based in older TM games
-
-    //public TimeInt32? CurrentInput
-    //{
-    //    get => currentInput;
-    //    set
-    //    {
-    //        currentInput = value;
-    //        StateHasChanged();
-    //    }
-    //}
 
     public InputState CurrentInputState
     {
         get
         {
-            if(currentInputIndex >= 0 && currentInputIndex < inputStates?.Count)
+            if (currentInputIndex >= 0 && currentInputIndex < inputStates.Length)
                 return inputStates[currentInputIndex];
 
             return new();
@@ -82,14 +63,16 @@ public partial class InputDisplay : ComponentBase
         }
     }
 
-    private ImmutableList<IInput>? inputs;
-    private ImmutableList<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs ?? [];
+    private ImmutableArray<IInput> inputs;
 
-    private ImmutableList<InputState>? inputStates;
+    // Same source order as GhostControls, which provides CurrentInputIndex
+    private ImmutableArray<IInput> Inputs => OverrideInputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? Ghost?.Inputs ?? [];
 
-    private ImmutableList<InputState> GetInputStates(ImmutableList<IInput> inputs)
+    private ImmutableArray<InputState> inputStates = [];
+
+    private ImmutableArray<InputState> GetInputStates(ImmutableArray<IInput> inputs)
     {
-        inputStates = [];
+        var inputStates = ImmutableArray.CreateBuilder<InputState>(inputs.Length);
 
         GBX.NET.GameVersion version = GBX.NET.GameVersion.MP4;
         if (Ghost is not null)
@@ -117,7 +100,7 @@ public partial class InputDisplay : ComponentBase
         GBX.NET.Inputs.AccelerateReal accelerateReal = new();
         GBX.NET.Inputs.Brake brake = new();
         GBX.NET.Inputs.BrakeReal brakeReal = new();
-        GBX.NET.Inputs.Steer steer = new();
+        IInputSteer steer = new GBX.NET.Inputs.Steer();
         GBX.NET.Inputs.SteerLeft steerLeft = new();
         GBX.NET.Inputs.SteerRight steerRight = new();
 
@@ -138,10 +121,8 @@ public partial class InputDisplay : ComponentBase
                     brake = inputBrake; break;
                 case GBX.NET.Inputs.BrakeReal inputBrakeReal:
                     brakeReal = inputBrakeReal; break;
-                case GBX.NET.Inputs.Steer inputSteer:
+                case IInputSteer inputSteer: // Steer, SteerOld, SteerTM2020
                     steer = inputSteer; break;
-                case GBX.NET.Inputs.IInputSteer inputSteer:
-                    steer = (GBX.NET.Inputs.Steer)inputSteer; break;
                 case GBX.NET.Inputs.SteerLeft inputSteerLeft:
                     steerLeft = inputSteerLeft; break;
                 case GBX.NET.Inputs.SteerRight inputSteerRight:
@@ -395,23 +376,19 @@ public partial class InputDisplay : ComponentBase
 
             #endregion
 
-            inputStates = inputStates.Add(inputState);
+            inputStates.Add(inputState);
         }
 
-        return inputStates;
+        return inputStates.MoveToImmutable();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override void OnParametersSet()
     {
-        if (Inputs != inputs)
+        var newInputs = Inputs;
+
+        if (newInputs != inputs)
         {
-            if (virtualizeInputList is not null)
-            {
-                await virtualizeInputList.RefreshDataAsync();
-            }
-
-            inputs = Inputs;
-
+            inputs = newInputs;
             inputStates = GetInputStates(inputs);
         }
     }

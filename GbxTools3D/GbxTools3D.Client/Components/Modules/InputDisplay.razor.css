@@ -1,4 +1,13 @@
 ﻿.module {
+    --input-key-bg: var(--color-overlay-bg);
+    --input-key-border: var(--color-border-subtle);
+    --input-key-text: var(--color-text-primary);
+    --input-main-on: var(--blue-color);
+    --input-main-on-inactive: color-mix(in srgb, var(--blue-color) 45%, transparent);
+    --input-brake-on: var(--red-color);
+    --input-brake-on-inactive: color-mix(in srgb, var(--red-color) 45%, transparent);
+    --input-off: color-mix(in srgb, var(--color-text-primary) 35%, transparent);
+    --input-off-inactive: color-mix(in srgb, var(--color-text-primary) 18%, transparent);
     position: absolute;
     top: 20%;
     left: 50%;
@@ -13,7 +22,6 @@
     align-items: center;
     justify-items: center;
     gap: 6px;
-    font-family: monospace;
     user-select: none;
 }
 
@@ -28,89 +36,70 @@
     position: relative;
     width: 48px;
     height: 48px;
-    border: 2px solid #666;
+    border: 2px solid var(--input-key-border);
     border-radius: 6px;
     display: flex;
     justify-content: center;
     align-items: center;
     font-size: 24px;
-    color: #ccc;
-    background-color: #222;
+    color: var(--input-key-text);
+    background-color: var(--input-key-bg);
+    backdrop-filter: blur(10px);
     overflow: hidden;
 }
 
-.arrow .key {
-    position: absolute;
-    top: 0; bottom: 0;
-    left: 0; right: 0;
-    transition: none;
+    .arrow .key {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+
+    .arrow span {
+        position: relative;
+        z-index: 3;
+        pointer-events: none;
+    }
+
+.key-fill-main-on {
+    z-index: 1;
+    background-color: var(--input-main-on);
 }
 
-    .key-fill-main-on {
-        z-index: 1;
-        background-color: #00bfff;
-        transition: none;
-    }
-
-    .key-fill-main-off {
-        z-index: 1;
-        background-color: #5f5f5f;
-        transition: none;
-    }
-
-    .key-fill-main-on-inactive {
-        z-index: 2;
-        background-color: #005f7f;
-        transition: none;
-    }
-
-    .key-fill-main-off-inactive {
-        z-index: 2;
-        background-color: #2f2f2f;
-        transition: none;
-    }
-
-
-    .key-fill-brake-on {
-        z-index: 1;
-        background-color: #ff3333;
-        transition: none;
-    }
-
-    .key-fill-brake-off {
-        z-index: 1;
-        background-color: #5f5f5f;
-        transition: none;
-    }
-
-    .key-fill-brake-on-inactive {
-        z-index: 2;
-        background-color: #7f1919;
-        transition: none;
-    }
-
-    .key-fill-brake-off-inactive {
-        z-index: 2;
-        background-color: #2f2f2f;
-        transition: none;
-    }
-
-
-.arrow span {
-    position: relative;
-    z-index: 3;
-    pointer-events: none;
+.key-fill-main-on-inactive {
+    z-index: 2;
+    background-color: var(--input-main-on-inactive);
 }
 
+.key-fill-brake-on {
+    z-index: 1;
+    background-color: var(--input-brake-on);
+}
+
+.key-fill-brake-on-inactive {
+    z-index: 2;
+    background-color: var(--input-brake-on-inactive);
+}
+
+.key-fill-main-off,
+.key-fill-brake-off {
+    z-index: 1;
+    background-color: var(--input-off);
+}
+
+.key-fill-main-off-inactive,
+.key-fill-brake-off-inactive {
+    z-index: 2;
+    background-color: var(--input-off-inactive);
+}
 
 .spacer {
     width: 48px;
     height: 48px;
-    border: 2px solid #666;
-    border-radius: 6px;
+    border: 2px solid transparent;
     visibility: hidden;
 }
-
 
 .triangle-container {
     position: relative;
@@ -128,24 +117,21 @@
 }
 
     .triangle.base {
-        fill: #222;
+        fill: var(--input-key-bg);
         stroke: none;
     }
 
     .triangle.fill {
-        fill: #00bfff;
+        fill: var(--input-main-on);
         stroke: none;
-        transition: none;
     }
 
     .triangle.fill-alt {
-        fill: #005f7f;
+        fill: var(--input-main-on-inactive);
         stroke: none;
-        transition: none;
     }
 
     .triangle.outline {
-        stroke: #666;
+        stroke: var(--input-key-border);
         fill: none;
     }
-
