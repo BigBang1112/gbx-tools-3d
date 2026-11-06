@@ -172,7 +172,7 @@ public class MeshSerializer
                 continue;
             }
 
-            subTree.Name = $"#{i}";
+            subTree.PlugId = $"#{i}";
 
             var mat = (Mat3)Matrix4x4.CreateFromQuaternion(
                 new Quaternion(ent.Rotation.X, ent.Rotation.Y, ent.Rotation.Z, ent.Rotation.W)
@@ -203,7 +203,7 @@ public class MeshSerializer
             {
                 var subTree = new CPlugTree
                 {
-                    Name = $"#{shadedGeom.VisualIndex}",
+                    PlugId = $"#{shadedGeom.VisualIndex}",
                     Visual = solid2.Visuals?[shadedGeom.VisualIndex],
                 };
 
@@ -260,8 +260,8 @@ public class MeshSerializer
     {
         ArgumentNullException.ThrowIfNull(tree);
 
-        var isSpecialDeco = isDeco && lod is null && tree.Children.Count == 2 && tree.Children[0].Name == "High" && tree.Children[1].Name == "Low";
-        var isSpecialDeco2 = isDeco && lod is null && tree.Children.Count == 3 && tree.Children[0].Name == "Low" && tree.Children[1].Name == "High";
+        var isSpecialDeco = isDeco && lod is null && tree.Children.Count == 2 && tree.Children[0].PlugId == "High" && tree.Children[1].PlugId == "Low";
+        var isSpecialDeco2 = isDeco && lod is null && tree.Children.Count == 3 && tree.Children[0].PlugId == "Low" && tree.Children[1].PlugId == "High";
 
         w.Write7BitEncodedInt(tree.Children.Count(x => ShouldIncludeTree(x, isRoot) && !isSpecialDeco));
 
@@ -270,7 +270,7 @@ public class MeshSerializer
 
         if (hasVisual)
         {
-            if (materialSpecialMapping?.TryGetValue(tree.Name, out var specialMaterial) == true)
+            if (materialSpecialMapping?.TryGetValue(tree.PlugId, out var specialMaterial) == true)
             {
                 WriteMaterial(w, specialMaterial);
             }
@@ -287,7 +287,7 @@ public class MeshSerializer
             foreach (var level in tree.Children)
             {
                 // may not work for boats and custom skins properly
-                if (int.TryParse(level.Name, out var treeIndex))
+                if (int.TryParse(level.PlugId, out var treeIndex))
                 {
                     var lod = treeIndex * 16;
                     visualMip.Levels.Add(new CPlugTreeVisualMip.Level(lod, level));
@@ -333,7 +333,7 @@ public class MeshSerializer
 
         WriteLight(w, tree as CPlugTreeLight);
 
-        w.Write(tree.Name ?? "");
+        w.Write(tree.PlugId ?? "");
 
         foreach (var node in tree.Children.Where(x => ShouldIncludeTree(x, isRoot) && !isSpecialDeco))
         {
@@ -349,7 +349,7 @@ public class MeshSerializer
         }
 
         // may not work for boats and custom skins properly
-        if (int.TryParse(tree.Name, out var treeIndex))
+        if (int.TryParse(tree.PlugId, out var treeIndex))
         {
             if (lod != treeIndex - 1)
             {
@@ -548,7 +548,7 @@ public class MeshSerializer
 
         w.Write(materialName);
 
-        var shaderFile = material?.References.Shader.File;
+        var shaderFile = material?.References.MaterialModel.File;
         var shaderName = shaderFile is null ? string.Empty : Path.GetRelativePath(gamePath, GbxPath.ChangeExtension(shaderFile.GetFullPath(), null));
 
         if (shaderName == Path.Combine("Techno", "Media", "Material", "TDiff PX2 Trans NormY PC3only")
@@ -710,7 +710,7 @@ public class MeshSerializer
 
     private static void WriteLight(AdjustedBinaryWriter w, CPlugTreeLight? treeLight)
     {
-        if (treeLight?.PlugLight?.Light is not GxLight light)
+        if (treeLight?.PlugLight?.GxLightModel is not GxLight light)
         {
             w.Write(false);
             return;

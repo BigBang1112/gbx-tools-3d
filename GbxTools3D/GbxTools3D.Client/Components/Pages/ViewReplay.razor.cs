@@ -148,7 +148,7 @@ public partial class ViewReplay : ComponentBase, IAsyncDisposable
 
         if (ghostControls is not null)
         {
-            await ghostControls.TryLoadGhostAsync(ghost, Replay.Inputs?.ToImmutableArray());
+            await ghostControls.TryLoadGhostAsync(ghost, Replay.GetValidationGhost()?.Inputs);
         }
 
         return true;

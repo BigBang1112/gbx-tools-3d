@@ -78,12 +78,12 @@ internal sealed class MaterialService
         logger.LogInformation("Processing shader materials...");
         foreach (var (parentPath, parentNode) in materials)
         {
-            if (parentNode?.Shader is not CPlugMaterial shaderMaterialNode)
+            if (parentNode?.MaterialModel is not CPlugMaterial shaderMaterialNode)
             {
                 continue;
             }
             
-            var path = Path.GetRelativePath(gamePath, parentNode.References.Shader.File?.GetFullPath() ?? throw new Exception("Shader has instance but no file"));
+            var path = Path.GetRelativePath(gamePath, parentNode.References.MaterialModel.File?.GetFullPath() ?? throw new Exception("Shader has instance but no file"));
             
             if (!alreadyProcessedShaders.TryGetValue(path, out var shaderMaterial))
             {
@@ -136,24 +136,24 @@ internal sealed class MaterialService
             
         material.SurfaceId = node.SurfaceId;
             
-        if (node.CustomMaterial is not null)
+        if (node.MaterialCustom is not null)
         {
             // regular material tweaked from Shader
             material.IsShader = false;
                 
             var textures = ImmutableDictionary.CreateBuilder<string, string>();
                 
-            foreach (var bitmap in node.CustomMaterial.Textures ?? [])
+            foreach (var bitmap in node.MaterialCustom.Bitmaps ?? [])
             {
-                var textureName = bitmap.Name ?? throw new Exception("Texture has no name");
+                var textureName = bitmap.LayerName ?? throw new Exception("Texture has no name");
 
-                if (bitmap.Texture is not CPlugBitmap texture)
+                if (bitmap.BitmapOrImage is not CPlugBitmap texture)
                 {
                     logger.LogWarning("Material {MaterialName} has texture {TextureName} which is null. This could mean that it couldn't find the file or that the Texture.Gbx cannot be read properly.", name, textureName);
                     continue;
                 }
 
-                ProcessTexture(gamePath, gameVersion, texture, bitmap.References.Texture.File, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
+                ProcessTexture(gamePath, gameVersion, texture, bitmap.References.BitmapOrImage.File, textureName, textures, alreadyProcessedTexturePaths, cancellationToken);
             }
                 
             material.Textures = textures.ToImmutable();
@@ -166,7 +166,7 @@ internal sealed class MaterialService
             if (gameVersion != GameVersion.TMT && gameVersion != GameVersion.MP4 && gameVersion != GameVersion.TM2020) // some random StackOverflowException in TMT and MP4 when trying to access Shader1
             {
                 // lookup into shader (SportCar situation)
-                var pc0 = node.DeviceMaterials[0].Shader1 as CPlugShaderApply;
+                var pc0 = node.DeviceMaterials[0].Shader as CPlugShaderApply;
 
                 if (pc0?.BitmapAddresses?.Count > 0)
                 {

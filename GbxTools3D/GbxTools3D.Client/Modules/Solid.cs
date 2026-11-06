@@ -703,7 +703,7 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
     {
         var tree = Create(matrixAutoUpdate: true);
 
-        SetName(tree, plugTree.Name);
+        SetName(tree, plugTree.PlugId);
 
         var iso4 = plugTree.Location ?? Iso4.Identity;
         SetRotationMatrix(tree, iso4.XX, iso4.XY, iso4.XZ, iso4.YX, iso4.YY, iso4.YZ, iso4.ZX, iso4.ZY, iso4.ZZ);
@@ -715,19 +715,19 @@ internal sealed partial class Solid(JSObject obj, string? filePath)
 
             if (materialName is null)
             {
-                if (plugTree.Name.StartsWith('d'))
+                if (plugTree.PlugId.StartsWith('d'))
                 {
                     materialName = "d";
                 }
-                else if (plugTree.Name.StartsWith('s'))
+                else if (plugTree.PlugId.StartsWith('s'))
                 {
                     materialName = "s";
                 }
-                else if (plugTree.Name.StartsWith('p'))
+                else if (plugTree.PlugId.StartsWith('p'))
                 {
                     materialName = "p";
                 }
-                else if (plugTree.Name.StartsWith('g'))
+                else if (plugTree.PlugId.StartsWith('g'))
                 {
                     materialName = ":Glass";
                 }
