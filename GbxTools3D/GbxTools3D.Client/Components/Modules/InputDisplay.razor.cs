@@ -72,6 +72,12 @@ public partial class InputDisplay : ComponentBase
 
     private ImmutableArray<InputState> GetInputStates(ImmutableArray<IInput> inputs)
     {
+        var fakeIsRaceRunning = inputs.OfType<FakeIsRaceRunning>().FirstOrDefault();
+        if(fakeIsRaceRunning.Time.TotalMilliseconds != 0)
+        {
+            inputs = inputs.Select(input => input.WithTime(input.Time - fakeIsRaceRunning.Time)).ToImmutableArray();
+        }
+
         var inputStates = ImmutableArray.CreateBuilder<InputState>(inputs.Length);
 
         GBX.NET.GameVersion version = GBX.NET.GameVersion.MP4;
