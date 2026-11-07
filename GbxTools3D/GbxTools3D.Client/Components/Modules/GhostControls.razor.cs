@@ -44,7 +44,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
     public CGameCtnGhost? CurrentGhost { get; set; }
     public Dictionary<int, TimeInt32>? LastRespawnByCp {get; set;}
 
-    private ImmutableArray<IInput>? overrideInputs;
+    private ImmutableArray<IInput>? raceInputs;
 
     private bool UseHundredths => Map is not null && GameVersionSupport.GetSupportedGameVersion(Map) <= GameVersion.TMF;
 
@@ -106,7 +106,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         }
 
         CurrentGhost = ghost;
-        this.overrideInputs = overrideInputs;
+        raceInputs = GetRaceInputs(ghost, overrideInputs);
 
         if (ghost?.SampleData is null)
         {
@@ -313,7 +313,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
         var checkpoints = ghost.Checkpoints ?? [];
         var numLaps = ghost.GetNumberOfLaps(Map) ?? 1;
         var perLap = checkpoints.Length / numLaps;
-        var respawns = (overrideInputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? ghost.Inputs)
+        var respawns = raceInputs.Value
             .Where(x => x is Respawn { Pressed: true } or RespawnTM2020).ToList();
 
         InitLastRespawnByCp(respawns);
@@ -339,6 +339,27 @@ public partial class GhostControls(StateService stateService) : ComponentBase
 
         return true;
     }
+
+    private static ImmutableArray<IInput> GetRaceInputs(CGameCtnGhost ghost, ImmutableArray<IInput>? overrideInputs)
+    {
+        var inputs = overrideInputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? ghost.Inputs;
+
+        if (inputs.IsDefault)
+        {
+            return [];
+        }
+
+        // FakeIsRaceRunning marks the race start when input times don't start from it
+        var raceStart = inputs.OfType<FakeIsRaceRunning>().FirstOrDefault().Time;
+
+        if (raceStart.TotalMilliseconds == 0)
+        {
+            return inputs;
+        }
+
+        return inputs.Select(input => input.WithTime(input.Time - raceStart)).ToImmutableArray();
+    }
+
     private void InitLastRespawnByCp(IEnumerable<IInput> respawns)
     {
         var checkpointTimes = CurrentGhost?.Checkpoints?.Where(c => c.Time.HasValue).Select(cp => cp.Time!.Value).ToList() ?? [];
@@ -481,7 +502,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
                 }
             }
 
-            var inputs = overrideInputs ?? CurrentGhost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? CurrentGhost.Inputs;
+            var inputs = raceInputs ?? [];
             if (inputs.Length > 0)
             {
                 int left = 0, right = inputs.Length - 1, mid = -1;
