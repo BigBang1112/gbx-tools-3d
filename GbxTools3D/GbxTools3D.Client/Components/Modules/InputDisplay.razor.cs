@@ -94,15 +94,15 @@ public partial class InputDisplay : ComponentBase
                 version = GBX.NET.GameVersion.MP4; // Game not recognized, fall back to MP4.
         }
 
-        GBX.NET.Inputs.FakeDontInverseAxis fakeDontInverseAxis = new();
-        GBX.NET.Inputs.Gas gas = new();
-        GBX.NET.Inputs.Accelerate accelerate = new();
-        GBX.NET.Inputs.AccelerateReal accelerateReal = new();
-        GBX.NET.Inputs.Brake brake = new();
-        GBX.NET.Inputs.BrakeReal brakeReal = new();
-        IInputSteer steer = new GBX.NET.Inputs.Steer();
-        GBX.NET.Inputs.SteerLeft steerLeft = new();
-        GBX.NET.Inputs.SteerRight steerRight = new();
+        GBX.NET.Inputs.FakeDontInverseAxis fakeDontInverseAxis = new(TmEssentials.TimeInt32.MinValue, false);
+        GBX.NET.Inputs.Gas gas = new(TmEssentials.TimeInt32.MinValue, 0);
+        GBX.NET.Inputs.Accelerate accelerate = new(TmEssentials.TimeInt32.MinValue, false);
+        GBX.NET.Inputs.AccelerateReal accelerateReal = new(TmEssentials.TimeInt32.MinValue, 0);
+        GBX.NET.Inputs.Brake brake = new(TmEssentials.TimeInt32.MinValue, false);
+        GBX.NET.Inputs.BrakeReal brakeReal = new(TmEssentials.TimeInt32.MinValue, 0);
+        IInputSteer steer = new GBX.NET.Inputs.Steer(TmEssentials.TimeInt32.MinValue, 0);
+        GBX.NET.Inputs.SteerLeft steerLeft = new(TmEssentials.TimeInt32.MinValue, false);
+        GBX.NET.Inputs.SteerRight steerRight = new(TmEssentials.TimeInt32.MinValue, false);
 
         InputState inputState = new();
         foreach(var input in inputs)
