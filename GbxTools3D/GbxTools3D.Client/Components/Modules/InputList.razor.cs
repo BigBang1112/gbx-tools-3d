@@ -68,7 +68,7 @@ public partial class InputList : ComponentBase
     public int CurrentInputIndex { get; set; }
 
     private ImmutableArray<IInput> inputs;
-    private ImmutableArray<IInput> Inputs => OverrideInputs ?? Ghost?.Inputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? [];
+    private ImmutableArray<IInput> Inputs => OverrideInputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? Ghost?.GetDisplayableInputs().ToImmutableArray() ?? [];
 
     protected override async Task OnInitializedAsync()
     {

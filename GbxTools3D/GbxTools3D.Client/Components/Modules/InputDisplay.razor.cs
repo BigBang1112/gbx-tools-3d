@@ -66,7 +66,7 @@ public partial class InputDisplay : ComponentBase
     private ImmutableArray<IInput> inputs;
 
     // Same source order as GhostControls, which provides CurrentInputIndex
-    private ImmutableArray<IInput> Inputs => OverrideInputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? Ghost?.Inputs ?? [];
+    private ImmutableArray<IInput> Inputs => OverrideInputs ?? Ghost?.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? Ghost?.GetDisplayableInputs().ToImmutableArray() ?? [];
 
     private ImmutableArray<InputState> inputStates = [];
 

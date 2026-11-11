@@ -342,7 +342,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
 
     private static ImmutableArray<IInput> GetRaceInputs(CGameCtnGhost ghost, ImmutableArray<IInput>? overrideInputs)
     {
-        var inputs = overrideInputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? ghost.Inputs;
+        var inputs = overrideInputs ?? ghost.PlayerInputs?.FirstOrDefault()?.Inputs.ToImmutableArray() ?? ghost.GetDisplayableInputs().ToImmutableArray();
 
         if (inputs.IsDefault)
         {
