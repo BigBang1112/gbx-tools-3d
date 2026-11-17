@@ -228,7 +228,7 @@ public partial class GhostControls(StateService stateService) : ComponentBase
 
         // Setup mixer and playback
         var visualMixer = Animation.CreateMixer(ghostSolid.Object);
-        playback?.SetDuration(TimeSpan.FromSeconds(duration));
+        playback?.SetDuration((TimeInt32)TimeSpan.FromSeconds(duration));
 
         actions["Vehicle"] = Animation.CreateAction(visualMixer, Animation.CreateClip("Vehicle", duration, [positionTrack, rotationTrack]));
 
