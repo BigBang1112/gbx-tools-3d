@@ -16,14 +16,14 @@
 
     <ItemGroup>
         <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-        <PackageReference Include="GBX.NET" Version="2.5.1" />
+        <PackageReference Include="GBX.NET" Version="2.5.2" />
         <PackageReference Include="GBX.NET.LZO" Version="2.*" />
         <PackageReference Include="GBX.NET.ZLib" Version="1.*" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="11.0.0" />
         <PackageReference Include="Reuniverse.Razor" Version="0.12.0" />
         <PackageReference Include="System.Linq.Async" Version="7.0.1" />
         <PackageReference Include="SimpleBase" Version="5.*" />
-        <PackageReference Include="TmEssentials" Version="2.9.0" />
+        <PackageReference Include="TmEssentials" Version="2.9.1" />
         <PackageReference Include="TmEssentials.Razor" Version="1.2.0" />
     </ItemGroup>
 
